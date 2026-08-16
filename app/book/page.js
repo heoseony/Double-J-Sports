@@ -39,6 +39,9 @@ function BookPageInner() {
   const [expandedSessionId, setExpandedSessionId] = useState(null);
   const [bookingSessionId, setBookingSessionId] = useState(null);
   const [myBookedSessionIds, setMyBookedSessionIds] = useState([]);
+  const [myBookingIdBySession, setMyBookingIdBySession] = useState({});
+  const [cancellingSessionId, setCancellingSessionId] = useState(null);
+  const [cutoffHours, setCutoffHours] = useState(24);
 
   async function loadAll() {
     setErrorMsg("");
@@ -91,10 +94,24 @@ function BookPageInner() {
 
     const { data: myBookings } = await supabase
       .from("bookings")
-      .select("class_session_id")
+      .select("id, class_session_id")
       .eq("member_id", memberId)
       .eq("status", "booked");
     setMyBookedSessionIds((myBookings || []).map((b) => b.class_session_id));
+    const bookingMap = {};
+    (myBookings || []).forEach((b) => {
+      bookingMap[b.class_session_id] = b.id;
+    });
+    setMyBookingIdBySession(bookingMap);
+
+    const { data: policyData } = await supabase
+      .from("cancellation_policy")
+      .select("cutoff_hours")
+      .limit(1)
+      .maybeSingle();
+    if (policyData?.cutoff_hours != null) {
+      setCutoffHours(policyData.cutoff_hours);
+    }
 
     const today = todayStr();
     const { data: sessionData, error: sessionError } = await supabase
@@ -177,6 +194,69 @@ function BookPageInner() {
 
     setBookingSessionId(null);
     setSuccessMsg("예약이 완료되었습니다.");
+    await loadAll();
+  }
+
+  async function handleCancel(sessionId) {
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    const bookingId = myBookingIdBySession[sessionId];
+    if (!bookingId) {
+      setErrorMsg("예약 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session) {
+      setErrorMsg("수업 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    setCancellingSessionId(sessionId);
+
+    const sessionDateTime = new Date(
+      `${session.session_date}T${session.start_time}`
+    );
+    const cutoffTime = new Date(
+      sessionDateTime.getTime() - cutoffHours * 60 * 60 * 1000
+    );
+    const now = new Date();
+    const isPrior = now < cutoffTime;
+    const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
+
+    const { error: cancelError } = await supabase
+      .from("bookings")
+      .update({ status: newStatus, cancelled_at: new Date().toISOString() })
+      .eq("id", bookingId);
+
+    if (cancelError) {
+      setCancellingSessionId(null);
+      setErrorMsg("취소 실패: " + cancelError.message);
+      return;
+    }
+
+    if (isPrior && membershipId) {
+      const { data: currentMembership } = await supabase
+        .from("memberships")
+        .select("sessions_used")
+        .eq("id", membershipId)
+        .single();
+
+      const newUsed = Math.max((currentMembership?.sessions_used || 0) - 1, 0);
+
+      await supabase
+        .from("memberships")
+        .update({ sessions_used: newUsed })
+        .eq("id", membershipId);
+    }
+
+    setCancellingSessionId(null);
+    setSuccessMsg(
+      isPrior
+        ? "취소되었습니다. 잔여 횟수가 복구되었습니다."
+        : "취소되었습니다. 당일 취소라 잔여 횟수는 복구되지 않습니다."
+    );
     await loadAll();
   }
 
@@ -263,15 +343,36 @@ function BookPageInner() {
 
               <div style={{ marginTop: 10 }}>
                 {alreadyBooked ? (
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: "#0b3d2e",
-                      fontWeight: 700,
-                    }}
-                  >
-                    ✓ 예약됨
-                  </span>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: "#0b3d2e",
+                        fontWeight: 700,
+                      }}
+                    >
+                      ✓ 예약됨
+                    </span>
+                    <button
+                      type="button"
+                      style={{
+                        marginLeft: 12,
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        border: "1px solid #b3261e",
+                        color: "#b3261e",
+                        borderRadius: 8,
+                        background: "white",
+                        cursor: "pointer",
+                      }}
+                      disabled={cancellingSessionId === s.id}
+                      onClick={() => handleCancel(s.id)}
+                    >
+                      {cancellingSessionId === s.id
+                        ? "취소 중..."
+                        : "예약 취소"}
+                    </button>
+                  </div>
                 ) : (
                   <button
                     className="primary"
