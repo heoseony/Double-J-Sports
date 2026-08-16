@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../../lib/supabaseClient";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -15,7 +15,7 @@ function toDateStr(d) {
 
 function getMonday(date) {
   const d = new Date(date);
-  const day = d.getDay(); // 0=일 ~ 6=토
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return d;
@@ -27,10 +27,10 @@ function addDays(date, days) {
   return d;
 }
 
-export default function CoachHomePage() {
+export default function AdminAttendancePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [isCoach, setIsCoach] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
@@ -52,27 +52,12 @@ export default function CoachHomePage() {
         .eq("id", user.id)
         .single();
 
-      if (!profile || profile.role !== "coach") {
+      if (!profile || profile.role !== "admin") {
         router.push("/dashboard");
         return;
       }
 
-      setIsCoach(true);
-
-      const { data: myClasses } = await supabase
-        .from("classes")
-        .select("id, class_name, program")
-        .eq("coach_id", user.id);
-
-      const classIds = (myClasses || []).map((c) => c.id);
-      const classMap = {};
-      (myClasses || []).forEach((c) => (classMap[c.id] = c));
-
-      if (classIds.length === 0) {
-        setSessions([]);
-        setLoading(false);
-        return;
-      }
+      setIsAdmin(true);
 
       const weekEnd = addDays(weekStart, 6);
       const startStr = toDateStr(weekStart);
@@ -80,8 +65,9 @@ export default function CoachHomePage() {
 
       const { data: sessionData, error } = await supabase
         .from("class_sessions")
-        .select("id, session_date, start_time, end_time, class_id")
-        .in("class_id", classIds)
+        .select(
+          "id, session_date, start_time, end_time, classes(class_name, program, coach_id)"
+        )
         .gte("session_date", startStr)
         .lte("session_date", endStr)
         .order("session_date", { ascending: true })
@@ -93,12 +79,33 @@ export default function CoachHomePage() {
         return;
       }
 
-      const withClassInfo = (sessionData || []).map((s) => ({
+      const coachIds = [
+        ...new Set(
+          (sessionData || [])
+            .map((s) => s.classes?.coach_id)
+            .filter(Boolean)
+        ),
+      ];
+
+      let coachEmailById = {};
+      if (coachIds.length > 0) {
+        const { data: coachRows } = await supabase
+          .from("users")
+          .select("id, email")
+          .in("id", coachIds);
+        (coachRows || []).forEach((c) => {
+          coachEmailById[c.id] = c.email;
+        });
+      }
+
+      const withCoach = (sessionData || []).map((s) => ({
         ...s,
-        classInfo: classMap[s.class_id],
+        coachEmail: s.classes?.coach_id
+          ? coachEmailById[s.classes.coach_id] || "(알 수 없음)"
+          : "미지정",
       }));
 
-      setSessions(withClassInfo);
+      setSessions(withCoach);
       setLoading(false);
     }
 
@@ -118,7 +125,7 @@ export default function CoachHomePage() {
     setWeekStart(getMonday(new Date()));
   }
 
-  if (loading || !isCoach) {
+  if (loading || !isAdmin) {
     return (
       <main className="page">
         <div className="subtitle">확인 중...</div>
@@ -132,7 +139,7 @@ export default function CoachHomePage() {
   return (
     <main className="page">
       <div className="brand">Double J Sports</div>
-      <div className="subtitle">코치 화면 · 주간 수업</div>
+      <div className="subtitle">출석 현황 (전체)</div>
 
       <div className="card">
         <div
@@ -201,7 +208,7 @@ export default function CoachHomePage() {
 
         {sessions.length === 0 && !errorMsg && (
           <p style={{ fontSize: 14, color: "#777" }}>
-            이 기간에 담당하는 수업이 없습니다.
+            이 기간에 예정된 수업이 없습니다.
           </p>
         )}
 
@@ -214,11 +221,12 @@ export default function CoachHomePage() {
             }}
           >
             <div style={{ fontSize: 15, fontWeight: 700 }}>
-              {s.session_date} · {s.classInfo?.class_name} (
-              {s.classInfo?.program})
+              {s.session_date} · {s.start_time?.slice(0, 5)}~
+              {s.end_time?.slice(0, 5)} · {s.classes?.class_name} (
+              {s.classes?.program})
             </div>
             <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-              {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)}
+              담당 코치: {s.coachEmail}
             </div>
             <Link href={`/coach/attendance?sessionId=${s.id}`}>
               <button
@@ -230,6 +238,10 @@ export default function CoachHomePage() {
             </Link>
           </div>
         ))}
+      </div>
+
+      <div className="link-row">
+        <Link href="/admin">← 관리자 홈으로</Link>
       </div>
     </main>
   );

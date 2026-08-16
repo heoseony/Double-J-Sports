@@ -42,6 +42,17 @@ function AttendanceInner() {
       return;
     }
 
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+      router.push("/dashboard");
+      return;
+    }
+
     const { data: session } = await supabase
       .from("class_sessions")
       .select("id, session_date, start_time, end_time, classes(class_name)")

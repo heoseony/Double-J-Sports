@@ -75,6 +75,12 @@ export default function AdminHomePage() {
           </button>
         </Link>
 
+        <Link href="/admin/attendance">
+          <button className="primary" style={{ marginTop: 12 }}>
+            출석 현황 (전체)
+          </button>
+        </Link>
+
         <div className="link-row">
           <Link href="/dashboard">← 일반 화면으로 돌아가기</Link>
         </div>
