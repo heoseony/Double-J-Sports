@@ -68,17 +68,19 @@ export default function AdultSignupPage() {
       return;
     }
 
-    const { data: memberData, error: memberInsertError } = await supabase
-      .from("members")
-      .insert({
-        user_id: userId,
-        program,
-        name,
-        emergency_contact: phone,
-        status: "active",
-      })
-      .select()
-      .single();
+    const newMemberId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const { error: memberInsertError } = await supabase.from("members").insert({
+      id: newMemberId,
+      user_id: userId,
+      program,
+      name,
+      emergency_contact: phone,
+      status: "active",
+    });
 
     if (memberInsertError) {
       setErrorMsg("회원 정보 저장 실패: " + memberInsertError.message);
@@ -87,7 +89,7 @@ export default function AdultSignupPage() {
     }
 
     await supabase.from("consents").insert({
-      member_id: memberData.id,
+      member_id: newMemberId,
       privacy_consent: privacyConsent,
       media_consent: mediaConsent,
       terms_consent: termsConsent,
