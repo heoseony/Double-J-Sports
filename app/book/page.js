@@ -46,6 +46,8 @@ function BookPageInner() {
   const [myBookingIdBySession, setMyBookingIdBySession] = useState({});
   const [cancellingSessionId, setCancellingSessionId] = useState(null);
   const [cutoffHours, setCutoffHours] = useState(24);
+  const [allClassesAllowed, setAllClassesAllowed] = useState(true);
+  const [allowedClassIds, setAllowedClassIds] = useState([]);
 
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date();
@@ -87,7 +89,9 @@ function BookPageInner() {
 
     const { data: memberships } = await supabase
       .from("memberships")
-      .select("id, sessions_used, status, membership_plans(sessions_per_month)")
+      .select(
+        "id, sessions_used, status, plan_id, membership_plans(sessions_per_month, all_classes_allowed)"
+      )
       .eq("member_id", memberId)
       .eq("status", "active")
       .order("start_date", { ascending: false })
@@ -98,9 +102,24 @@ function BookPageInner() {
       const total = m.membership_plans?.sessions_per_month || 0;
       setRemaining(total - m.sessions_used);
       setMembershipId(m.id);
+
+      const allAllowed = m.membership_plans?.all_classes_allowed !== false;
+      setAllClassesAllowed(allAllowed);
+
+      if (!allAllowed) {
+        const { data: allowedRows } = await supabase
+          .from("membership_plan_classes")
+          .select("class_id")
+          .eq("plan_id", m.plan_id);
+        setAllowedClassIds((allowedRows || []).map((r) => r.class_id));
+      } else {
+        setAllowedClassIds([]);
+      }
     } else {
       setRemaining(0);
       setMembershipId(null);
+      setAllClassesAllowed(true);
+      setAllowedClassIds([]);
     }
 
     const { data: myBookings } = await supabase
@@ -128,7 +147,7 @@ function BookPageInner() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, session_date, start_time, end_time, status, classes(class_name, program, weekday, active)"
+        "id, class_id, session_date, start_time, end_time, status, classes(id, class_name, program, weekday, active)"
       )
       .gte("session_date", today)
       .order("session_date", { ascending: true })
@@ -140,9 +159,24 @@ function BookPageInner() {
       return;
     }
 
-    const kidsSessions = (sessionData || []).filter(
+    let kidsSessions = (sessionData || []).filter(
       (s) => s.classes?.program === "kids" && s.classes?.active
     );
+
+    const currentAllAllowed =
+      memberships && memberships.length > 0
+        ? memberships[0].membership_plans?.all_classes_allowed !== false
+        : true;
+
+    if (!currentAllAllowed) {
+      const { data: allowedRows2 } = await supabase
+        .from("membership_plan_classes")
+        .select("class_id")
+        .eq("plan_id", memberships[0].plan_id);
+      const allowedIds = (allowedRows2 || []).map((r) => r.class_id);
+      kidsSessions = kidsSessions.filter((s) => allowedIds.includes(s.class_id));
+    }
+
     setSessions(kidsSessions);
 
     const { data: participantData } = await supabase
@@ -322,6 +356,7 @@ function BookPageInner() {
       <div className="brand">Double J Sports</div>
       <div className="subtitle">
         {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
+        {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
       </div>
 
       <div className="card">

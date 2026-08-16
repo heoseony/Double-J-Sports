@@ -35,6 +35,7 @@ export default function AdultBookPage() {
   const [cancellingSessionId, setCancellingSessionId] = useState(null);
   const [myBookingIdBySession, setMyBookingIdBySession] = useState({});
   const [cutoffHours, setCutoffHours] = useState(24);
+  const [allClassesAllowed, setAllClassesAllowed] = useState(true);
 
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date();
@@ -70,7 +71,9 @@ export default function AdultBookPage() {
 
     const { data: memberships } = await supabase
       .from("memberships")
-      .select("id, sessions_used, status, membership_plans(sessions_per_month)")
+      .select(
+        "id, sessions_used, status, plan_id, membership_plans(sessions_per_month, all_classes_allowed)"
+      )
       .eq("member_id", memberData.id)
       .eq("status", "active")
       .order("start_date", { ascending: false })
@@ -81,9 +84,11 @@ export default function AdultBookPage() {
       const total = m.membership_plans?.sessions_per_month || 0;
       setRemaining(total - m.sessions_used);
       setMembershipId(m.id);
+      setAllClassesAllowed(m.membership_plans?.all_classes_allowed !== false);
     } else {
       setRemaining(0);
       setMembershipId(null);
+      setAllClassesAllowed(true);
     }
 
     const { data: myBookings } = await supabase
@@ -110,7 +115,7 @@ export default function AdultBookPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, session_date, start_time, end_time, classes(class_name, program, weekday, active)"
+        "id, class_id, session_date, start_time, end_time, classes(id, class_name, program, weekday, active)"
       )
       .gte("session_date", today)
       .order("session_date", { ascending: true })
@@ -122,9 +127,26 @@ export default function AdultBookPage() {
       return;
     }
 
-    const programSessions = (sessionData || []).filter(
+    let programSessions = (sessionData || []).filter(
       (s) => s.classes?.program === memberData.program && s.classes?.active
     );
+
+    const currentAllAllowed =
+      memberships && memberships.length > 0
+        ? memberships[0].membership_plans?.all_classes_allowed !== false
+        : true;
+
+    if (!currentAllAllowed) {
+      const { data: allowedRows } = await supabase
+        .from("membership_plan_classes")
+        .select("class_id")
+        .eq("plan_id", memberships[0].plan_id);
+      const allowedIds = (allowedRows || []).map((r) => r.class_id);
+      programSessions = programSessions.filter((s) =>
+        allowedIds.includes(s.class_id)
+      );
+    }
+
     setSessions(programSessions);
 
     const { data: countData } = await supabase
@@ -300,6 +322,7 @@ export default function AdultBookPage() {
       <div className="brand">Double J Sports</div>
       <div className="subtitle">
         {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
+        {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
       </div>
 
       <div className="card">
