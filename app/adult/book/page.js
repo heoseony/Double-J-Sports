@@ -1,18 +1,22 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 
-const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function toDateStr(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
 
 function todayStr() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return toDateStr(new Date());
 }
 
 export default function AdultBookPage() {
@@ -31,6 +35,13 @@ export default function AdultBookPage() {
   const [cancellingSessionId, setCancellingSessionId] = useState(null);
   const [myBookingIdBySession, setMyBookingIdBySession] = useState({});
   const [cutoffHours, setCutoffHours] = useState(24);
+
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+  const [selectedDate, setSelectedDate] = useState(todayStr());
 
   async function loadAll() {
     setErrorMsg("");
@@ -133,6 +144,41 @@ export default function AdultBookPage() {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const sessionsByDate = useMemo(() => {
+    const map = {};
+    sessions.forEach((s) => {
+      if (!map[s.session_date]) map[s.session_date] = [];
+      map[s.session_date].push(s);
+    });
+    return map;
+  }, [sessions]);
+
+  const calendarCells = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push(`${year}-${pad2(month + 1)}-${pad2(d)}`);
+    }
+    return cells;
+  }, [currentMonth]);
+
+  function goPrevMonth() {
+    const d = new Date(currentMonth);
+    d.setMonth(d.getMonth() - 1);
+    setCurrentMonth(d);
+  }
+
+  function goNextMonth() {
+    const d = new Date(currentMonth);
+    d.setMonth(d.getMonth() + 1);
+    setCurrentMonth(d);
+  }
 
   async function handleBook(sessionId) {
     setErrorMsg("");
@@ -246,6 +292,9 @@ export default function AdultBookPage() {
     );
   }
 
+  const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
+  const selectedSessions = sessionsByDate[selectedDate] || [];
+
   return (
     <main className="page">
       <div className="brand">Double J Sports</div>
@@ -257,13 +306,126 @@ export default function AdultBookPage() {
         {errorMsg && <div className="message error">{errorMsg}</div>}
         {successMsg && <div className="message success">{successMsg}</div>}
 
-        {sessions.length === 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 10,
+          }}
+        >
+          <button
+            type="button"
+            onClick={goPrevMonth}
+            style={{
+              padding: "6px 12px",
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "white",
+              cursor: "pointer",
+            }}
+          >
+            ‹
+          </button>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{monthLabel}</div>
+          <button
+            type="button"
+            onClick={goNextMonth}
+            style={{
+              padding: "6px 12px",
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "white",
+              cursor: "pointer",
+            }}
+          >
+            ›
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: 4,
+            fontSize: 12,
+            textAlign: "center",
+            color: "#777",
+            marginBottom: 4,
+          }}
+        >
+          {WEEKDAY_HEADERS.map((w) => (
+            <div key={w}>{w}</div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: 4,
+          }}
+        >
+          {calendarCells.map((dateStr, idx) => {
+            if (!dateStr) return <div key={`empty-${idx}`} />;
+            const daySessions = sessionsByDate[dateStr] || [];
+            const isSelected = dateStr === selectedDate;
+            const isToday = dateStr === todayStr();
+            const dayNum = Number(dateStr.split("-")[2]);
+
+            return (
+              <button
+                type="button"
+                key={dateStr}
+                onClick={() => setSelectedDate(dateStr)}
+                style={{
+                  aspectRatio: "1",
+                  padding: 2,
+                  border: isSelected
+                    ? "2px solid #0b3d2e"
+                    : "1px solid #eee",
+                  borderRadius: 8,
+                  background: isSelected ? "#e8f5ec" : "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 13,
+                  fontWeight: isToday ? 700 : 400,
+                  color: isToday ? "#0b3d2e" : "#1a1a1a",
+                }}
+              >
+                <span>{dayNum}</span>
+                {daySessions.length > 0 && (
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: "#0b3d2e",
+                      marginTop: 2,
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ fontWeight: 700, marginBottom: 10 }}>
+          {selectedDate} 수업
+        </div>
+
+        {selectedSessions.length === 0 && (
           <p style={{ fontSize: 14, color: "#777" }}>
-            예약 가능한 수업이 아직 없습니다. 관리자에게 문의해주세요.
+            이 날짜에는 예약 가능한 수업이 없습니다.
           </p>
         )}
 
-        {sessions.map((s) => {
+        {selectedSessions.map((s) => {
           const count = countsBySession[s.id] || 0;
           const bookingId = myBookingIdBySession[s.id];
 
@@ -276,7 +438,6 @@ export default function AdultBookPage() {
               }}
             >
               <div style={{ fontSize: 15, fontWeight: 700 }}>
-                {s.session_date} ({WEEKDAY_LABELS[s.classes.weekday]}){" "}
                 {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} ·{" "}
                 {s.classes.class_name}
               </div>
