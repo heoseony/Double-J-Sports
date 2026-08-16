@@ -10,6 +10,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [guardianName, setGuardianName] = useState("");
   const [email, setEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -23,6 +24,16 @@ export default function DashboardPage() {
       }
 
       setEmail(user.email);
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role === "admin") {
+        setIsAdmin(true);
+      }
 
       const { data: guardian } = await supabase
         .from("guardians")
@@ -67,6 +78,14 @@ export default function DashboardPage() {
         <Link href="/members">
           <button className="primary">자녀 관리</button>
         </Link>
+
+        {isAdmin && (
+          <Link href="/admin">
+            <button className="primary" style={{ background: "#1a4fb4" }}>
+              관리자 화면으로 이동
+            </button>
+          </Link>
+        )}
 
         <button
           className="primary"
