@@ -34,6 +34,15 @@ export default function AdminClassesPage() {
   const [generateMsg, setGenerateMsg] = useState("");
   const [coaches, setCoaches] = useState([]);
   const [assigningClassId, setAssigningClassId] = useState(null);
+  const [editingClassId, setEditingClassId] = useState(null);
+  const [editProgram, setEditProgram] = useState("kids");
+  const [editClassName, setEditClassName] = useState("");
+  const [editWeekday, setEditWeekday] = useState("1");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
 
   async function loadClasses() {
     const { data, error } = await supabase
@@ -143,6 +152,52 @@ export default function AdminClassesPage() {
       .eq("id", classId);
     await loadClasses();
     setAssigningClassId(null);
+  }
+
+  function startEdit(c) {
+    setEditingClassId(c.id);
+    setEditProgram(c.program);
+    setEditClassName(c.class_name);
+    setEditWeekday(String(c.weekday));
+    setEditStartTime(c.start_time?.slice(0, 5) || "");
+    setEditEndTime(c.end_time?.slice(0, 5) || "");
+    setEditLocation(c.location || "");
+  }
+
+  function cancelEdit() {
+    setEditingClassId(null);
+  }
+
+  async function saveEdit(classId) {
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from("classes")
+      .update({
+        program: editProgram,
+        class_name: editClassName,
+        weekday: Number(editWeekday),
+        start_time: editStartTime,
+        end_time: editEndTime,
+        location: editLocation || null,
+      })
+      .eq("id", classId);
+
+    setSavingEdit(false);
+
+    if (!error) {
+      setEditingClassId(null);
+      await loadClasses();
+    }
+  }
+
+  async function toggleActive(classId, currentActive) {
+    setTogglingId(classId);
+    await supabase
+      .from("classes")
+      .update({ active: !currentActive })
+      .eq("id", classId);
+    await loadClasses();
+    setTogglingId(null);
   }
 
   async function handleSubmit(e) {
@@ -286,49 +341,247 @@ export default function AdminClassesPage() {
           </p>
         )}
 
-        {classes.map((c) => (
-          <div
-            key={c.id}
-            style={{
-              padding: "12px 0",
-              borderBottom: "1px solid #eee",
-              fontSize: 14,
-            }}
-          >
-            <div style={{ fontWeight: 700 }}>
-              [{c.program}] {c.class_name} — {WEEKDAY_LABELS[c.weekday]}요일{" "}
-              {c.start_time?.slice(0, 5)}~{c.end_time?.slice(0, 5)}
-            </div>
-            <div style={{ color: "#777", marginTop: 2 }}>
-              {c.location || "장소 미입력"}
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <label style={{ fontSize: 12, marginBottom: 4 }}>
-                담당 코치
-              </label>
-              <select
-                value={c.coach_id || ""}
-                onChange={(e) => handleAssignCoach(c.id, e.target.value)}
-                disabled={assigningClassId === c.id}
+        {classes.map((c) => {
+          const isEditing = editingClassId === c.id;
+
+          if (isEditing) {
+            return (
+              <div
+                key={c.id}
                 style={{
-                  width: "100%",
-                  padding: 10,
+                  padding: "12px 0",
+                  borderBottom: "1px solid #eee",
                   fontSize: 14,
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
                   background: "#fafafa",
                 }}
               >
-                <option value="">-- 미지정 --</option>
-                {coaches.map((co) => (
-                  <option key={co.id} value={co.id}>
-                    {co.email}
-                  </option>
-                ))}
-              </select>
+                <label style={{ fontSize: 12 }}>프로그램</label>
+                <select
+                  value={editProgram}
+                  onChange={(e) => setEditProgram(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    fontSize: 14,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <option value="kids">Kids</option>
+                  <option value="women">Women's</option>
+                  <option value="men">Men's</option>
+                </select>
+
+                <label style={{ fontSize: 12 }}>수업 이름</label>
+                <input
+                  type="text"
+                  value={editClassName}
+                  onChange={(e) => setEditClassName(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    fontSize: 14,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <label style={{ fontSize: 12 }}>요일</label>
+                <select
+                  value={editWeekday}
+                  onChange={(e) => setEditWeekday(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    fontSize: 14,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <option value="1">월요일</option>
+                  <option value="2">화요일</option>
+                  <option value="3">수요일</option>
+                  <option value="4">목요일</option>
+                  <option value="5">금요일</option>
+                  <option value="6">토요일</option>
+                </select>
+
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 12 }}>시작 시간</label>
+                    <input
+                      type="time"
+                      value={editStartTime}
+                      onChange={(e) => setEditStartTime(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        fontSize: 14,
+                        border: "1px solid #ddd",
+                        borderRadius: 8,
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 12 }}>종료 시간</label>
+                    <input
+                      type="time"
+                      value={editEndTime}
+                      onChange={(e) => setEditEndTime(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        fontSize: 14,
+                        border: "1px solid #ddd",
+                        borderRadius: 8,
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <label style={{ fontSize: 12 }}>장소</label>
+                <input
+                  type="text"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    fontSize: 14,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    marginBottom: 10,
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    style={{
+                      padding: "8px 14px",
+                      fontSize: 13,
+                      border: "none",
+                      borderRadius: 8,
+                      background: "#0b3d2e",
+                      color: "white",
+                      cursor: "pointer",
+                    }}
+                    disabled={savingEdit}
+                    onClick={() => saveEdit(c.id)}
+                  >
+                    {savingEdit ? "저장 중..." : "저장"}
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      padding: "8px 14px",
+                      fontSize: 13,
+                      border: "1px solid #ddd",
+                      borderRadius: 8,
+                      background: "white",
+                      cursor: "pointer",
+                    }}
+                    onClick={cancelEdit}
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={c.id}
+              style={{
+                padding: "12px 0",
+                borderBottom: "1px solid #eee",
+                fontSize: 14,
+                opacity: c.active ? 1 : 0.5,
+              }}
+            >
+              <div style={{ fontWeight: 700 }}>
+                [{c.program}] {c.class_name} — {WEEKDAY_LABELS[c.weekday]}요일{" "}
+                {c.start_time?.slice(0, 5)}~{c.end_time?.slice(0, 5)}
+                {!c.active && " (비활성)"}
+              </div>
+              <div style={{ color: "#777", marginTop: 2 }}>
+                {c.location || "장소 미입력"}
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <label style={{ fontSize: 12, marginBottom: 4 }}>
+                  담당 코치
+                </label>
+                <select
+                  value={c.coach_id || ""}
+                  onChange={(e) => handleAssignCoach(c.id, e.target.value)}
+                  disabled={assigningClassId === c.id}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    fontSize: 14,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    background: "#fafafa",
+                  }}
+                >
+                  <option value="">-- 미지정 --</option>
+                  {coaches.map((co) => (
+                    <option key={co.id} value={co.id}>
+                      {co.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => startEdit(c)}
+                >
+                  수정
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    border: c.active
+                      ? "1px solid #b3261e"
+                      : "1px solid #0b3d2e",
+                    color: c.active ? "#b3261e" : "#0b3d2e",
+                    borderRadius: 8,
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                  disabled={togglingId === c.id}
+                  onClick={() => toggleActive(c.id, c.active)}
+                >
+                  {togglingId === c.id
+                    ? "처리 중..."
+                    : c.active
+                    ? "비활성화"
+                    : "활성화"}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="link-row">
