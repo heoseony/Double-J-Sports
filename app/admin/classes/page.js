@@ -30,6 +30,8 @@ export default function AdminClassesPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generateMsg, setGenerateMsg] = useState("");
 
   async function loadClasses() {
     const { data, error } = await supabase
@@ -72,6 +74,53 @@ export default function AdminClassesPage() {
 
     check();
   }, [router]);
+
+  async function handleGenerateSessions() {
+    setGenerateMsg("");
+    setGenerating(true);
+
+    let createdCount = 0;
+
+    for (const c of classes) {
+      if (!c.active) continue;
+
+      const targetDates = [];
+      const today = new Date();
+      for (let i = 0; i < 28; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        if (d.getDay() === c.weekday) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          targetDates.push(`${yyyy}-${mm}-${dd}`);
+        }
+      }
+
+      for (const dateStr of targetDates) {
+        const { data: existing } = await supabase
+          .from("class_sessions")
+          .select("id")
+          .eq("class_id", c.id)
+          .eq("session_date", dateStr)
+          .maybeSingle();
+
+        if (!existing) {
+          const { error } = await supabase.from("class_sessions").insert({
+            class_id: c.id,
+            session_date: dateStr,
+            start_time: c.start_time,
+            end_time: c.end_time,
+            status: "scheduled",
+          });
+          if (!error) createdCount += 1;
+        }
+      }
+    }
+
+    setGenerating(false);
+    setGenerateMsg(`${createdCount}개의 새 세션이 생성되었습니다. (앞으로 4주치)`);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -194,6 +243,19 @@ export default function AdminClassesPage() {
 
       <div className="card" style={{ marginTop: 20 }}>
         <div style={{ fontWeight: 700, marginBottom: 10 }}>등록된 수업</div>
+
+        {classes.length > 0 && (
+          <button
+            className="primary"
+            style={{ marginBottom: 16 }}
+            onClick={handleGenerateSessions}
+            disabled={generating}
+          >
+            {generating ? "생성 중..." : "앞으로 4주 실제 날짜 세션 생성"}
+          </button>
+        )}
+
+        {generateMsg && <div className="message success">{generateMsg}</div>}
 
         {classes.length === 0 && (
           <p style={{ fontSize: 14, color: "#777" }}>
