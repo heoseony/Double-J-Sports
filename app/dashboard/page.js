@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [guardianName, setGuardianName] = useState("");
   const [email, setEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCoach, setIsCoach] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -25,16 +26,6 @@ export default function DashboardPage() {
 
       setEmail(user.email);
 
-      const { data: profile } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role === "admin") {
-        setIsAdmin(true);
-      }
-
       const { data: guardian } = await supabase
         .from("guardians")
         .select("name")
@@ -43,6 +34,19 @@ export default function DashboardPage() {
 
       if (guardian) {
         setGuardianName(guardian.name);
+      }
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile && profile.role === "admin") {
+        setIsAdmin(true);
+      }
+      if (profile && profile.role === "coach") {
+        setIsCoach(true);
       }
 
       setLoading(false);
@@ -81,8 +85,22 @@ export default function DashboardPage() {
 
         {isAdmin && (
           <Link href="/admin">
-            <button className="primary" style={{ background: "#1a4fb4" }}>
-              관리자 화면으로 이동
+            <button
+              className="primary"
+              style={{ background: "#1a1a1a", marginTop: 12 }}
+            >
+              관리자 화면
+            </button>
+          </Link>
+        )}
+
+        {isCoach && (
+          <Link href="/coach">
+            <button
+              className="primary"
+              style={{ background: "#1a1a1a", marginTop: 12 }}
+            >
+              코치 화면
             </button>
           </Link>
         )}

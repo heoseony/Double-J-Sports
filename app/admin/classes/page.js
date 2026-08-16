@@ -32,17 +32,29 @@ export default function AdminClassesPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generateMsg, setGenerateMsg] = useState("");
+  const [coaches, setCoaches] = useState([]);
+  const [assigningClassId, setAssigningClassId] = useState(null);
 
   async function loadClasses() {
     const { data, error } = await supabase
       .from("classes")
-      .select("id, program, class_name, weekday, start_time, end_time, location, active")
+      .select(
+        "id, program, class_name, weekday, start_time, end_time, location, active, coach_id"
+      )
       .order("weekday", { ascending: true })
       .order("start_time", { ascending: true });
 
     if (!error) {
       setClasses(data || []);
     }
+  }
+
+  async function loadCoaches() {
+    const { data } = await supabase
+      .from("users")
+      .select("id, email")
+      .eq("role", "coach");
+    setCoaches(data || []);
   }
 
   useEffect(() => {
@@ -69,6 +81,7 @@ export default function AdminClassesPage() {
 
       setIsAdmin(true);
       await loadClasses();
+      await loadCoaches();
       setLoading(false);
     }
 
@@ -120,6 +133,16 @@ export default function AdminClassesPage() {
 
     setGenerating(false);
     setGenerateMsg(`${createdCount}개의 새 세션이 생성되었습니다. (앞으로 4주치)`);
+  }
+
+  async function handleAssignCoach(classId, coachId) {
+    setAssigningClassId(classId);
+    await supabase
+      .from("classes")
+      .update({ coach_id: coachId || null })
+      .eq("id", classId);
+    await loadClasses();
+    setAssigningClassId(null);
   }
 
   async function handleSubmit(e) {
@@ -278,6 +301,31 @@ export default function AdminClassesPage() {
             </div>
             <div style={{ color: "#777", marginTop: 2 }}>
               {c.location || "장소 미입력"}
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <label style={{ fontSize: 12, marginBottom: 4 }}>
+                담당 코치
+              </label>
+              <select
+                value={c.coach_id || ""}
+                onChange={(e) => handleAssignCoach(c.id, e.target.value)}
+                disabled={assigningClassId === c.id}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  fontSize: 14,
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
+                  background: "#fafafa",
+                }}
+              >
+                <option value="">-- 미지정 --</option>
+                {coaches.map((co) => (
+                  <option key={co.id} value={co.id}>
+                    {co.email}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         ))}
