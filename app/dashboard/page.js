@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function DashboardPage() {
@@ -59,13 +60,19 @@ export default function DashboardPage() {
 
       <div className="card">
         <p style={{ marginTop: 0, fontSize: 15, lineHeight: 1.6 }}>
-          로그인이 정상적으로 완료되었습니다.
-          <br />
-          이 화면은 앞으로 자녀 등록, 수업 예약, 잔여 횟수 확인 등의 기능이
-          채워질 자리입니다.
+          아래에서 자녀를 등록하고 관리할 수 있습니다. 앞으로 수업 예약,
+          잔여 횟수 확인 등의 기능이 계속 추가될 예정입니다.
         </p>
 
-        <button className="primary" onClick={handleLogout}>
+        <Link href="/members">
+          <button className="primary">자녀 관리</button>
+        </Link>
+
+        <button
+          className="primary"
+          style={{ background: "#999", marginTop: 12 }}
+          onClick={handleLogout}
+        >
           로그아웃
         </button>
       </div>
