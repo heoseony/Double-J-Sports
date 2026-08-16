@@ -1,121 +1,228 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
-
-const PROGRAM_LABEL = {
-  kids: "Kids",
-  womens: "Women's",
-  mens: "Men's",
+const WEEKDAY_LABELS = {
+  1: "월",
+  2: "화",
+  3: "수",
+  4: "목",
+  5: "금",
+  6: "토",
 };
 
-function formatTime(t) {
-  if (!t) return "";
-  return t.slice(0, 5);
-}
-
 export default function AdminClassesPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const [classes, setClasses] = useState([]);
-  const [sessionCounts, setSessionCounts] = useState({});
+
+  const [program, setProgram] = useState("kids");
+  const [className, setClassName] = useState("Kids");
+  const [weekday, setWeekday] = useState("1");
+  const [startTime, setStartTime] = useState("16:00");
+  const [endTime, setEndTime] = useState("17:00");
+  const [location, setLocation] = useState("");
+
+  const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  useEffect(() => {
-    async function load() {
-      const { data: classList, error } = await supabase
-        .from("classes")
-        .select("*")
-        .order("weekday", { ascending: true })
-        .order("start_time", { ascending: true });
+  async function loadClasses() {
+    const { data, error } = await supabase
+      .from("classes")
+      .select("id, program, class_name, weekday, start_time, end_time, location, active")
+      .order("weekday", { ascending: true })
+      .order("start_time", { ascending: true });
 
-      if (error) {
-        setErrorMsg("수업 목록을 불러오지 못했습니다: " + error.message);
-        setLoading(false);
+    if (!error) {
+      setClasses(data || []);
+    }
+  }
+
+  useEffect(() => {
+    async function check() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push("/login");
         return;
       }
 
-      setClasses(classList || []);
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-      // 오늘 이후 예정된 회차 수 (참고용)
-      if (classList && classList.length > 0) {
-        const today = new Date().toISOString().slice(0, 10);
-        const { data: sessions } = await supabase
-          .from("class_sessions")
-          .select("class_id")
-          .gte("session_date", today);
-
-        const counts = {};
-        (sessions || []).forEach((s) => {
-          counts[s.class_id] = (counts[s.class_id] || 0) + 1;
-        });
-        setSessionCounts(counts);
+      if (!profile || profile.role !== "admin") {
+        router.push("/dashboard");
+        return;
       }
 
+      setIsAdmin(true);
+      await loadClasses();
       setLoading(false);
     }
 
-    load();
-  }, []);
+    check();
+  }, [router]);
 
-  if (loading) {
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setErrorMsg("");
+    setSaving(true);
+
+    const { error } = await supabase.from("classes").insert({
+      program,
+      class_name: className,
+      weekday: Number(weekday),
+      start_time: startTime,
+      end_time: endTime,
+      location: location || null,
+      active: true,
+    });
+
+    setSaving(false);
+
+    if (error) {
+      setErrorMsg("생성 실패: " + error.message);
+      return;
+    }
+
+    setClassName("Kids");
+    setLocation("");
+    await loadClasses();
+  }
+
+  if (loading || !isAdmin) {
     return (
-      <main className="admin-page">
-        <div className="subtitle">불러오는 중...</div>
+      <main className="page">
+        <div className="subtitle">확인 중...</div>
       </main>
     );
   }
 
   return (
-    <main className="admin-page">
-      <div className="brand">수업 관리</div>
-      <div className="subtitle">
-        Kids / Women's / Men's 수업을 요일별로 관리합니다. (정원 없음 —
-        신청자 수만 표시)
-      </div>
+    <main className="page">
+      <div className="brand">Double J Sports</div>
+      <div className="subtitle">수업 관리 (반복 스케줄)</div>
 
       <div className="card">
-        {errorMsg && <div className="message error">{errorMsg}</div>}
+        <form onSubmit={handleSubmit}>
+          <label>프로그램</label>
+          <select
+            value={program}
+            onChange={(e) => setProgram(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 14,
+              fontSize: 16,
+              border: "1px solid #ddd",
+              borderRadius: 10,
+              background: "#fafafa",
+            }}
+          >
+            <option value="kids">Kids</option>
+            <option value="women">Women's</option>
+            <option value="men">Men's</option>
+          </select>
 
-        {classes.length === 0 && !errorMsg && (
-          <p style={{ marginTop: 0, fontSize: 15, color: "#555" }}>
+          <label>수업 이름</label>
+          <input
+            type="text"
+            value={className}
+            onChange={(e) => setClassName(e.target.value)}
+            placeholder="예: Kids"
+          />
+
+          <label>요일</label>
+          <select
+            value={weekday}
+            onChange={(e) => setWeekday(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 14,
+              fontSize: 16,
+              border: "1px solid #ddd",
+              borderRadius: 10,
+              background: "#fafafa",
+            }}
+          >
+            <option value="1">월요일</option>
+            <option value="2">화요일</option>
+            <option value="3">수요일</option>
+            <option value="4">목요일</option>
+            <option value="5">금요일</option>
+            <option value="6">토요일</option>
+          </select>
+
+          <label>시작 시간</label>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+          />
+
+          <label>종료 시간</label>
+          <input
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+          />
+
+          <label>장소 (선택)</label>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="예: Frankfurt Training Center"
+          />
+
+          {errorMsg && <div className="message error">{errorMsg}</div>}
+
+          <button className="primary" type="submit" disabled={saving}>
+            {saving ? "생성 중..." : "수업 생성"}
+          </button>
+        </form>
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ fontWeight: 700, marginBottom: 10 }}>등록된 수업</div>
+
+        {classes.length === 0 && (
+          <p style={{ fontSize: 14, color: "#777" }}>
             아직 등록된 수업이 없습니다.
           </p>
         )}
 
         {classes.map((c) => (
-          <div key={c.id} className="list-row">
-            <div>
-              <span className={`badge ${c.program}`}>
-                {PROGRAM_LABEL[c.program] || c.program}
-              </span>
-              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 6 }}>
-                {c.class_name}
-                {c.age_group ? ` (${c.age_group})` : ""}
-              </div>
-              <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-                매주 {WEEKDAY_LABEL[c.weekday]}요일{" "}
-                {formatTime(c.start_time)}~{formatTime(c.end_time)}
-                {c.coach_name ? ` · ${c.coach_name} 코치` : ""}
-                {c.location ? ` · ${c.location}` : ""}
-              </div>
-              <div style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
-                예정된 회차: {sessionCounts[c.id] || 0}개
-                {!c.is_active && " · 비활성"}
-              </div>
+          <div
+            key={c.id}
+            style={{
+              padding: "12px 0",
+              borderBottom: "1px solid #eee",
+              fontSize: 14,
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>
+              [{c.program}] {c.class_name} — {WEEKDAY_LABELS[c.weekday]}요일{" "}
+              {c.start_time?.slice(0, 5)}~{c.end_time?.slice(0, 5)}
+            </div>
+            <div style={{ color: "#777", marginTop: 2 }}>
+              {c.location || "장소 미입력"}
             </div>
           </div>
         ))}
+      </div>
 
-        <Link href="/admin/classes/new">
-          <button className="primary">+ 새 수업 만들기</button>
-        </Link>
-
-        <div className="link-row">
-          <Link href="/admin">← 관리자 홈으로</Link>
-        </div>
+      <div className="link-row">
+        <Link href="/admin">← 관리자 홈으로</Link>
       </div>
     </main>
   );
