@@ -12,6 +12,8 @@ export default function DashboardPage() {
   const [email, setEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCoach, setIsCoach] = useState(false);
+  const [isAdultMember, setIsAdultMember] = useState(false);
+  const [adultMemberName, setAdultMemberName] = useState("");
 
   useEffect(() => {
     async function loadUser() {
@@ -49,6 +51,17 @@ export default function DashboardPage() {
         setIsCoach(true);
       }
 
+      const { data: selfMember } = await supabase
+        .from("members")
+        .select("name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (selfMember) {
+        setIsAdultMember(true);
+        setAdultMemberName(selfMember.name);
+      }
+
       setLoading(false);
     }
 
@@ -82,6 +95,14 @@ export default function DashboardPage() {
         <Link href="/members">
           <button className="primary">자녀 관리</button>
         </Link>
+
+        {isAdultMember && (
+          <Link href="/adult/book">
+            <button className="primary" style={{ marginTop: 12 }}>
+              수업 예약 ({adultMemberName}님)
+            </button>
+          </Link>
+        )}
 
         {isAdmin && (
           <Link href="/admin">

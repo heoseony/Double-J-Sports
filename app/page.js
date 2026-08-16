@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -11,7 +11,12 @@ export default function HomePage() {
           아직 회원가입을 하지 않으셨다면 먼저 가입해주세요.
         </p>
         <Link href="/signup">
-          <button className="primary">회원가입</button>
+          <button className="primary">학부모 회원가입 (Kids)</button>
+        </Link>
+        <Link href="/signup/adult">
+          <button className="primary" style={{ marginTop: 12 }}>
+            성인 회원가입 (Women's / Men's)
+          </button>
         </Link>
         <div className="link-row">
           이미 계정이 있으신가요? <Link href="/login">로그인</Link>
