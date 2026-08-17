@@ -35,17 +35,17 @@ export default function BottomNav() {
       <button
         type="button"
         onClick={() => router.back()}
-        style={itemStyle(false)}
+        style={{ ...itemStyle(false), fontSize: 24 }}
       >
-        뒤로
+        ‹
       </button>
 
       <button
         type="button"
         onClick={() => router.forward()}
-        style={itemStyle(false)}
+        style={{ ...itemStyle(false), fontSize: 24 }}
       >
-        앞으로
+        ›
       </button>
 
       <button
