@@ -53,14 +53,9 @@ export default function BottomNav() {
           fontWeight: 700,
           color: "#0b3d2e",
           cursor: "pointer",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 2,
         }}
       >
-        <span style={{ fontSize: 18 }}>🏠</span>
-        홈
+        Home
       </button>
     </div>
   );
