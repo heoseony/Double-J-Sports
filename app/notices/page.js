@@ -24,6 +24,7 @@ export default function NoticesPage() {
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   async function loadNotices() {
     const { data, error } = await supabase
@@ -174,52 +175,70 @@ export default function NoticesPage() {
         </div>
       )}
 
-      {notices.map((n) => (
-        <div className="card" key={n.id} style={{ marginBottom: 14 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}
-          >
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{n.title}</div>
-            <div style={{ fontSize: 12, color: "#999", whiteSpace: "nowrap" }}>
-              {formatDate(n.created_at)}
-            </div>
-          </div>
-          <p
-            style={{
-              fontSize: 14,
-              color: "#444",
-              marginTop: 10,
-              marginBottom: isAdmin ? 12 : 0,
-              lineHeight: 1.6,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {n.content}
-          </p>
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => handleDelete(n.id)}
-              disabled={deletingId === n.id}
+      {notices.map((n) => {
+        const isExpanded = expandedId === n.id;
+
+        return (
+          <div className="card" key={n.id} style={{ marginBottom: 14 }}>
+            <div
+              onClick={() => setExpandedId(isExpanded ? null : n.id)}
               style={{
-                fontSize: 12,
-                border: "1px solid #b3261e",
-                color: "#b3261e",
-                background: "white",
-                borderRadius: 8,
-                padding: "6px 12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
                 cursor: "pointer",
               }}
             >
-              {deletingId === n.id ? "삭제 중..." : "삭제"}
-            </button>
-          )}
-        </div>
-      ))}
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{n.title}</div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#999",
+                  whiteSpace: "nowrap",
+                  marginLeft: 10,
+                }}
+              >
+                {formatDate(n.created_at)}
+              </div>
+            </div>
+
+            {isExpanded && (
+              <>
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: "#444",
+                    marginTop: 10,
+                    marginBottom: isAdmin ? 12 : 0,
+                    lineHeight: 1.6,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {n.content}
+                </p>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(n.id)}
+                    disabled={deletingId === n.id}
+                    style={{
+                      fontSize: 12,
+                      border: "1px solid #b3261e",
+                      color: "#b3261e",
+                      background: "white",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {deletingId === n.id ? "삭제 중..." : "삭제"}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
     </main>
   );
 }
