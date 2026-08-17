@@ -27,7 +27,7 @@ export default function AdminMembersPage() {
     const { data, error } = await supabase
       .from("members")
       .select(
-        "id, name, program, status, birth_date, gender, guardians(name, phone), users(email, phone)"
+        "id, name, program, status, birth_date, gender, referred_by, guardians(name, phone, referred_by), users(email, phone)"
       )
       .order("created_at", { ascending: false });
 
@@ -213,6 +213,8 @@ export default function AdminMembersPage() {
             ? `본인 계정: ${m.users.email}`
             : "연락처 정보 없음";
 
+          const referredBy = m.guardians?.referred_by || m.referred_by;
+
           const isExpanded = expandedId === m.id;
           const memberships = membershipsByMember[m.id] || [];
 
@@ -234,6 +236,11 @@ export default function AdminMembersPage() {
                 <div style={{ fontSize: 13, color: "#777", marginTop: 2 }}>
                   {contact}
                 </div>
+                {referredBy && (
+                  <div style={{ fontSize: 12, color: "#0b3d2e", marginTop: 2 }}>
+                    추천인: {referredBy}
+                  </div>
+                )}
               </div>
 
               {isExpanded && (

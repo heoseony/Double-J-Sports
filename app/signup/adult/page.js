@@ -12,6 +12,7 @@ export default function AdultSignupPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [referredBy, setReferredBy] = useState("");
   const [program, setProgram] = useState("women");
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [mediaConsent, setMediaConsent] = useState(false);
@@ -80,6 +81,7 @@ export default function AdultSignupPage() {
       name,
       emergency_contact: phone,
       status: "active",
+      referred_by: referredBy || null,
     });
 
     if (memberInsertError) {
@@ -153,6 +155,14 @@ export default function AdultSignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="비밀번호"
+          />
+
+          <label>추천인 이름 (선택)</label>
+          <input
+            type="text"
+            value={referredBy}
+            onChange={(e) => setReferredBy(e.target.value)}
+            placeholder="나를 추천해준 회원 이름"
           />
 
           <div className="checkbox-row">

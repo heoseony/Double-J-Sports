@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [referredBy, setReferredBy] = useState("");
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [mediaConsent, setMediaConsent] = useState(false);
   const [termsConsent, setTermsConsent] = useState(false);
@@ -33,7 +34,6 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    // 1. Supabase Auth 계정 생성
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -55,7 +55,6 @@ export default function SignupPage() {
       return;
     }
 
-    // 2. users 테이블에 프로필 저장
     const { error: userInsertError } = await supabase.from("users").insert({
       id: userId,
       email,
@@ -69,13 +68,13 @@ export default function SignupPage() {
       return;
     }
 
-    // 3. guardians 테이블에 보호자 정보 저장
     const { data: guardianData, error: guardianInsertError } = await supabase
       .from("guardians")
       .insert({
         user_id: userId,
         name,
         phone,
+        referred_by: referredBy || null,
       })
       .select()
       .single();
@@ -86,7 +85,6 @@ export default function SignupPage() {
       return;
     }
 
-    // 4. 동의 이력 저장
     await supabase.from("consents").insert({
       guardian_id: guardianData.id,
       member_id: null,
@@ -136,6 +134,14 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="비밀번호"
+          />
+
+          <label>추천인 이름 (선택)</label>
+          <input
+            type="text"
+            value={referredBy}
+            onChange={(e) => setReferredBy(e.target.value)}
+            placeholder="나를 추천해준 회원 이름"
           />
 
           <div className="checkbox-row">
