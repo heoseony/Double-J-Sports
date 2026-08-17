@@ -1,4 +1,4 @@
-* {
+﻿* {
   box-sizing: border-box;
 }
 
@@ -12,7 +12,7 @@ body {
 .page {
   max-width: 420px;
   margin: 0 auto;
-  padding: 24px 20px 60px;
+  padding: 24px 20px calc(80px + env(safe-area-inset-bottom, 0px));
   min-height: 100vh;
 }
 
@@ -120,118 +120,4 @@ button.primary:disabled {
 .message.success {
   background: #e8f5ec;
   color: #0b3d2e;
-}
-
-select {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background: #fafafa;
-}
-
-input[type="date"],
-input[type="time"],
-input[type="number"] {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background: #fafafa;
-}
-
-.admin-page {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 20px 20px 60px;
-  min-height: 100vh;
-}
-
-.admin-nav {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 16px 20px;
-  display: flex;
-  gap: 18px;
-  border-bottom: 1px solid #e2e2e2;
-  background: white;
-}
-
-.admin-nav a {
-  color: #0b3d2e;
-  font-weight: 700;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.admin-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.list-row {
-  padding: 14px 0;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.list-row:last-child {
-  border-bottom: none;
-}
-
-.badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.badge.kids {
-  background: #e8f0fe;
-  color: #1a4fb4;
-}
-
-.badge.womens {
-  background: #fdeef7;
-  color: #b4197a;
-}
-
-.badge.mens {
-  background: #eef7ee;
-  color: #1a7a2f;
-}
-
-.small-btn {
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  color: white;
-  background: #0b3d2e;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.small-btn.secondary {
-  background: #999;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 24px 0 10px;
-}
-
-.section-title:first-child {
-  margin-top: 0;
 }
