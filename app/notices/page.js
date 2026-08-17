@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 
 function formatDate(dateStr) {
@@ -23,8 +24,6 @@ export default function NoticesPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const [expandedId, setExpandedId] = useState(null);
 
   async function loadNotices() {
     const { data, error } = await supabase
@@ -91,13 +90,6 @@ export default function NoticesPage() {
       setShowForm(false);
       await loadNotices();
     }
-  }
-
-  async function handleDelete(id) {
-    setDeletingId(id);
-    await supabase.from("notices").delete().eq("id", id);
-    await loadNotices();
-    setDeletingId(null);
   }
 
   if (loading) {
@@ -175,21 +167,19 @@ export default function NoticesPage() {
         </div>
       )}
 
-      {notices.map((n) => {
-        const isExpanded = expandedId === n.id;
-
-        return (
-          <div className="card" key={n.id} style={{ marginBottom: 14 }}>
+      {notices.map((n) => (
+        <Link key={n.id} href={`/notices/detail?id=${n.id}`}>
+          <div className="card" style={{ marginBottom: 14, cursor: "pointer" }}>
             <div
-              onClick={() => setExpandedId(isExpanded ? null : n.id)}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "flex-start",
-                cursor: "pointer",
+                alignItems: "center",
               }}
             >
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{n.title}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#1a1a1a" }}>
+                {n.title}
+              </div>
               <div
                 style={{
                   fontSize: 12,
@@ -201,44 +191,9 @@ export default function NoticesPage() {
                 {formatDate(n.created_at)}
               </div>
             </div>
-
-            {isExpanded && (
-              <>
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: "#444",
-                    marginTop: 10,
-                    marginBottom: isAdmin ? 12 : 0,
-                    lineHeight: 1.6,
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {n.content}
-                </p>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(n.id)}
-                    disabled={deletingId === n.id}
-                    style={{
-                      fontSize: 12,
-                      border: "1px solid #b3261e",
-                      color: "#b3261e",
-                      background: "white",
-                      borderRadius: 8,
-                      padding: "6px 12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {deletingId === n.id ? "삭제 중..." : "삭제"}
-                  </button>
-                )}
-              </>
-            )}
           </div>
-        );
-      })}
+        </Link>
+      ))}
     </main>
   );
 }
