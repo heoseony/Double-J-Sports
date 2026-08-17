@@ -1,9 +1,25 @@
 ﻿"use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function BottomNav() {
   const router = useRouter();
+  const pathname = usePathname();
+
+  const itemStyle = (active) => ({
+    flex: 1,
+    padding: "10px 0",
+    border: "none",
+    background: "white",
+    fontSize: 12,
+    fontWeight: 700,
+    color: active ? "#0b3d2e" : "#555",
+    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 2,
+  });
 
   return (
     <div
@@ -22,14 +38,28 @@ export default function BottomNav() {
       <button
         type="button"
         onClick={() => router.back()}
+        style={itemStyle(false)}
+      >
+        <span style={{ fontSize: 16 }}>‹</span>
+        뒤로
+      </button>
+
+      <button
+        type="button"
+        onClick={() => router.forward()}
+        style={itemStyle(false)}
+      >
+        <span style={{ fontSize: 16 }}>›</span>
+        앞으로
+      </button>
+
+      <button
+        type="button"
+        onClick={() => router.push("/dashboard")}
         style={{
           flex: 1,
-          padding: "14px 0",
+          padding: "8px 0",
           border: "none",
-          background: "white",
-          fontSize: 14,
-          fontWeight: 700,
-          color: "#333",
           cursor: "pointer",
           display: "flex",
           flexDirection: "column",
@@ -37,25 +67,40 @@ export default function BottomNav() {
           gap: 2,
         }}
       >
-        <span style={{ fontSize: 18 }}>←</span>
-        뒤로가기
+        <span
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            background: "#0b3d2e",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          Home
+        </span>
       </button>
-      <div style={{ width: 1, background: "#e5e5e5" }} />
+
       <button
         type="button"
-        onClick={() => router.push("/dashboard")}
-        style={{
-          flex: 1,
-          padding: "14px 0",
-          border: "none",
-          background: "white",
-          fontSize: 14,
-          fontWeight: 700,
-          color: "#0b3d2e",
-          cursor: "pointer",
-        }}
+        onClick={() => router.push("/notices")}
+        style={itemStyle(pathname?.startsWith("/notices"))}
       >
-        Home
+        <span style={{ fontSize: 16 }}>📋</span>
+        공지
+      </button>
+
+      <button
+        type="button"
+        onClick={() => router.push("/photos")}
+        style={itemStyle(pathname?.startsWith("/photos"))}
+      >
+        <span style={{ fontSize: 16 }}>🖼️</span>
+        사진
       </button>
     </div>
   );
