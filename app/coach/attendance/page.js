@@ -5,14 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 
-const STATUS_LABEL = {
-  booked: "미체크",
-  attended: "출석",
-  absent: "결석",
-  cancelled_prior: "취소 (전날)",
-  cancelled_same_day: "취소 (당일)",
-};
-
 function AttendanceInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,6 +16,7 @@ function AttendanceInner() {
   const [bookings, setBookings] = useState([]);
   const [remainingByMember, setRemainingByMember] = useState({});
   const [updatingId, setUpdatingId] = useState(null);
+  const [editingBookingId, setEditingBookingId] = useState(null);
 
   async function loadData() {
     setErrorMsg("");
@@ -66,6 +59,7 @@ function AttendanceInner() {
       .from("bookings")
       .select("id, status, member_id, members(name)")
       .eq("class_session_id", sessionId)
+      .neq("status", "cancelled_prior")
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -110,6 +104,7 @@ function AttendanceInner() {
   async function handleSetStatus(bookingId, status) {
     setUpdatingId(bookingId);
     await supabase.from("bookings").update({ status }).eq("id", bookingId);
+    setEditingBookingId(null);
     await loadData();
     setUpdatingId(null);
   }
@@ -135,14 +130,16 @@ function AttendanceInner() {
 
         {bookings.length === 0 && !errorMsg && (
           <p style={{ fontSize: 14, color: "#777" }}>
-            이 수업에 예약한 회원이 없습니다.
+            이 수업에 출석체크할 회원이 없습니다.
           </p>
         )}
 
         {bookings.map((b) => {
           const remaining = remainingByMember[b.member_id];
-          const isCancelled =
-            b.status === "cancelled_prior" || b.status === "cancelled_same_day";
+          const isSameDayCancel = b.status === "cancelled_same_day";
+          const isDecided = b.status === "attended" || b.status === "absent";
+          const showButtons =
+            !isSameDayCancel && (!isDecided || editingBookingId === b.id);
 
           return (
             <div
@@ -159,9 +156,60 @@ function AttendanceInner() {
                   justifyContent: "space-between",
                 }}
               >
-                <div style={{ fontSize: 16, fontWeight: 700 }}>
-                  {b.members?.name || "(알 수 없음)"}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 16, fontWeight: 700 }}>
+                    {b.members?.name || "(알 수 없음)"}
+                  </span>
+
+                  {!showButtons && b.status === "attended" && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#0b3d2e",
+                      }}
+                    >
+                      <span style={{ color: "#2e7d32" }}>●</span> 출석
+                    </span>
+                  )}
+
+                  {!showButtons && b.status === "absent" && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#b3261e",
+                      }}
+                    >
+                      <span>✕</span> 결석
+                    </span>
+                  )}
+
+                  {isSameDayCancel && (
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#999",
+                      }}
+                    >
+                      당일취소
+                    </span>
+                  )}
                 </div>
+
                 {remaining !== undefined && (
                   <div
                     style={{
@@ -171,6 +219,7 @@ function AttendanceInner() {
                       background: remaining > 0 ? "#e8f5ec" : "#fdecec",
                       padding: "4px 10px",
                       borderRadius: 999,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     잔여 {remaining}회
@@ -178,17 +227,7 @@ function AttendanceInner() {
                 )}
               </div>
 
-              {isCancelled ? (
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: 13,
-                    color: "#777",
-                  }}
-                >
-                  {STATUS_LABEL[b.status]}
-                </div>
-              ) : (
+              {showButtons && (
                 <div
                   style={{
                     marginTop: 10,
@@ -235,6 +274,25 @@ function AttendanceInner() {
                     ✕ 결석
                   </button>
                 </div>
+              )}
+
+              {!showButtons && isDecided && (
+                <button
+                  type="button"
+                  onClick={() => setEditingBookingId(b.id)}
+                  style={{
+                    marginTop: 8,
+                    padding: "6px 14px",
+                    fontSize: 13,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    background: "white",
+                    color: "#333",
+                    cursor: "pointer",
+                  }}
+                >
+                  수정
+                </button>
               )}
             </div>
           );
