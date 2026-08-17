@@ -46,6 +46,7 @@ function BookPageInner() {
   const [myBookingIdBySession, setMyBookingIdBySession] = useState({});
   const [cancellingSessionId, setCancellingSessionId] = useState(null);
   const [cutoffHours, setCutoffHours] = useState(24);
+  const [bookingCutoffHours, setBookingCutoffHours] = useState(2);
   const [allClassesAllowed, setAllClassesAllowed] = useState(true);
   const [allowedClassIds, setAllowedClassIds] = useState([]);
 
@@ -136,11 +137,14 @@ function BookPageInner() {
 
     const { data: policyData } = await supabase
       .from("cancellation_policy")
-      .select("cutoff_hours")
+      .select("cutoff_hours, booking_cutoff_hours")
       .limit(1)
       .maybeSingle();
     if (policyData?.cutoff_hours != null) {
       setCutoffHours(policyData.cutoff_hours);
+    }
+    if (policyData?.booking_cutoff_hours != null) {
+      setBookingCutoffHours(policyData.booking_cutoff_hours);
     }
 
     const today = todayStr();
@@ -245,6 +249,22 @@ function BookPageInner() {
     if (myBookedSessionIds.includes(sessionId)) {
       setErrorMsg("이미 이 수업에 예약되어 있습니다.");
       return;
+    }
+
+    const session = sessions.find((s) => s.id === sessionId);
+    if (session) {
+      const sessionDateTime = new Date(
+        `${session.session_date}T${session.start_time}`
+      );
+      const deadline = new Date(
+        sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
+      );
+      if (new Date() > deadline) {
+        setErrorMsg(
+          `예약이 마감되었습니다. (수업 시작 ${bookingCutoffHours}시간 전까지 예약 가능)`
+        );
+        return;
+      }
     }
 
     setBookingSessionId(sessionId);
@@ -487,6 +507,12 @@ function BookPageInner() {
           const isExpanded = expandedSessionId === s.id;
           const alreadyBooked = myBookedSessionIds.includes(s.id);
 
+          const sessionDateTime = new Date(`${s.session_date}T${s.start_time}`);
+          const bookingDeadline = new Date(
+            sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
+          );
+          const isPastDeadline = new Date() > bookingDeadline;
+
           return (
             <div
               key={s.id}
@@ -567,6 +593,17 @@ function BookPageInner() {
                         ? "취소 중..."
                         : "예약 취소"}
                     </button>
+                  </div>
+                ) : isPastDeadline ? (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#999",
+                      fontWeight: 700,
+                    }}
+                  >
+                    예약 마감 (수업 시작 {bookingCutoffHours}시간 전까지 예약
+                    가능)
                   </div>
                 ) : (
                   <button
