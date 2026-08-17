@@ -87,14 +87,18 @@ export default function DashboardPage() {
       <div className="subtitle">환영합니다, {guardianName || email}님</div>
 
       <div className="card">
-        <p style={{ marginTop: 0, fontSize: 15, lineHeight: 1.6 }}>
-          아래에서 자녀를 등록하고 관리할 수 있습니다. 앞으로 수업 예약,
-          잔여 횟수 확인 등의 기능이 계속 추가될 예정입니다.
-        </p>
+        {!isAdmin && !isCoach && (
+          <>
+            <p style={{ marginTop: 0, fontSize: 15, lineHeight: 1.6 }}>
+              아래에서 자녀를 등록하고 관리할 수 있습니다. 앞으로 수업 예약,
+              잔여 횟수 확인 등의 기능이 계속 추가될 예정입니다.
+            </p>
 
-        <Link href="/members">
-          <button className="primary">자녀 관리</button>
-        </Link>
+            <Link href="/members">
+              <button className="primary">자녀 관리</button>
+            </Link>
+          </>
+        )}
 
         {isAdultMember && (
           <Link href="/adult/book">
