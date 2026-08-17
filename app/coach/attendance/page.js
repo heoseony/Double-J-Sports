@@ -22,6 +22,7 @@ function AttendanceInner() {
   const [errorMsg, setErrorMsg] = useState("");
   const [sessionInfo, setSessionInfo] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [remainingByMember, setRemainingByMember] = useState({});
   const [updatingId, setUpdatingId] = useState(null);
 
   async function loadData() {
@@ -74,6 +75,30 @@ function AttendanceInner() {
     }
 
     setBookings(bookingData || []);
+
+    const memberIds = [...new Set((bookingData || []).map((b) => b.member_id))];
+
+    if (memberIds.length > 0) {
+      const { data: membershipData } = await supabase
+        .from("memberships")
+        .select(
+          "member_id, sessions_used, status, start_date, membership_plans(sessions_per_month)"
+        )
+        .in("member_id", memberIds)
+        .eq("status", "active")
+        .order("start_date", { ascending: false });
+
+      const map = {};
+      (membershipData || []).forEach((m) => {
+        if (map[m.member_id] !== undefined) return;
+        const total = m.membership_plans?.sessions_per_month || 0;
+        map[m.member_id] = total - m.sessions_used;
+      });
+      setRemainingByMember(map);
+    } else {
+      setRemainingByMember({});
+    }
+
     setLoading(false);
   }
 
@@ -114,68 +139,106 @@ function AttendanceInner() {
           </p>
         )}
 
-        {bookings.map((b) => (
-          <div
-            key={b.id}
-            style={{
-              padding: "14px 0",
-              borderBottom: "1px solid #eee",
-            }}
-          >
-            <div style={{ fontSize: 16, fontWeight: 700 }}>
-              {b.members?.name || "(알 수 없음)"}
-            </div>
+        {bookings.map((b) => {
+          const remaining = remainingByMember[b.member_id];
+          const isCancelled =
+            b.status === "cancelled_prior" || b.status === "cancelled_same_day";
+
+          return (
             <div
+              key={b.id}
               style={{
-                fontSize: 13,
-                color: "#777",
-                marginTop: 4,
-                marginBottom: 10,
+                padding: "14px 0",
+                borderBottom: "1px solid #eee",
               }}
             >
-              현재 상태: {STATUS_LABEL[b.status] || b.status}
-            </div>
-
-            {(b.status === "booked" ||
-              b.status === "attended" ||
-              b.status === "absent") && (
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  style={{
-                    padding: "10px 16px",
-                    fontSize: 14,
-                    border: "none",
-                    borderRadius: 8,
-                    background: "#0b3d2e",
-                    color: "white",
-                    cursor: "pointer",
-                  }}
-                  disabled={updatingId === b.id}
-                  onClick={() => handleSetStatus(b.id, "attended")}
-                >
-                  출석
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    padding: "10px 16px",
-                    fontSize: 14,
-                    border: "1px solid #b3261e",
-                    borderRadius: 8,
-                    background: "white",
-                    color: "#b3261e",
-                    cursor: "pointer",
-                  }}
-                  disabled={updatingId === b.id}
-                  onClick={() => handleSetStatus(b.id, "absent")}
-                >
-                  결석
-                </button>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div style={{ fontSize: 16, fontWeight: 700 }}>
+                  {b.members?.name || "(알 수 없음)"}
+                </div>
+                {remaining !== undefined && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: remaining > 0 ? "#0b3d2e" : "#b3261e",
+                      background: remaining > 0 ? "#e8f5ec" : "#fdecec",
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                    }}
+                  >
+                    잔여 {remaining}회
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+
+              {isCancelled ? (
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 13,
+                    color: "#777",
+                  }}
+                >
+                  {STATUS_LABEL[b.status]}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "flex",
+                    border: "1px solid #ddd",
+                    borderRadius: 10,
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    type="button"
+                    disabled={updatingId === b.id}
+                    onClick={() => handleSetStatus(b.id, "attended")}
+                    style={{
+                      flex: 1,
+                      padding: "12px 0",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      border: "none",
+                      cursor: "pointer",
+                      background:
+                        b.status === "attended" ? "#0b3d2e" : "white",
+                      color: b.status === "attended" ? "white" : "#0b3d2e",
+                    }}
+                  >
+                    ✓ 출석
+                  </button>
+                  <button
+                    type="button"
+                    disabled={updatingId === b.id}
+                    onClick={() => handleSetStatus(b.id, "absent")}
+                    style={{
+                      flex: 1,
+                      padding: "12px 0",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      border: "none",
+                      borderLeft: "1px solid #ddd",
+                      cursor: "pointer",
+                      background: b.status === "absent" ? "#b3261e" : "white",
+                      color: b.status === "absent" ? "white" : "#b3261e",
+                    }}
+                  >
+                    ✕ 결석
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         <div className="link-row">
           <Link href="/coach">← 코치 홈으로</Link>
