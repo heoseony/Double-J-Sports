@@ -12,6 +12,23 @@ function formatDate(dateStr) {
   ).padStart(2, "0")}`;
 }
 
+async function downloadMedia(url) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = url.split("/").pop() || "download";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    window.open(url, "_blank");
+  }
+}
+
 export default function PhotosPage() {
   const router = useRouter();
   const fileInputRef = useRef(null);
@@ -21,24 +38,32 @@ export default function PhotosPage() {
   const [userId, setUserId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const [photos, setPhotos] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [showForm, setShowForm] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  async function loadPhotos() {
+  async function loadPosts() {
     const { data, error } = await supabase
-      .from("photos")
-      .select("id, image_url, caption, media_type, uploaded_by, created_at")
+      .from("photo_posts")
+      .select(
+        "id, caption, uploaded_by, created_at, photo_post_media(id, media_url, media_type, order_index)"
+      )
       .order("created_at", { ascending: false });
 
     if (!error) {
-      setPhotos(data || []);
+      const withSortedMedia = (data || []).map((p) => ({
+        ...p,
+        photo_post_media: [...(p.photo_post_media || [])].sort(
+          (a, b) => a.order_index - b.order_index
+        ),
+      }));
+      setPosts(withSortedMedia);
     } else {
       setErrorMsg("갤러리를 불러오지 못했습니다: " + error.message);
     }
@@ -70,7 +95,7 @@ export default function PhotosPage() {
         setIsAdmin(true);
       }
 
-      await loadPhotos();
+      await loadPosts();
       setLoading(false);
     }
 
@@ -78,15 +103,20 @@ export default function PhotosPage() {
   }, [router]);
 
   function handleFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setSelectedFiles(files);
+    setPreviews(
+      files.map((f) => ({
+        url: URL.createObjectURL(f),
+        isVideo: f.type.startsWith("video"),
+      }))
+    );
   }
 
   function resetForm() {
-    setSelectedFile(null);
-    setPreviewUrl("");
+    setSelectedFiles([]);
+    setPreviews([]);
     setCaption("");
     setShowForm(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -94,52 +124,71 @@ export default function PhotosPage() {
 
   async function handleUpload(e) {
     e.preventDefault();
-    if (!selectedFile) {
-      setErrorMsg("사진 또는 동영상을 선택해주세요.");
+    if (selectedFiles.length === 0) {
+      setErrorMsg("사진 또는 동영상을 하나 이상 선택해주세요.");
       return;
     }
 
     setUploading(true);
     setErrorMsg("");
 
-    const mediaType = selectedFile.type.startsWith("video") ? "video" : "image";
-    const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.]/g, "_");
-    const path = `${Date.now()}-${safeName}`;
+    const postId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("photos")
-      .upload(path, selectedFile);
-
-    if (uploadError) {
-      setUploading(false);
-      setErrorMsg("업로드 실패: " + uploadError.message);
-      return;
-    }
-
-    const { data: urlData } = supabase.storage.from("photos").getPublicUrl(path);
-
-    const { error: insertError } = await supabase.from("photos").insert({
-      image_url: urlData.publicUrl,
+    const { error: postError } = await supabase.from("photo_posts").insert({
+      id: postId,
       caption: caption || null,
-      media_type: mediaType,
       uploaded_by: userId,
     });
 
-    setUploading(false);
-
-    if (insertError) {
-      setErrorMsg("저장 실패: " + insertError.message);
+    if (postError) {
+      setUploading(false);
+      setErrorMsg("게시물 생성 실패: " + postError.message);
       return;
     }
 
+    const mediaRows = [];
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      const mediaType = file.type.startsWith("video") ? "video" : "image";
+      const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+      const path = `${postId}-${i}-${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("photos")
+        .upload(path, file);
+
+      if (uploadError) {
+        setErrorMsg(`업로드 실패 (${file.name}): ` + uploadError.message);
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage.from("photos").getPublicUrl(path);
+
+      mediaRows.push({
+        post_id: postId,
+        media_url: urlData.publicUrl,
+        media_type: mediaType,
+        order_index: i,
+      });
+    }
+
+    if (mediaRows.length > 0) {
+      await supabase.from("photo_post_media").insert(mediaRows);
+    }
+
+    setUploading(false);
     resetForm();
-    await loadPhotos();
+    await loadPosts();
   }
 
-  async function handleDelete(id) {
+  async function handleDeletePost(id) {
     setDeletingId(id);
-    await supabase.from("photos").delete().eq("id", id);
-    await loadPhotos();
+    await supabase.from("photo_posts").delete().eq("id", id);
+    await loadPosts();
     setDeletingId(null);
   }
 
@@ -164,30 +213,60 @@ export default function PhotosPage() {
             </button>
           ) : (
             <form onSubmit={handleUpload}>
-              <label>사진 또는 동영상</label>
+              <label>사진 또는 동영상 (여러 개 선택 가능)</label>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*,video/*"
+                multiple
                 onChange={handleFileChange}
                 style={{ marginTop: 4 }}
               />
 
-              {previewUrl && (
-                <div style={{ marginTop: 12 }}>
-                  {selectedFile?.type.startsWith("video") ? (
-                    <video
-                      src={previewUrl}
-                      controls
-                      style={{ width: "100%", borderRadius: 10 }}
-                    />
-                  ) : (
-                    <img
-                      src={previewUrl}
-                      alt="미리보기"
-                      style={{ width: "100%", borderRadius: 10 }}
-                    />
-                  )}
+              {previews.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 12,
+                    overflowX: "auto",
+                    paddingBottom: 4,
+                  }}
+                >
+                  {previews.map((p, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        flex: "0 0 auto",
+                        width: 90,
+                        height: 90,
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        background: "#eee",
+                      }}
+                    >
+                      {p.isVideo ? (
+                        <video
+                          src={p.url}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src={p.url}
+                          alt="미리보기"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -225,7 +304,7 @@ export default function PhotosPage() {
         </div>
       )}
 
-      {photos.length === 0 && !errorMsg && (
+      {posts.length === 0 && !errorMsg && (
         <div className="card">
           <p style={{ fontSize: 14, color: "#777", margin: 0 }}>
             아직 등록된 사진/동영상이 없습니다.
@@ -233,31 +312,83 @@ export default function PhotosPage() {
         </div>
       )}
 
-      {photos.map((p) => {
-        const canDelete = isAdmin || p.uploaded_by === userId;
+      {posts.map((post) => {
+        const canDelete = isAdmin || post.uploaded_by === userId;
+        const mediaList = post.photo_post_media || [];
 
         return (
           <div
-            key={p.id}
+            key={post.id}
             className="card"
             style={{ marginBottom: 20, padding: 0, overflow: "hidden" }}
           >
-            {p.media_type === "video" ? (
-              <video
-                src={p.image_url}
-                controls
-                style={{ width: "100%", display: "block" }}
-              />
-            ) : (
-              <img
-                src={p.image_url}
-                alt={p.caption || "사진"}
-                style={{ width: "100%", display: "block" }}
-              />
+            <div
+              style={{
+                display: "flex",
+                overflowX: "auto",
+                scrollSnapType: "x mandatory",
+              }}
+            >
+              {mediaList.map((m) => (
+                <div
+                  key={m.id}
+                  style={{
+                    flex: "0 0 100%",
+                    scrollSnapAlign: "start",
+                    position: "relative",
+                  }}
+                >
+                  {m.media_type === "video" ? (
+                    <video
+                      src={m.media_url}
+                      controls
+                      style={{ width: "100%", display: "block" }}
+                    />
+                  ) : (
+                    <img
+                      src={m.media_url}
+                      alt={post.caption || "사진"}
+                      style={{ width: "100%", display: "block" }}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => downloadMedia(m.media_url)}
+                    style={{
+                      position: "absolute",
+                      top: 10,
+                      right: 10,
+                      background: "rgba(0,0,0,0.55)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 20,
+                      padding: "6px 12px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ↓ 다운로드
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {mediaList.length > 1 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "#999",
+                  padding: "6px 0 0",
+                }}
+              >
+                좌우로 넘겨서 {mediaList.length}개 보기
+              </div>
             )}
 
             <div style={{ padding: 16 }}>
-              {p.caption && (
+              {post.caption && (
                 <p
                   style={{
                     fontSize: 14,
@@ -266,7 +397,7 @@ export default function PhotosPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  {p.caption}
+                  {post.caption}
                 </p>
               )}
               <div
@@ -278,13 +409,13 @@ export default function PhotosPage() {
                 }}
               >
                 <span style={{ fontSize: 12, color: "#999" }}>
-                  {formatDate(p.created_at)}
+                  {formatDate(post.created_at)}
                 </span>
                 {canDelete && (
                   <button
                     type="button"
-                    onClick={() => handleDelete(p.id)}
-                    disabled={deletingId === p.id}
+                    onClick={() => handleDeletePost(post.id)}
+                    disabled={deletingId === post.id}
                     style={{
                       fontSize: 12,
                       border: "1px solid #b3261e",
@@ -295,7 +426,7 @@ export default function PhotosPage() {
                       cursor: "pointer",
                     }}
                   >
-                    {deletingId === p.id ? "삭제 중..." : "삭제"}
+                    {deletingId === post.id ? "삭제 중..." : "삭제"}
                   </button>
                 )}
               </div>
