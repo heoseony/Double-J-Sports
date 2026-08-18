@@ -29,6 +29,48 @@ async function downloadMedia(url) {
   }
 }
 
+function loadImageElement(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function addWatermark(file) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const photoImg = await loadImageElement(objectUrl);
+    const logoImg = await loadImageElement("/logo-watermark.png");
+
+    const canvas = document.createElement("canvas");
+    canvas.width = photoImg.naturalWidth;
+    canvas.height = photoImg.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(photoImg, 0, 0);
+
+    const logoWidth = canvas.width * 0.14;
+    const logoHeight = logoWidth * (logoImg.naturalHeight / logoImg.naturalWidth);
+    const margin = canvas.width * 0.03;
+    const x = canvas.width - logoWidth - margin;
+    const y = margin;
+
+    ctx.globalAlpha = 0.85;
+    ctx.drawImage(logoImg, x, y, logoWidth, logoHeight);
+    ctx.globalAlpha = 1;
+
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.92)
+    );
+
+    return new File([blob], file.name, { type: "image/jpeg" });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export default function PhotosPage() {
   const router = useRouter();
   const fileInputRef = useRef(null);
@@ -154,12 +196,22 @@ export default function PhotosPage() {
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       const mediaType = file.type.startsWith("video") ? "video" : "image";
+
+      let fileToUpload = file;
+      if (mediaType === "image") {
+        try {
+          fileToUpload = await addWatermark(file);
+        } catch (wmError) {
+          fileToUpload = file;
+        }
+      }
+
       const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
       const path = `${postId}-${i}-${safeName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("photos")
-        .upload(path, file);
+        .upload(path, fileToUpload);
 
       if (uploadError) {
         setErrorMsg(`업로드 실패 (${file.name}): ` + uploadError.message);
