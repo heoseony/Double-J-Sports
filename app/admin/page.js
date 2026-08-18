@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -53,8 +53,16 @@ export default function AdminHomePage() {
       <div className="subtitle">관리자 화면</div>
 
       <div className="card">
+        <Link href="/admin/payments">
+          <button className="primary" style={{ background: "#0b3d2e" }}>
+            결제 관리 (입금확인)
+          </button>
+        </Link>
+
         <Link href="/admin/classes">
-          <button className="primary">수업 관리 (반복 스케줄)</button>
+          <button className="primary" style={{ marginTop: 12 }}>
+            수업 관리 (반복 스케줄)
+          </button>
         </Link>
 
         <Link href="/admin/memberships">
