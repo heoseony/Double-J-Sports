@@ -251,7 +251,10 @@ export default function PhotosPage() {
 
       const { error: uploadError } = await supabase.storage
         .from("photos")
-        .upload(path, fileToUpload);
+        .upload(path, fileToUpload, {
+          contentType: fileToUpload.type || "application/octet-stream",
+          upsert: false,
+        });
 
       if (uploadError) {
         setErrorMsg(`업로드 실패 (${file.name}): ` + uploadError.message);
