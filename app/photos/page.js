@@ -254,6 +254,37 @@ function MediaGrid({ mediaList, onOpen }) {
   );
 }
 
+function navZoneStyle(side) {
+  return {
+    position: "absolute",
+    [side]: 0,
+    top: 0,
+    bottom: 0,
+    width: "35%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: side === "left" ? "flex-start" : "flex-end",
+    padding: "0 10px",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    zIndex: 5,
+  };
+}
+
+const navCircleStyle = {
+  width: 40,
+  height: 40,
+  borderRadius: "50%",
+  background: "rgba(255,255,255,0.15)",
+  color: "white",
+  fontSize: 22,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  pointerEvents: "none",
+};
+
 function navBtnStyle(side) {
   return {
     position: "absolute",
@@ -295,6 +326,16 @@ function Lightbox({
 }) {
   const touchStartX = useRef(null);
   const m = mediaList[index];
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === "ArrowLeft") onChange(index - 1);
+      if (e.key === "ArrowRight") onChange(index + 1);
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [index, onChange, onClose]);
 
   function handleTouchStart(e) {
     touchStartX.current = e.touches[0].clientX;
@@ -381,8 +422,13 @@ function Lightbox({
         }}
       >
         {index > 0 && (
-          <button type="button" onClick={() => onChange(index - 1)} style={navBtnStyle("left")}>
-            ‹
+          <button
+            type="button"
+            onClick={() => onChange(index - 1)}
+            aria-label="이전 사진"
+            style={navZoneStyle("left")}
+          >
+            <span style={navCircleStyle}>‹</span>
           </button>
         )}
 
@@ -402,8 +448,13 @@ function Lightbox({
         )}
 
         {index < mediaList.length - 1 && (
-          <button type="button" onClick={() => onChange(index + 1)} style={navBtnStyle("right")}>
-            ›
+          <button
+            type="button"
+            onClick={() => onChange(index + 1)}
+            aria-label="다음 사진"
+            style={navZoneStyle("right")}
+          >
+            <span style={navCircleStyle}>›</span>
           </button>
         )}
       </div>
