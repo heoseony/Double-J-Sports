@@ -232,7 +232,15 @@ export default function PhotosPage() {
     }
 
     if (mediaRows.length > 0) {
-      await supabase.from("photo_post_media").insert(mediaRows);
+      const { error: mediaInsertError } = await supabase
+        .from("photo_post_media")
+        .insert(mediaRows);
+
+      if (mediaInsertError) {
+        setUploading(false);
+        setErrorMsg("사진 정보 저장 실패: " + mediaInsertError.message);
+        return;
+      }
     }
 
     setUploading(false);
