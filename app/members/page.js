@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -92,14 +92,21 @@ export default function MembersPage() {
             <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
               생년월일: {formatBirthDate(m.birth_date) || "미입력"}
             </div>
-            <Link href={`/book?memberId=${m.id}`}>
-              <button
-                className="primary"
-                style={{ marginTop: 10, padding: "10px 16px" }}
-              >
-                수업 예약
-              </button>
-            </Link>
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <Link href={`/book?memberId=${m.id}`}>
+                <button className="primary" style={{ padding: "10px 16px" }}>
+                  수업 예약
+                </button>
+              </Link>
+              <Link href={`/members/${m.id}/subscribe`}>
+                <button
+                  className="primary"
+                  style={{ padding: "10px 16px", background: "#0b3d2e" }}
+                >
+                  회원권 신청
+                </button>
+              </Link>
+            </div>
           </div>
         ))}
 
