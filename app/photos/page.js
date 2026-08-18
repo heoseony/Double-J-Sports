@@ -12,6 +12,12 @@ function formatDate(dateStr) {
   ).padStart(2, "0")}`;
 }
 
+function roleLabel(role) {
+  if (role === "admin") return "관리자";
+  if (role === "coach") return "코치";
+  return "";
+}
+
 async function downloadMedia(url) {
   try {
     const response = await fetch(url);
@@ -59,6 +65,8 @@ async function normalizeImageFile(file) {
 
   return new File([finalBlob], newName, { type: "image/jpeg" });
 }
+
+const WATERMARK_ENABLED = false; // 워터마크 임시 비활성화. 다시 켜려면 true로 변경.
 
 async function addWatermark(file) {
   const objectUrl = URL.createObjectURL(file);
@@ -263,7 +271,25 @@ function navBtnStyle(side) {
   };
 }
 
-function Lightbox({ mediaList, index, caption, onClose, onChange }) {
+function Lightbox({
+  mediaList,
+  index,
+  caption,
+  authorLabel,
+  roleText,
+  dateLabel,
+  canDelete,
+  isEditing,
+  editValue,
+  onChangeEditValue,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onDelete,
+  deleting,
+  onClose,
+  onChange,
+}) {
   const touchStartX = useRef(null);
   const m = mediaList[index];
 
@@ -379,11 +405,116 @@ function Lightbox({ mediaList, index, caption, onClose, onChange }) {
         )}
       </div>
 
-      {caption && (
-        <div style={{ padding: 14, color: "white", fontSize: 13, textAlign: "center" }}>
-          {caption}
-        </div>
-      )}
+      <div style={{ padding: 14 }}>
+        {isEditing ? (
+          <div>
+            <textarea
+              value={editValue}
+              onChange={(e) => onChangeEditValue(e.target.value)}
+              rows={2}
+              style={{
+                width: "100%",
+                borderRadius: 8,
+                border: "1px solid #555",
+                background: "rgba(255,255,255,0.08)",
+                color: "white",
+                padding: 8,
+                fontSize: 14,
+                resize: "none",
+              }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={onSaveEdit}
+                style={{
+                  background: "#0b3d2e",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "6px 14px",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                저장
+              </button>
+              <button
+                type="button"
+                onClick={onCancelEdit}
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "6px 14px",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {caption && (
+              <p style={{ color: "white", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+                {caption}
+              </p>
+            )}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 8,
+              }}
+            >
+              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
+                {authorLabel}
+                {roleText ? ` · ${roleText}` : ""} · {dateLabel}
+              </span>
+              {canDelete && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={onStartEdit}
+                    style={{
+                      background: "rgba(255,255,255,0.15)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    disabled={deleting}
+                    style={{
+                      background: "rgba(179,38,30,0.85)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {deleting ? "삭제 중..." : "삭제"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -409,12 +540,14 @@ export default function PhotosPage() {
   const [deletingId, setDeletingId] = useState(null);
 
   const [lightbox, setLightbox] = useState(null); // { postId, index }
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editCaptionValue, setEditCaptionValue] = useState("");
 
   async function loadPosts() {
     const { data, error } = await supabase
       .from("photo_posts")
       .select(
-        "id, caption, uploaded_by, created_at, photo_post_media(id, media_url, media_type, order_index)"
+        "id, caption, uploaded_by, created_at, photo_post_media(id, media_url, media_type, order_index), author:users!uploaded_by(name, role)"
       )
       .order("created_at", { ascending: false });
 
@@ -532,7 +665,7 @@ export default function PhotosPage() {
       const mediaType = file.type.startsWith("video") ? "video" : "image";
 
       let fileToUpload = file;
-      if (mediaType === "image") {
+      if (mediaType === "image" && WATERMARK_ENABLED) {
         try {
           fileToUpload = await addWatermark(file);
         } catch (wmError) {
@@ -585,8 +718,37 @@ export default function PhotosPage() {
   async function handleDeletePost(id) {
     setDeletingId(id);
     await supabase.from("photo_posts").delete().eq("id", id);
+    if (lightbox && lightbox.postId === id) {
+      setLightbox(null);
+    }
     await loadPosts();
     setDeletingId(null);
+  }
+
+  function startEditCaption(post) {
+    setEditingPostId(post.id);
+    setEditCaptionValue(post.caption || "");
+  }
+
+  function cancelEditCaption() {
+    setEditingPostId(null);
+    setEditCaptionValue("");
+  }
+
+  async function saveEditCaption(postId) {
+    const { error } = await supabase
+      .from("photo_posts")
+      .update({ caption: editCaptionValue || null })
+      .eq("id", postId);
+
+    if (error) {
+      setErrorMsg("설명 수정 실패: " + error.message);
+      return;
+    }
+
+    setEditingPostId(null);
+    setEditCaptionValue("");
+    await loadPosts();
   }
 
   if (loading) {
@@ -737,48 +899,104 @@ export default function PhotosPage() {
             />
 
             <div style={{ padding: 16 }}>
-              {post.caption && (
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: "#333",
-                    margin: 0,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {post.caption}
-                </p>
-              )}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: 8,
-                }}
-              >
-                <span style={{ fontSize: 12, color: "#999" }}>
-                  {formatDate(post.created_at)}
-                </span>
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePost(post.id)}
-                    disabled={deletingId === post.id}
+              {editingPostId === post.id ? (
+                <div>
+                  <textarea
+                    value={editCaptionValue}
+                    onChange={(e) => setEditCaptionValue(e.target.value)}
+                    rows={2}
                     style={{
-                      fontSize: 12,
-                      border: "1px solid #b3261e",
-                      color: "#b3261e",
-                      background: "white",
+                      width: "100%",
                       borderRadius: 8,
-                      padding: "4px 10px",
-                      cursor: "pointer",
+                      border: "1px solid #ccc",
+                      padding: 8,
+                      fontSize: 14,
+                      resize: "none",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className="primary"
+                      onClick={() => saveEditCaption(post.id)}
+                    >
+                      저장
+                    </button>
+                    <button
+                      type="button"
+                      className="primary"
+                      style={{ background: "#999" }}
+                      onClick={cancelEditCaption}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {post.caption && (
+                    <p
+                      style={{
+                        fontSize: 14,
+                        color: "#333",
+                        margin: 0,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {post.caption}
+                    </p>
+                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 8,
                     }}
                   >
-                    {deletingId === post.id ? "삭제 중..." : "삭제"}
-                  </button>
-                )}
-              </div>
+                    <span style={{ fontSize: 12, color: "#999" }}>
+                      {post.author?.name || "알 수 없음"}
+                      {roleLabel(post.author?.role) ? ` · ${roleLabel(post.author?.role)}` : ""} ·{" "}
+                      {formatDate(post.created_at)}
+                    </span>
+                    {canDelete && (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => startEditCaption(post)}
+                          style={{
+                            fontSize: 12,
+                            border: "1px solid #ccc",
+                            color: "#555",
+                            background: "white",
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          수정
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePost(post.id)}
+                          disabled={deletingId === post.id}
+                          style={{
+                            fontSize: 12,
+                            border: "1px solid #b3261e",
+                            color: "#b3261e",
+                            background: "white",
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {deletingId === post.id ? "삭제 중..." : "삭제"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         );
@@ -789,6 +1007,18 @@ export default function PhotosPage() {
           mediaList={lightboxMediaList}
           index={lightboxIndex}
           caption={lightboxPost.caption}
+          authorLabel={lightboxPost.author?.name || "알 수 없음"}
+          roleText={roleLabel(lightboxPost.author?.role)}
+          dateLabel={formatDate(lightboxPost.created_at)}
+          canDelete={isAdmin || lightboxPost.uploaded_by === userId}
+          isEditing={editingPostId === lightboxPost.id}
+          editValue={editCaptionValue}
+          onChangeEditValue={setEditCaptionValue}
+          onStartEdit={() => startEditCaption(lightboxPost)}
+          onCancelEdit={cancelEditCaption}
+          onSaveEdit={() => saveEditCaption(lightboxPost.id)}
+          onDelete={() => handleDeletePost(lightboxPost.id)}
+          deleting={deletingId === lightboxPost.id}
           onClose={() => setLightbox(null)}
           onChange={(newIndex) => {
             if (newIndex < 0 || newIndex >= lightboxMediaList.length) return;
