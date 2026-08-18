@@ -96,6 +96,298 @@ async function addWatermark(file) {
   }
 }
 
+function MediaThumb({ m }) {
+  if (m.media_type === "video") {
+    return (
+      <>
+        <video
+          src={m.media_url}
+          muted
+          playsInline
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 0,
+              height: 0,
+              borderTop: "7px solid transparent",
+              borderBottom: "7px solid transparent",
+              borderLeft: "11px solid white",
+              marginLeft: 3,
+            }}
+          />
+        </div>
+      </>
+    );
+  }
+  return (
+    <img
+      src={m.media_url}
+      alt=""
+      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+    />
+  );
+}
+
+function MediaGrid({ mediaList, onOpen }) {
+  const count = mediaList.length;
+  if (count === 0) return null;
+
+  const gap = 2;
+  const gridHeight = 260;
+
+  if (count === 1) {
+    return (
+      <div
+        style={{ position: "relative", width: "100%", height: 320, background: "#eee", cursor: "pointer" }}
+        onClick={() => onOpen(0)}
+      >
+        <MediaThumb m={mediaList[0]} />
+      </div>
+    );
+  }
+
+  if (count === 2) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap, height: gridHeight }}>
+        {mediaList.map((m, i) => (
+          <div key={m.id} style={{ position: "relative", cursor: "pointer" }} onClick={() => onOpen(i)}>
+            <MediaThumb m={m} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (count === 3) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gridTemplateRows: "1fr 1fr",
+          gap,
+          height: gridHeight,
+        }}
+      >
+        <div
+          style={{ position: "relative", gridRow: "1 / 3", cursor: "pointer" }}
+          onClick={() => onOpen(0)}
+        >
+          <MediaThumb m={mediaList[0]} />
+        </div>
+        <div style={{ position: "relative", cursor: "pointer" }} onClick={() => onOpen(1)}>
+          <MediaThumb m={mediaList[1]} />
+        </div>
+        <div style={{ position: "relative", cursor: "pointer" }} onClick={() => onOpen(2)}>
+          <MediaThumb m={mediaList[2]} />
+        </div>
+      </div>
+    );
+  }
+
+  const visible = mediaList.slice(0, 4);
+  const remaining = count - 4;
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gridTemplateRows: "1fr 1fr",
+        gap,
+        height: gridHeight,
+      }}
+    >
+      {visible.map((m, i) => {
+        const isLastWithMore = i === 3 && remaining > 0;
+        return (
+          <div
+            key={m.id}
+            style={{ position: "relative", cursor: "pointer" }}
+            onClick={() => onOpen(i)}
+          >
+            <MediaThumb m={m} />
+            {isLastWithMore && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "rgba(0,0,0,0.5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span style={{ color: "white", fontSize: 22, fontWeight: 700 }}>
+                  +{remaining}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function navBtnStyle(side) {
+  return {
+    position: "absolute",
+    [side]: 10,
+    top: "50%",
+    transform: "translateY(-50%)",
+    background: "rgba(255,255,255,0.15)",
+    color: "white",
+    border: "none",
+    borderRadius: "50%",
+    width: 40,
+    height: 40,
+    fontSize: 22,
+    cursor: "pointer",
+  };
+}
+
+function Lightbox({ mediaList, index, caption, onClose, onChange }) {
+  const touchStartX = useRef(null);
+  const m = mediaList[index];
+
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+
+  function handleTouchEnd(e) {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    if (deltaX > 50) onChange(index - 1);
+    else if (deltaX < -50) onChange(index + 1);
+    touchStartX.current = null;
+  }
+
+  if (!m) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.92)",
+        zIndex: 1000,
+        display: "flex",
+        flexDirection: "column",
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: 14,
+        }}
+      >
+        <span style={{ color: "white", fontSize: 13 }}>
+          {index + 1} / {mediaList.length}
+        </span>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => downloadMedia(m.media_url)}
+            style={{
+              background: "rgba(255,255,255,0.15)",
+              color: "white",
+              border: "none",
+              borderRadius: 20,
+              padding: "6px 12px",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            ↓ 다운로드
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "rgba(255,255,255,0.15)",
+              color: "white",
+              border: "none",
+              borderRadius: 20,
+              width: 32,
+              height: 32,
+              fontSize: 16,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {index > 0 && (
+          <button type="button" onClick={() => onChange(index - 1)} style={navBtnStyle("left")}>
+            ‹
+          </button>
+        )}
+
+        {m.media_type === "video" ? (
+          <video
+            src={m.media_url}
+            controls
+            autoPlay
+            style={{ maxWidth: "100%", maxHeight: "100%" }}
+          />
+        ) : (
+          <img
+            src={m.media_url}
+            alt=""
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+          />
+        )}
+
+        {index < mediaList.length - 1 && (
+          <button type="button" onClick={() => onChange(index + 1)} style={navBtnStyle("right")}>
+            ›
+          </button>
+        )}
+      </div>
+
+      {caption && (
+        <div style={{ padding: 14, color: "white", fontSize: 13, textAlign: "center" }}>
+          {caption}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PhotosPage() {
   const router = useRouter();
   const fileInputRef = useRef(null);
@@ -115,6 +407,8 @@ export default function PhotosPage() {
   const [uploading, setUploading] = useState(false);
   const [converting, setConverting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+
+  const [lightbox, setLightbox] = useState(null); // { postId, index }
 
   async function loadPosts() {
     const { data, error } = await supabase
@@ -303,6 +597,12 @@ export default function PhotosPage() {
     );
   }
 
+  const lightboxPost = lightbox ? posts.find((p) => p.id === lightbox.postId) : null;
+  const lightboxMediaList = lightboxPost ? lightboxPost.photo_post_media || [] : [];
+  const lightboxIndex = lightboxPost
+    ? Math.min(Math.max(lightbox.index, 0), lightboxMediaList.length - 1)
+    : 0;
+
   return (
     <main className="page">
       <div className="brand">Double J Sports</div>
@@ -431,70 +731,10 @@ export default function PhotosPage() {
             className="card"
             style={{ marginBottom: 20, padding: 0, overflow: "hidden" }}
           >
-            <div
-              style={{
-                display: "flex",
-                overflowX: "auto",
-                scrollSnapType: "x mandatory",
-              }}
-            >
-              {mediaList.map((m) => (
-                <div
-                  key={m.id}
-                  style={{
-                    flex: "0 0 100%",
-                    scrollSnapAlign: "start",
-                    position: "relative",
-                  }}
-                >
-                  {m.media_type === "video" ? (
-                    <video
-                      src={m.media_url}
-                      controls
-                      style={{ width: "100%", display: "block" }}
-                    />
-                  ) : (
-                    <img
-                      src={m.media_url}
-                      alt={post.caption || "사진"}
-                      style={{ width: "100%", display: "block" }}
-                    />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => downloadMedia(m.media_url)}
-                    style={{
-                      position: "absolute",
-                      top: 10,
-                      right: 10,
-                      background: "rgba(0,0,0,0.55)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: 20,
-                      padding: "6px 12px",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ↓ 다운로드
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {mediaList.length > 1 && (
-              <div
-                style={{
-                  textAlign: "center",
-                  fontSize: 12,
-                  color: "#999",
-                  padding: "6px 0 0",
-                }}
-              >
-                좌우로 넘겨서 {mediaList.length}개 보기
-              </div>
-            )}
+            <MediaGrid
+              mediaList={mediaList}
+              onOpen={(idx) => setLightbox({ postId: post.id, index: idx })}
+            />
 
             <div style={{ padding: 16 }}>
               {post.caption && (
@@ -543,6 +783,19 @@ export default function PhotosPage() {
           </div>
         );
       })}
+
+      {lightboxPost && (
+        <Lightbox
+          mediaList={lightboxMediaList}
+          index={lightboxIndex}
+          caption={lightboxPost.caption}
+          onClose={() => setLightbox(null)}
+          onChange={(newIndex) => {
+            if (newIndex < 0 || newIndex >= lightboxMediaList.length) return;
+            setLightbox({ postId: lightboxPost.id, index: newIndex });
+          }}
+        />
+      )}
     </main>
   );
 }
