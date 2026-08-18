@@ -72,11 +72,11 @@ async function addWatermark(file) {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(photoImg, 0, 0);
 
-    const logoWidth = canvas.width * 0.14;
+    const logoWidth = canvas.width * 0.10;
     const logoHeight = logoWidth * (logoImg.naturalHeight / logoImg.naturalWidth);
-    const margin = canvas.width * 0.03;
-    const x = canvas.width - logoWidth - margin;
-    const y = margin;
+    const margin = canvas.height * 0.03;
+    const x = (canvas.width - logoWidth) / 2;
+    const y = canvas.height - logoHeight - margin;
 
     ctx.globalAlpha = 0.85;
     ctx.drawImage(logoImg, x, y, logoWidth, logoHeight);
