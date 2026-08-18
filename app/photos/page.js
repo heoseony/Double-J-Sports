@@ -32,7 +32,6 @@ async function downloadMedia(url) {
 function loadImageElement(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
@@ -64,6 +63,10 @@ async function addWatermark(file) {
     const blob = await new Promise((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", 0.92)
     );
+
+    if (!blob || blob.size === 0) {
+      throw new Error("워터마크 합성 결과가 비어있습니다.");
+    }
 
     return new File([blob], file.name, { type: "image/jpeg" });
   } finally {
