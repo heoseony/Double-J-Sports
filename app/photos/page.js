@@ -274,13 +274,16 @@ function navBtnStyle(side) {
 function Lightbox({
   mediaList,
   index,
+  title,
   caption,
   authorLabel,
   roleText,
   dateLabel,
   canDelete,
   isEditing,
+  editTitleValue,
   editValue,
+  onChangeEditTitle,
   onChangeEditValue,
   onStartEdit,
   onCancelEdit,
@@ -408,10 +411,28 @@ function Lightbox({
       <div style={{ padding: 14 }}>
         {isEditing ? (
           <div>
+            <input
+              type="text"
+              value={editTitleValue}
+              onChange={(e) => onChangeEditTitle(e.target.value)}
+              placeholder="제목"
+              style={{
+                width: "100%",
+                borderRadius: 8,
+                border: "1px solid #555",
+                background: "rgba(255,255,255,0.08)",
+                color: "white",
+                padding: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                marginBottom: 8,
+              }}
+            />
             <textarea
               value={editValue}
               onChange={(e) => onChangeEditValue(e.target.value)}
               rows={2}
+              placeholder="설명"
               style={{
                 width: "100%",
                 borderRadius: 8,
@@ -459,8 +480,20 @@ function Lightbox({
           </div>
         ) : (
           <>
+            {title && (
+              <p style={{ color: "white", fontSize: 15, fontWeight: 700, margin: 0, lineHeight: 1.4 }}>
+                {title}
+              </p>
+            )}
             {caption && (
-              <p style={{ color: "white", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+              <p
+                style={{
+                  color: "white",
+                  fontSize: 14,
+                  margin: title ? "4px 0 0" : 0,
+                  lineHeight: 1.5,
+                }}
+              >
                 {caption}
               </p>
             )}
@@ -534,6 +567,7 @@ export default function PhotosPage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
   const [converting, setConverting] = useState(false);
@@ -541,13 +575,14 @@ export default function PhotosPage() {
 
   const [lightbox, setLightbox] = useState(null); // { postId, index }
   const [editingPostId, setEditingPostId] = useState(null);
+  const [editTitleValue, setEditTitleValue] = useState("");
   const [editCaptionValue, setEditCaptionValue] = useState("");
 
   async function loadPosts() {
     const { data, error } = await supabase
       .from("photo_posts")
       .select(
-        "id, caption, uploaded_by, created_at, photo_post_media(id, media_url, media_type, order_index), author:users!uploaded_by(name, role)"
+        "id, title, caption, uploaded_by, created_at, photo_post_media(id, media_url, media_type, order_index), author:users!uploaded_by(name, role)"
       )
       .order("created_at", { ascending: false });
 
@@ -626,6 +661,7 @@ export default function PhotosPage() {
   function resetForm() {
     setSelectedFiles([]);
     setPreviews([]);
+    setTitle("");
     setCaption("");
     setShowForm(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -648,6 +684,7 @@ export default function PhotosPage() {
 
     const { error: postError } = await supabase.from("photo_posts").insert({
       id: postId,
+      title: title || null,
       caption: caption || null,
       uploaded_by: userId,
     });
@@ -727,26 +764,29 @@ export default function PhotosPage() {
 
   function startEditCaption(post) {
     setEditingPostId(post.id);
+    setEditTitleValue(post.title || "");
     setEditCaptionValue(post.caption || "");
   }
 
   function cancelEditCaption() {
     setEditingPostId(null);
+    setEditTitleValue("");
     setEditCaptionValue("");
   }
 
   async function saveEditCaption(postId) {
     const { error } = await supabase
       .from("photo_posts")
-      .update({ caption: editCaptionValue || null })
+      .update({ title: editTitleValue || null, caption: editCaptionValue || null })
       .eq("id", postId);
 
     if (error) {
-      setErrorMsg("설명 수정 실패: " + error.message);
+      setErrorMsg("수정 실패: " + error.message);
       return;
     }
 
     setEditingPostId(null);
+    setEditTitleValue("");
     setEditCaptionValue("");
     await loadPosts();
   }
@@ -841,6 +881,14 @@ export default function PhotosPage() {
                 </div>
               )}
 
+              <label>제목 (선택)</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="예: 유아A반 8월 훈련"
+              />
+
               <label>설명 (선택)</label>
               <input
                 type="text"
@@ -901,10 +949,26 @@ export default function PhotosPage() {
             <div style={{ padding: 16 }}>
               {editingPostId === post.id ? (
                 <div>
+                  <input
+                    type="text"
+                    value={editTitleValue}
+                    onChange={(e) => setEditTitleValue(e.target.value)}
+                    placeholder="제목"
+                    style={{
+                      width: "100%",
+                      borderRadius: 8,
+                      border: "1px solid #ccc",
+                      padding: 8,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      marginBottom: 8,
+                    }}
+                  />
                   <textarea
                     value={editCaptionValue}
                     onChange={(e) => setEditCaptionValue(e.target.value)}
                     rows={2}
+                    placeholder="설명"
                     style={{
                       width: "100%",
                       borderRadius: 8,
@@ -934,12 +998,25 @@ export default function PhotosPage() {
                 </div>
               ) : (
                 <>
+                  {post.title && (
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "#111",
+                        margin: 0,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {post.title}
+                    </p>
+                  )}
                   {post.caption && (
                     <p
                       style={{
                         fontSize: 14,
                         color: "#333",
-                        margin: 0,
+                        margin: post.title ? "4px 0 0" : 0,
                         lineHeight: 1.5,
                       }}
                     >
@@ -1006,13 +1083,16 @@ export default function PhotosPage() {
         <Lightbox
           mediaList={lightboxMediaList}
           index={lightboxIndex}
+          title={lightboxPost.title}
           caption={lightboxPost.caption}
           authorLabel={lightboxPost.author?.name || "알 수 없음"}
           roleText={roleLabel(lightboxPost.author?.role)}
           dateLabel={formatDate(lightboxPost.created_at)}
           canDelete={isAdmin || lightboxPost.uploaded_by === userId}
           isEditing={editingPostId === lightboxPost.id}
+          editTitleValue={editTitleValue}
           editValue={editCaptionValue}
+          onChangeEditTitle={setEditTitleValue}
           onChangeEditValue={setEditCaptionValue}
           onStartEdit={() => startEditCaption(lightboxPost)}
           onCancelEdit={cancelEditCaption}
