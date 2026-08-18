@@ -38,6 +38,28 @@ function loadImageElement(src) {
   });
 }
 
+async function normalizeImageFile(file) {
+  if (!file.type.startsWith("image")) return file;
+
+  const isHeic =
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    /\.(heic|heif)$/i.test(file.name);
+
+  if (!isHeic) return file;
+
+  const heic2any = (await import("heic2any")).default;
+  const converted = await heic2any({
+    blob: file,
+    toType: "image/jpeg",
+    quality: 0.9,
+  });
+  const finalBlob = Array.isArray(converted) ? converted[0] : converted;
+  const newName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
+
+  return new File([finalBlob], newName, { type: "image/jpeg" });
+}
+
 async function addWatermark(file) {
   const objectUrl = URL.createObjectURL(file);
   try {
@@ -91,6 +113,7 @@ export default function PhotosPage() {
   const [previews, setPreviews] = useState([]);
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
   async function loadPosts() {
@@ -147,12 +170,26 @@ export default function PhotosPage() {
     load();
   }, [router]);
 
-  function handleFileChange(e) {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    setSelectedFiles(files);
+  async function handleFileChange(e) {
+    const rawFiles = Array.from(e.target.files || []);
+    if (rawFiles.length === 0) return;
+
+    setConverting(true);
+    setErrorMsg("");
+
+    const converted = [];
+    for (const f of rawFiles) {
+      try {
+        converted.push(await normalizeImageFile(f));
+      } catch (err) {
+        converted.push(f);
+      }
+    }
+
+    setConverting(false);
+    setSelectedFiles(converted);
     setPreviews(
-      files.map((f) => ({
+      converted.map((f) => ({
         url: URL.createObjectURL(f),
         isVideo: f.type.startsWith("video"),
       }))
@@ -280,11 +317,17 @@ export default function PhotosPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/*"
+                accept="image/*,video/*,.heic,.heif"
                 multiple
                 onChange={handleFileChange}
                 style={{ marginTop: 4 }}
               />
+
+              {converting && (
+                <p style={{ fontSize: 13, color: "#0b3d2e", marginTop: 8 }}>
+                  사진 형식을 변환하는 중입니다...
+                </p>
+              )}
 
               {previews.length > 0 && (
                 <div
@@ -344,7 +387,7 @@ export default function PhotosPage() {
               {errorMsg && <div className="message error">{errorMsg}</div>}
 
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                <button className="primary" type="submit" disabled={uploading}>
+                <button className="primary" type="submit" disabled={uploading || converting}>
                   {uploading ? "업로드 중..." : "게시하기"}
                 </button>
                 <button
