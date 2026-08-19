@@ -215,6 +215,7 @@ function MediaGrid({ mediaList, onOpen }) {
   return (
     <div
       style={{
+        position: "relative",
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
         gridTemplateRows: "1fr 1fr",
