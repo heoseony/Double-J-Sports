@@ -629,13 +629,20 @@ export default function PhotosPage() {
   const [editTitleValue, setEditTitleValue] = useState("");
   const [editCaptionValue, setEditCaptionValue] = useState("");
 
+  const loadRequestIdRef = useRef(0);
+
   async function loadPosts() {
+    const requestId = ++loadRequestIdRef.current;
+
     const { data, error } = await supabase
       .from("photo_posts")
       .select(
         "id, title, caption, uploaded_by, created_at, photo_post_media(id, media_url, media_type, order_index), author:users!uploaded_by(name, role)"
       )
       .order("created_at", { ascending: false });
+
+    // 이 요청이 시작된 후 더 최신 요청이 시작됐다면, 이 결과는 낡은 것이므로 무시
+    if (requestId !== loadRequestIdRef.current) return;
 
     if (!error) {
       const withSortedMedia = (data || []).map((p) => ({
@@ -682,14 +689,20 @@ export default function PhotosPage() {
 
     load();
 
+    let debounceTimer = null;
     function handleVisibilityChange() {
       if (document.visibilityState === "visible") {
-        loadPosts();
+        // visibilitychange와 pageshow가 동시에 발동해도 한 번만 실행되도록 짧게 묶음
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          loadPosts();
+        }, 50);
       }
     }
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pageshow", handleVisibilityChange);
     return () => {
+      clearTimeout(debounceTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pageshow", handleVisibilityChange);
     };
