@@ -634,6 +634,23 @@ export default function PhotosPage() {
   async function loadPosts() {
     const requestId = ++loadRequestIdRef.current;
 
+    // 세션이 아직 메모리에 복원되지 않은 순간에 조회하면 RLS에 막혀
+    // title/author 같은 보호된 데이터가 조용히 빠질 수 있으므로,
+    // 매 조회 전 세션이 실제로 준비됐는지 먼저 확인한다.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      // 세션이 아직 안 돌아왔다면 잠깐 기다렸다가 한 번만 재시도
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const retry = await supabase.auth.getSession();
+      if (!retry.data.session) {
+        // 그래도 세션이 없으면 로그인 만료 등 실제 문제이므로 조용히 종료
+        return;
+      }
+    }
+
     const { data, error } = await supabase
       .from("photo_posts")
       .select(
