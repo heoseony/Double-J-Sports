@@ -162,7 +162,7 @@ function MediaGrid({ mediaList, onOpen }) {
   if (count === 1) {
     return (
       <div
-        style={{ position: "relative", width: "100%", height: 320, background: "#eee", cursor: "pointer" }}
+        style={{ position: "relative", width: "100%", height: 320, overflow: "hidden", background: "#eee", cursor: "pointer" }}
         onClick={() => onOpen(0)}
       >
         <MediaThumb m={mediaList[0]} />
@@ -172,9 +172,9 @@ function MediaGrid({ mediaList, onOpen }) {
 
   if (count === 2) {
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap, height: gridHeight }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap, height: gridHeight, overflow: "hidden" }}>
         {mediaList.map((m, i) => (
-          <div key={m.id} style={{ position: "relative", height: "100%", cursor: "pointer" }} onClick={() => onOpen(i)}>
+          <div key={m.id} style={{ position: "relative", height: "100%", overflow: "hidden", cursor: "pointer" }} onClick={() => onOpen(i)}>
             <MediaThumb m={m} />
           </div>
         ))}
@@ -191,18 +191,19 @@ function MediaGrid({ mediaList, onOpen }) {
           gridTemplateRows: "1fr 1fr",
           gap,
           height: gridHeight,
+          overflow: "hidden",
         }}
       >
         <div
-          style={{ position: "relative", height: "100%", gridRow: "1 / 3", cursor: "pointer" }}
+          style={{ position: "relative", height: "100%", overflow: "hidden", gridRow: "1 / 3", cursor: "pointer" }}
           onClick={() => onOpen(0)}
         >
           <MediaThumb m={mediaList[0]} />
         </div>
-        <div style={{ position: "relative", height: "100%", cursor: "pointer" }} onClick={() => onOpen(1)}>
+        <div style={{ position: "relative", height: "100%", overflow: "hidden", cursor: "pointer" }} onClick={() => onOpen(1)}>
           <MediaThumb m={mediaList[1]} />
         </div>
-        <div style={{ position: "relative", height: "100%", cursor: "pointer" }} onClick={() => onOpen(2)}>
+        <div style={{ position: "relative", height: "100%", overflow: "hidden", cursor: "pointer" }} onClick={() => onOpen(2)}>
           <MediaThumb m={mediaList[2]} />
         </div>
       </div>
@@ -221,6 +222,7 @@ function MediaGrid({ mediaList, onOpen }) {
         gridTemplateRows: "1fr 1fr",
         gap,
         height: gridHeight,
+        overflow: "hidden",
       }}
     >
       {visible.map((m, i) => {
