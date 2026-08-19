@@ -174,7 +174,7 @@ function MediaGrid({ mediaList, onOpen }) {
     return (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap, height: gridHeight }}>
         {mediaList.map((m, i) => (
-          <div key={m.id} style={{ position: "relative", cursor: "pointer" }} onClick={() => onOpen(i)}>
+          <div key={m.id} style={{ position: "relative", height: "100%", cursor: "pointer" }} onClick={() => onOpen(i)}>
             <MediaThumb m={m} />
           </div>
         ))}
@@ -194,15 +194,15 @@ function MediaGrid({ mediaList, onOpen }) {
         }}
       >
         <div
-          style={{ position: "relative", gridRow: "1 / 3", cursor: "pointer" }}
+          style={{ position: "relative", height: "100%", gridRow: "1 / 3", cursor: "pointer" }}
           onClick={() => onOpen(0)}
         >
           <MediaThumb m={mediaList[0]} />
         </div>
-        <div style={{ position: "relative", cursor: "pointer" }} onClick={() => onOpen(1)}>
+        <div style={{ position: "relative", height: "100%", cursor: "pointer" }} onClick={() => onOpen(1)}>
           <MediaThumb m={mediaList[1]} />
         </div>
-        <div style={{ position: "relative", cursor: "pointer" }} onClick={() => onOpen(2)}>
+        <div style={{ position: "relative", height: "100%", cursor: "pointer" }} onClick={() => onOpen(2)}>
           <MediaThumb m={mediaList[2]} />
         </div>
       </div>
@@ -228,7 +228,7 @@ function MediaGrid({ mediaList, onOpen }) {
         return (
           <div
             key={m.id}
-            style={{ position: "relative", cursor: "pointer" }}
+            style={{ position: "relative", height: "100%", cursor: "pointer" }}
             onClick={() => onOpen(i)}
           >
             <MediaThumb m={m} />
