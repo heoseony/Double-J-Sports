@@ -22,10 +22,31 @@ async function downloadMedia(url) {
   try {
     const response = await fetch(url);
     const blob = await response.blob();
+    const filename = url.split("/").pop() || "download";
+
+    // 모바일(주로 안드로이드 크롬)에서 Web Share API가 지원되면
+    // 공유 시트를 띄워서 "사진에 저장"으로 바로 갤러리에 담을 수 있게 한다.
+    // 지원 안 되는 환경(대부분의 데스크톱 브라우저)에서는 기존 다운로드 방식으로 자동 전환.
+    try {
+      const file = new File([blob], filename, { type: blob.type });
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    } catch (shareErr) {
+      // 사용자가 공유 시트를 취소한 경우엔 그냥 종료 (에러 아님)
+      if (shareErr && shareErr.name === "AbortError") return;
+      // 그 외 공유 실패는 아래 기존 다운로드 방식으로 폴백
+    }
+
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = blobUrl;
-    link.download = url.split("/").pop() || "download";
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -152,6 +173,21 @@ function MediaThumb({ m }) {
   );
 }
 
+// 그리드 칸(cell) 공통 스타일. overflow:hidden + minWidth/minHeight:0을 항상 명시해서
+// 사진 원본 크기가 그리드 트랙 크기 계산에 영향을 주지 않게 강제한다.
+// (이게 빠지면 브라우저에 따라 — 특히 안드로이드 크롬에서 — 1행이 부풀고 2행이 눌리는 현상이 생김)
+function gridCellStyle(extra) {
+  return {
+    position: "relative",
+    height: "100%",
+    minHeight: 0,
+    minWidth: 0,
+    overflow: "hidden",
+    cursor: "pointer",
+    ...extra,
+  };
+}
+
 function MediaGrid({ mediaList, onOpen }) {
   const count = mediaList.length;
   if (count === 0) return null;
@@ -174,7 +210,7 @@ function MediaGrid({ mediaList, onOpen }) {
     return (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap, height: gridHeight, overflow: "hidden" }}>
         {mediaList.map((m, i) => (
-          <div key={m.id} style={{ position: "relative", height: "100%", overflow: "hidden", cursor: "pointer" }} onClick={() => onOpen(i)}>
+          <div key={m.id} style={gridCellStyle()} onClick={() => onOpen(i)}>
             <MediaThumb m={m} />
           </div>
         ))}
@@ -195,15 +231,15 @@ function MediaGrid({ mediaList, onOpen }) {
         }}
       >
         <div
-          style={{ position: "relative", height: "100%", overflow: "hidden", gridRow: "1 / 3", cursor: "pointer" }}
+          style={gridCellStyle({ gridRow: "1 / 3" })}
           onClick={() => onOpen(0)}
         >
           <MediaThumb m={mediaList[0]} />
         </div>
-        <div style={{ position: "relative", height: "100%", overflow: "hidden", cursor: "pointer" }} onClick={() => onOpen(1)}>
+        <div style={gridCellStyle()} onClick={() => onOpen(1)}>
           <MediaThumb m={mediaList[1]} />
         </div>
-        <div style={{ position: "relative", height: "100%", overflow: "hidden", cursor: "pointer" }} onClick={() => onOpen(2)}>
+        <div style={gridCellStyle()} onClick={() => onOpen(2)}>
           <MediaThumb m={mediaList[2]} />
         </div>
       </div>
@@ -230,7 +266,7 @@ function MediaGrid({ mediaList, onOpen }) {
         return (
           <div
             key={m.id}
-            style={{ position: "relative", height: "100%", cursor: "pointer" }}
+            style={gridCellStyle()}
             onClick={() => onOpen(i)}
           >
             <MediaThumb m={m} />
