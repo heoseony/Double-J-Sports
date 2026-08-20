@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
@@ -56,6 +56,11 @@ function BookPageInner() {
     return d;
   });
   const [selectedDate, setSelectedDate] = useState(todayStr());
+
+  // state(setBookingSessionId)는 비동기라 더블클릭/연타 시 두 번째 클릭이
+  // 아직 갱신 전인 state를 보고 통과할 수 있음 → ref로 동기적으로 즉시 막는다.
+  // (DB 쪽에도 유니크 제약을 걸어 이중 안전장치를 둔다 — Step 1 SQL 참고)
+  const isBookingRef = useRef(false);
 
   async function loadAll() {
     setErrorMsg("");
@@ -183,14 +188,16 @@ function BookPageInner() {
 
     setSessions(kidsSessions);
 
+    // member_id를 같이 받아와서, 렌더링할 때 "이 참가자가 지금 보고 있는 내 자녀인지"를
+    // 판별할 수 있게 한다 (본인은 마스킹 해제 + 파란색 표시).
     const { data: participantData } = await supabase
       .from("session_participants_kids")
-      .select("class_session_id, name");
+      .select("class_session_id, member_id, name");
 
     const grouped = {};
     (participantData || []).forEach((p) => {
       if (!grouped[p.class_session_id]) grouped[p.class_session_id] = [];
-      grouped[p.class_session_id].push(p.name);
+      grouped[p.class_session_id].push({ memberId: p.member_id, name: p.name });
     });
     setParticipantsBySession(grouped);
 
@@ -238,16 +245,22 @@ function BookPageInner() {
   }
 
   async function handleBook(sessionId) {
+    // 더블클릭/연타 방지: state 반영을 기다리지 않고 ref로 즉시 잠근다.
+    if (isBookingRef.current) return;
+    isBookingRef.current = true;
+
     setErrorMsg("");
     setSuccessMsg("");
 
     if (remaining <= 0 || !membershipId) {
       setErrorMsg("잔여 이용 횟수가 없습니다. 관리자에게 문의해주세요.");
+      isBookingRef.current = false;
       return;
     }
 
     if (myBookedSessionIds.includes(sessionId)) {
       setErrorMsg("이미 이 수업에 예약되어 있습니다.");
+      isBookingRef.current = false;
       return;
     }
 
@@ -263,6 +276,7 @@ function BookPageInner() {
         setErrorMsg(
           `예약이 마감되었습니다. (수업 시작 ${bookingCutoffHours}시간 전까지 예약 가능)`
         );
+        isBookingRef.current = false;
         return;
       }
     }
@@ -277,7 +291,15 @@ function BookPageInner() {
 
     if (bookingError) {
       setBookingSessionId(null);
-      setErrorMsg("예약 실패: " + bookingError.message);
+      isBookingRef.current = false;
+      // DB 유니크 제약(bookings_unique_active_booking) 위반 = 이미 예약된 경우.
+      // 사용자에게는 에러 메시지 대신 안내 문구를 보여주고 최신 상태로 새로고침한다.
+      if (bookingError.code === "23505") {
+        setErrorMsg("이미 이 수업에 예약되어 있습니다.");
+        await loadAll();
+      } else {
+        setErrorMsg("예약 실패: " + bookingError.message);
+      }
       return;
     }
 
@@ -294,6 +316,7 @@ function BookPageInner() {
 
     setBookingSessionId(null);
     setSuccessMsg("예약이 완료되었습니다.");
+    isBookingRef.current = false;
     await loadAll();
   }
 
@@ -558,7 +581,22 @@ function BookPageInner() {
                 >
                   {names.length === 0
                     ? "아직 신청자가 없습니다."
-                    : names.map(maskName).join(", ")}
+                    : names.map((p, i) => {
+                        const isMe = p.memberId === memberId;
+                        return (
+                          <span key={i}>
+                            <span
+                              style={{
+                                color: isMe ? "#1a73e8" : "#444",
+                                fontWeight: isMe ? 700 : 400,
+                              }}
+                            >
+                              {isMe ? p.name : maskName(p.name)}
+                            </span>
+                            {i < names.length - 1 ? ", " : ""}
+                          </span>
+                        );
+                      })}
                 </div>
               )}
 
