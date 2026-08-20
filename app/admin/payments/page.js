@@ -120,11 +120,34 @@ export default function AdminPaymentsPage() {
       return;
     }
 
-    // 참고: Invoice 생성 + 이메일 발송은 다음 단계에서 여기에 연결됩니다.
+    // 3. 인보이스 생성 + PDF 저장 + 이메일 발송 (API 라우트 호출)
+    //    이 단계가 실패해도 결제확인/회원권배정 자체는 이미 완료된 상태이므로,
+    //    에러를 안내 메시지에 덧붙이기만 하고 흐름은 막지 않는다.
+    let invoiceNote = "";
+    try {
+      const res = await fetch("/api/generate-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: payment.id }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        invoiceNote = ` (⚠ 인보이스 발급 실패: ${result.error || "알 수 없는 오류"})`;
+      } else if (!result.emailSent) {
+        invoiceNote = ` (인보이스 ${result.invoiceNumber} 발급됨, 이메일 발송은 실패: ${
+          result.emailError || "알 수 없는 이유"
+        })`;
+      } else {
+        invoiceNote = ` (인보이스 ${result.invoiceNumber} 발급 및 이메일 발송 완료)`;
+      }
+    } catch (e) {
+      invoiceNote = ` (⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message})`;
+    }
 
     setConfirmingId(null);
     setSuccessMsg(
-      `${payment.members?.name || "회원"}님의 결제가 확인되고 회원권이 배정되었습니다.`
+      `${payment.members?.name || "회원"}님의 결제가 확인되고 회원권이 배정되었습니다.${invoiceNote}`
     );
     await loadPayments();
   }
