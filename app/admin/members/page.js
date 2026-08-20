@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,11 +23,16 @@ export default function AdminMembersPage() {
   const [adjustingId, setAdjustingId] = useState(null);
   const [adjustMsg, setAdjustMsg] = useState("");
 
+  // 영문 이름(인보이스용) 편집 상태: 회원 id별로 입력 중인 값을 따로 들고 있다가 저장 버튼 누르면 반영
+  const [nameEnDrafts, setNameEnDrafts] = useState({});
+  const [savingNameEnId, setSavingNameEnId] = useState(null);
+  const [nameEnMsg, setNameEnMsg] = useState("");
+
   async function loadMembers() {
     const { data, error } = await supabase
       .from("members")
       .select(
-        "id, name, program, status, birth_date, gender, referred_by, guardians(name, phone, referred_by), users(email, phone)"
+        "id, name, name_en, program, status, birth_date, gender, referred_by, guardians(name, phone, referred_by), users(email, phone)"
       )
       .order("created_at", { ascending: false });
 
@@ -88,9 +93,40 @@ export default function AdminMembersPage() {
     setAdjustAmount("");
     setAdjustReason("");
     setAdjustMsg("");
+    setNameEnMsg("");
     if (!membershipsByMember[memberId]) {
       await loadMemberships(memberId);
     }
+  }
+
+  function getNameEnDraft(member) {
+    return nameEnDrafts[member.id] !== undefined
+      ? nameEnDrafts[member.id]
+      : member.name_en || "";
+  }
+
+  async function handleSaveNameEn(memberId) {
+    setNameEnMsg("");
+    const value = (nameEnDrafts[memberId] ?? "").trim();
+
+    setSavingNameEnId(memberId);
+
+    const { error } = await supabase
+      .from("members")
+      .update({ name_en: value || null })
+      .eq("id", memberId);
+
+    setSavingNameEnId(null);
+
+    if (error) {
+      setNameEnMsg("영문 이름 저장 실패: " + error.message);
+      return;
+    }
+
+    setMembers((prev) =>
+      prev.map((m) => (m.id === memberId ? { ...m, name_en: value || null } : m))
+    );
+    setNameEnMsg("영문 이름이 저장되었습니다.");
   }
 
   async function handleAdjust(membershipId, memberId) {
@@ -241,11 +277,62 @@ export default function AdminMembersPage() {
                     추천인: {referredBy}
                   </div>
                 )}
+                {!m.name_en && (
+                  <div style={{ fontSize: 12, color: "#b3261e", marginTop: 2 }}>
+                    ⚠ 영문 이름 미입력 (인보이스 발급 전 등록 필요)
+                  </div>
+                )}
               </div>
 
               {isExpanded && (
                 <div style={{ marginTop: 12, paddingLeft: 8 }}>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>
+                    영문 이름 (인보이스용)
+                  </div>
+                  <div style={{ marginTop: 6, display: "flex", gap: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="예: Seowon Park"
+                      value={getNameEnDraft(m)}
+                      onChange={(e) =>
+                        setNameEnDrafts((prev) => ({
+                          ...prev,
+                          [m.id]: e.target.value,
+                        }))
+                      }
+                      style={{
+                        flex: 1,
+                        padding: 8,
+                        fontSize: 13,
+                        border: "1px solid #ddd",
+                        borderRadius: 6,
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={savingNameEnId === m.id}
+                      onClick={() => handleSaveNameEn(m.id)}
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        border: "none",
+                        borderRadius: 6,
+                        background: "#0b3d2e",
+                        color: "white",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {savingNameEnId === m.id ? "저장 중..." : "저장"}
+                    </button>
+                  </div>
+                  {nameEnMsg && (
+                    <div style={{ marginTop: 6, fontSize: 12, color: "#0b3d2e" }}>
+                      {nameEnMsg}
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 13, fontWeight: 700, marginTop: 16 }}>
                     회원권 목록
                   </div>
 
