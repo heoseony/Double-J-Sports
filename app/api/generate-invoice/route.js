@@ -183,7 +183,7 @@ export async function POST(request) {
     if (guardianEmail && process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
+        const { data, error: resendError } = await resend.emails.send({
           from: "Double J Sports <onboarding@resend.dev>",
           to: guardianEmail,
           subject: `[Double J Sports] Invoice ${invoiceNumber}`,
@@ -195,7 +195,17 @@ export async function POST(request) {
             },
           ],
         });
-        emailSent = true;
+
+        // Resend 최신 SDK는 실패해도 예외를 던지지 않고 { data, error } 형태로
+        // 조용히 반환하는 경우가 있어, error 필드를 반드시 직접 확인해야 한다.
+        if (resendError) {
+          emailError =
+            resendError.message ||
+            JSON.stringify(resendError) ||
+            "알 수 없는 Resend 오류";
+        } else {
+          emailSent = true;
+        }
       } catch (e) {
         emailError = e.message;
       }
