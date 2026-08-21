@@ -893,7 +893,7 @@ export default function AdminClassesPage() {
                             {cc.coach_role === "main" ? "메인" : "보조"}
                           </span>
                           {cc.coach_profiles?.name}
-                          {cc.coach_profiles?.profile_type === "director" ? " (감독)" : ""}
+                          {""}
                         </span>
                         <button
                           type="button"
@@ -916,7 +916,7 @@ export default function AdminClassesPage() {
                           <option value="">-- 코치/감독 선택 --</option>
                           {coachProfiles.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.name + (p.profile_type === "director" ? " (감독)" : "")}
+                              {p.name}
                             </option>
                           ))}
                         </select>

@@ -35,6 +35,23 @@ export default function LoginPage() {
       return;
     }
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role === "coach") {
+        router.push("/coach/select-profile");
+        return;
+      }
+    }
+
     router.push("/dashboard");
   }
 
