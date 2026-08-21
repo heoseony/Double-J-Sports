@@ -130,10 +130,8 @@ export default function BottomNav() {
   return (
     <div
       style={{
-        position: "fixed",
+        position: "sticky",
         bottom: 0,
-        left: 0,
-        right: 0,
         display: "flex",
         alignItems: "center",
         borderTop: "1px solid #e5eaf2",
