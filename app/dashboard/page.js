@@ -123,7 +123,20 @@ export default function DashboardPage() {
         setAdultMemberName(selfMember.name);
       }
 
-      if (admin || coach) {
+      if (coach) {
+        let coachProfileName = null;
+        try {
+          const stored = localStorage.getItem(
+            "double-j-sports-active-coach-profile"
+          );
+          if (stored) {
+            coachProfileName = JSON.parse(stored)?.name || null;
+          }
+        } catch (e) {
+          coachProfileName = null;
+        }
+        setDisplayName(coachProfileName || profile?.name || user.email);
+      } else if (admin) {
         setDisplayName(profile?.name || user.email);
       } else if (selfMember) {
         setDisplayName(selfMember.name);

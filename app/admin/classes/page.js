@@ -72,6 +72,9 @@ export default function AdminClassesPage() {
   const [savingClassCoach, setSavingClassCoach] = useState(false);
   const [removingClassCoachId, setRemovingClassCoachId] = useState(null);
   const [classCoachMsg, setClassCoachMsg] = useState("");
+  const [editingLocationClassId, setEditingLocationClassId] = useState(null);
+  const [locationDraft, setLocationDraft] = useState("");
+  const [savingLocation, setSavingLocation] = useState(false);
   const [assigningClassId, setAssigningClassId] = useState(null);
   const [editingClassId, setEditingClassId] = useState(null);
   const [editProgram, setEditProgram] = useState("kids");
@@ -363,6 +366,17 @@ export default function AdminClassesPage() {
     setRemovingClassCoachId(null);
   }
 
+  async function handleSaveLocation(classId) {
+    setSavingLocation(true);
+    await supabase
+      .from("classes")
+      .update({ location: locationDraft || null })
+      .eq("id", classId);
+    await loadClasses();
+    setSavingLocation(false);
+    setEditingLocationClassId(null);
+  }
+
   function startEdit(c) {
     setEditingClassId(c.id);
     setEditProgram(c.program);
@@ -571,13 +585,154 @@ export default function AdminClassesPage() {
 
             {selectedDaySessions.map((s) => {
               const info = classMap[s.class_id];
+              const assignedCoaches = classCoachesByClass[s.class_id] || [];
               return (
-                <div key={s.id} style={{ padding: "8px 0", borderBottom: "1px solid #f5f5f5", fontSize: 13 }}>
+                <div key={s.id} style={{ padding: "10px 0", borderBottom: "1px solid #f5f5f5", fontSize: 13 }}>
                   <strong>
                     {"[" + (info ? info.program : "") + "] " + (info ? info.class_name : "(알 수 없는 수업)")}
                   </strong>
                   {" · "}
                   {s.start_time ? s.start_time.slice(0, 5) : ""}~{s.end_time ? s.end_time.slice(0, 5) : ""}
+
+                  <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    {assignedCoaches.length === 0 && (
+                      <span style={{ fontSize: 11, color: "#aab9cc" }}>배정된 코치 없음</span>
+                    )}
+                    {assignedCoaches.map((cc) => (
+                      <span
+                        key={cc.id}
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "3px 9px",
+                          borderRadius: 999,
+                          background: cc.coach_role === "main" ? "#e9f1fb" : "#eef1f5",
+                          color: cc.coach_role === "main" ? BLUE : "#8ea0b8",
+                        }}
+                      >
+                        {(cc.coach_role === "main" ? "메인 " : "보조 ") +
+                          cc.coach_profiles?.name +
+                          (cc.coach_profiles?.profile_type === "coach" ? " 코치" : "")}
+                      </span>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddingCoachForClassId(
+                          addingCoachForClassId === s.class_id ? null : s.class_id
+                        );
+                        setAddCoachProfileId("");
+                        setAddCoachRole("main");
+                        setClassCoachMsg("");
+                      }}
+                      style={{ fontSize: 11, fontWeight: 700, color: BLUE, background: "none", border: "1px dashed #b7d2ec", borderRadius: 999, padding: "3px 10px", cursor: "pointer" }}
+                    >
+                      코치 추가/수정
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingLocationClassId(
+                          editingLocationClassId === s.class_id ? null : s.class_id
+                        );
+                        setLocationDraft(info?.location || "");
+                      }}
+                      style={{ fontSize: 11, fontWeight: 700, color: "#8ea0b8", background: "none", border: "1px dashed #dde3ec", borderRadius: 999, padding: "3px 10px", cursor: "pointer" }}
+                    >
+                      위치 변경
+                    </button>
+                  </div>
+
+                  {editingLocationClassId === s.class_id && (
+                    <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
+                      <input
+                        type="text"
+                        value={locationDraft}
+                        onChange={(e) => setLocationDraft(e.target.value)}
+                        placeholder="예: Frankfurt Training Center"
+                        style={{ flex: 1, padding: 8, fontSize: 12, border: "1px solid #ddd", borderRadius: 6, boxSizing: "border-box" }}
+                      />
+                      <button
+                        type="button"
+                        disabled={savingLocation}
+                        onClick={() => handleSaveLocation(s.class_id)}
+                        style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, border: "none", borderRadius: 6, background: BLUE, color: "white", cursor: "pointer" }}
+                      >
+                        {savingLocation ? "저장 중..." : "저장"}
+                      </button>
+                    </div>
+                  )}
+
+                  {addingCoachForClassId === s.class_id && (
+                    <div style={{ marginTop: 8, padding: 10, background: "#f8fafd", borderRadius: 8 }}>
+                      <select
+                        value={addCoachProfileId}
+                        onChange={(e) => setAddCoachProfileId(e.target.value)}
+                        style={{ width: "100%", padding: 8, fontSize: 12, border: "1px solid #ddd", borderRadius: 6, marginBottom: 6, background: "white" }}
+                      >
+                        <option value="">-- 코치/감독 선택 --</option>
+                        {coachProfiles.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name + (p.profile_type === "coach" ? " 코치" : "")}
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => setAddCoachRole("main")}
+                          style={{
+                            flex: 1, padding: 7, fontSize: 12, fontWeight: 700, borderRadius: 6, cursor: "pointer",
+                            border: addCoachRole === "main" ? "none" : "1px solid #ddd",
+                            background: addCoachRole === "main" ? BLUE : "white",
+                            color: addCoachRole === "main" ? "white" : "#5b7699",
+                          }}
+                        >
+                          메인 코치
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAddCoachRole("assistant")}
+                          style={{
+                            flex: 1, padding: 7, fontSize: 12, fontWeight: 700, borderRadius: 6, cursor: "pointer",
+                            border: addCoachRole === "assistant" ? "none" : "1px solid #ddd",
+                            background: addCoachRole === "assistant" ? BLUE : "white",
+                            color: addCoachRole === "assistant" ? "white" : "#5b7699",
+                          }}
+                        >
+                          보조 코치
+                        </button>
+                      </div>
+                      {classCoachMsg && (
+                        <div style={{ fontSize: 11, color: "#b3261e", marginBottom: 6 }}>{classCoachMsg}</div>
+                      )}
+                      <button
+                        type="button"
+                        disabled={savingClassCoach}
+                        onClick={() => handleAddClassCoach(s.class_id)}
+                        style={{ width: "100%", padding: 8, fontSize: 12, fontWeight: 700, border: "none", borderRadius: 6, background: BLUE, color: "white", cursor: "pointer" }}
+                      >
+                        {savingClassCoach ? "추가 중..." : "추가"}
+                      </button>
+                      {assignedCoaches.length > 0 && (
+                        <div style={{ marginTop: 8 }}>
+                          {assignedCoaches.map((cc) => (
+                            <div key={cc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", fontSize: 12 }}>
+                              <span>{cc.coach_profiles?.name}{cc.coach_profiles?.profile_type === "coach" ? " 코치" : ""} ({cc.coach_role === "main" ? "메인" : "보조"})</span>
+                              <button
+                                type="button"
+                                disabled={removingClassCoachId === cc.id}
+                                onClick={() => handleRemoveClassCoach(cc.id)}
+                                style={{ border: "none", background: "none", color: "#b3261e", fontSize: 11, cursor: "pointer" }}
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -893,6 +1048,7 @@ export default function AdminClassesPage() {
                             {cc.coach_role === "main" ? "메인" : "보조"}
                           </span>
                           {cc.coach_profiles?.name}
+                          {cc.coach_profiles?.profile_type === "coach" ? " 코치" : ""}
                           {""}
                         </span>
                         <button
@@ -916,7 +1072,7 @@ export default function AdminClassesPage() {
                           <option value="">-- 코치/감독 선택 --</option>
                           {coachProfiles.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.name}
+                              {p.name + (p.profile_type === "coach" ? " 코치" : "")}
                             </option>
                           ))}
                         </select>

@@ -37,6 +37,7 @@ function AttendanceInner() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [sessionInfo, setSessionInfo] = useState(null);
+  const [sessionCoaches, setSessionCoaches] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [remainingByMember, setRemainingByMember] = useState({});
   const [updatingId, setUpdatingId] = useState(null);
@@ -73,11 +74,20 @@ function AttendanceInner() {
 
     const { data: session } = await supabase
       .from("class_sessions")
-      .select("id, session_date, start_time, end_time, classes(class_name)")
+      .select("id, session_date, start_time, end_time, class_id, classes(class_name)")
       .eq("id", sessionId)
       .single();
 
     setSessionInfo(session);
+
+    if (session?.class_id) {
+      const { data: cc } = await supabase
+        .from("class_coaches")
+        .select("id, coach_role, coach_profiles(name, profile_type)")
+        .eq("class_id", session.class_id)
+        .order("coach_role", { ascending: true });
+      setSessionCoaches(cc || []);
+    }
 
     const { data: bookingData, error } = await supabase
       .from("bookings")
@@ -188,6 +198,18 @@ function AttendanceInner() {
             {sessionInfo?.session_date} · {sessionInfo?.start_time?.slice(0, 5)}~
             {sessionInfo?.end_time?.slice(0, 5)}
           </div>
+          {sessionCoaches.length > 0 && (
+            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 4 }}>
+              {sessionCoaches
+                .map(
+                  (cc) =>
+                    (cc.coach_role === "main" ? "메인 " : "보조 ") +
+                    cc.coach_profiles?.name +
+                    (cc.coach_profiles?.profile_type === "coach" ? " 코치" : "")
+                )
+                .join(" · ")}
+            </div>
+          )}
           <div
             style={{
               display: "flex",
