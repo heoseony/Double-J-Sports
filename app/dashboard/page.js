@@ -102,7 +102,7 @@ export default function DashboardPage() {
 
       const { data: profile } = await supabase
         .from("users")
-        .select("role")
+        .select("role, name")
         .eq("id", user.id)
         .single();
 
@@ -122,10 +122,14 @@ export default function DashboardPage() {
         setAdultMemberName(selfMember.name);
       }
 
-      if (guardian) {
-        setDisplayName(guardian.name);
+      if (admin || coach) {
+        setDisplayName(profile?.name || user.email);
       } else if (selfMember) {
         setDisplayName(selfMember.name);
+      } else if (guardian) {
+        // 학부모 이름 대신, 첫 번째로 등록한 자녀 이름을 우선 표시한다.
+        // (자녀가 아직 없으면 학부모 본인 이름으로 대체)
+        setDisplayName(guardian.name);
       } else {
         setDisplayName(user.email);
       }
@@ -153,6 +157,11 @@ export default function DashboardPage() {
           .order("created_at", { ascending: true });
 
         setChildren(childList || []);
+
+        // 첫 번째로 등록한 자녀 이름을 인사말에 우선 표시 (요청사항)
+        if (childList && childList.length > 0) {
+          setDisplayName(childList[0].name);
+        }
 
         const childIds = (childList || []).map((c) => c.id);
 
@@ -271,7 +280,7 @@ export default function DashboardPage() {
     );
   }
 
-  const roleLabel = isAdmin ? "관리자" : isCoach ? "코치" : "학부모";
+  const roleLabel = isAdmin ? "감독" : isCoach ? "코치" : "학부모";
   const greetingSub = isAdmin
     ? "아카데미 운영을 효율적으로 관리하세요."
     : isCoach
@@ -344,18 +353,50 @@ export default function DashboardPage() {
         {/* 인사말 카드 */}
         <div
           style={{
-            background: `linear-gradient(135deg, ${BLUE} 0%, #2a5f94 100%)`,
+            position: "relative",
+            overflow: "hidden",
+            background: isCoach
+              ? `linear-gradient(90deg, rgba(15,35,70,0.55) 0%, rgba(15,35,70,0.15) 60%), url(/banner-coach.jpg)`
+              : isAdmin
+              ? `linear-gradient(90deg, rgba(10,20,50,0.55) 0%, rgba(10,20,50,0.15) 60%), url(/banner-admin.jpg)`
+              : `linear-gradient(135deg, ${BLUE} 0%, #2a5f94 100%)`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
             borderRadius: 18,
             padding: 22,
             color: "white",
             marginBottom: 18,
           }}
         >
+          {/* 장식용 축구공 아이콘 (학부모 화면에만 — 코치/감독은 실제 사진으로 대체) */}
+          {!isCoach && !isAdmin && (
+            <svg
+              width="90"
+              height="90"
+              viewBox="0 0 90 90"
+              style={{ position: "absolute", top: -20, right: -20, opacity: 0.25 }}
+              aria-hidden="true"
+            >
+              <circle cx="45" cy="45" r="40" fill="white" />
+              <polygon points="45,25 60,36 54,55 36,55 30,36" fill="#2a5f94" />
+              <path
+                d="M45,25 L45,10 M60,36 L74,27 M54,55 L62,72 M36,55 L28,72 M30,36 L16,27"
+                stroke="#2a5f94"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+          )}
+
           <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 4 }}>
             안녕하세요!
           </div>
           <div style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>
-            {displayName || email}
+            {isAdmin ? (
+              "정연웅 • 정연황"
+            ) : (
+              displayName || email
+            )}
             {roleLabel === "학부모" ? " 학부모님" : ` ${roleLabel}님`}
           </div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>{greetingSub}</div>
