@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,19 @@ const WEEKDAY_LABELS = {
   5: "금",
   6: "토",
 };
+
+const CAL_WEEKDAY_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
+const BLUE = "#3B82C4";
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function toDateStr(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+function todayStr() {
+  return toDateStr(new Date());
+}
 
 export default function AdminClassesPage() {
   const router = useRouter();
@@ -44,6 +57,22 @@ export default function AdminClassesPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [togglingId, setTogglingId] = useState(null);
 
+  // ── 캘린더 관련 상태 ──────────────────────────
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+  const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [monthSessions, setMonthSessions] = useState([]); // 이번 달 전체 세션(클래스 정보 포함)
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
+  const [showAddSession, setShowAddSession] = useState(false);
+  const [addClassId, setAddClassId] = useState("");
+  const [addStartTime, setAddStartTime] = useState("16:00");
+  const [addEndTime, setAddEndTime] = useState("17:00");
+  const [addSaving, setAddSaving] = useState(false);
+  const [addMsg, setAddMsg] = useState("");
+
   async function loadClasses() {
     const { data, error } = await supabase
       .from("classes")
@@ -64,6 +93,24 @@ export default function AdminClassesPage() {
       .select("id, email")
       .eq("role", "coach");
     setCoaches(data || []);
+  }
+
+  async function loadMonthSessions(monthDate) {
+    setLoadingCalendar(true);
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    const firstDay = toDateStr(new Date(year, month, 1));
+    const lastDay = toDateStr(new Date(year, month + 1, 0));
+
+    const { data } = await supabase
+      .from("class_sessions")
+      .select("id, session_date, start_time, end_time, class_id, status")
+      .gte("session_date", firstDay)
+      .lte("session_date", lastDay)
+      .order("start_time", { ascending: true });
+
+    setMonthSessions(data || []);
+    setLoadingCalendar(false);
   }
 
   useEffect(() => {
@@ -91,11 +138,81 @@ export default function AdminClassesPage() {
       setIsAdmin(true);
       await loadClasses();
       await loadCoaches();
+      await loadMonthSessions(currentMonth);
       setLoading(false);
     }
 
     check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  useEffect(() => {
+    if (!loading) {
+      loadMonthSessions(currentMonth);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMonth]);
+
+  function goPrevMonth() {
+    const d = new Date(currentMonth);
+    d.setMonth(d.getMonth() - 1);
+    setCurrentMonth(d);
+  }
+  function goNextMonth() {
+    const d = new Date(currentMonth);
+    d.setMonth(d.getMonth() + 1);
+    setCurrentMonth(d);
+  }
+
+  const classMap = {};
+  classes.forEach((c) => (classMap[c.id] = c));
+
+  const sessionsByDate = {};
+  monthSessions.forEach((s) => {
+    if (!sessionsByDate[s.session_date]) sessionsByDate[s.session_date] = [];
+    sessionsByDate[s.session_date].push(s);
+  });
+
+  const calendarCells = (() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push(`${year}-${pad2(month + 1)}-${pad2(d)}`);
+    }
+    return cells;
+  })();
+
+  async function handleAddSession() {
+    setAddMsg("");
+    if (!addClassId) {
+      setAddMsg("추가할 수업(상품)을 선택해주세요.");
+      return;
+    }
+    setAddSaving(true);
+
+    const { error } = await supabase.from("class_sessions").insert({
+      class_id: addClassId,
+      session_date: selectedDate,
+      start_time: addStartTime,
+      end_time: addEndTime,
+      status: "scheduled",
+    });
+
+    setAddSaving(false);
+
+    if (error) {
+      setAddMsg("추가 실패: " + error.message);
+      return;
+    }
+
+    setAddMsg("이 날짜에 수업이 추가되었습니다. 계속해서 다른 수업도 추가할 수 있습니다.");
+    await loadMonthSessions(currentMonth);
+  }
 
   async function handleGenerateSessions() {
     setGenerateMsg("");
@@ -142,6 +259,7 @@ export default function AdminClassesPage() {
 
     setGenerating(false);
     setGenerateMsg(`${createdCount}개의 새 세션이 생성되었습니다. (앞으로 4주치)`);
+    await loadMonthSessions(currentMonth);
   }
 
   async function handleAssignCoach(classId, coachId) {
@@ -235,12 +353,317 @@ export default function AdminClassesPage() {
     );
   }
 
+  const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
+  const selectedDaySessions = sessionsByDate[selectedDate] || [];
+
   return (
     <main className="page">
       <div className="brand">Double J Sports</div>
       <div className="subtitle">수업 관리 (반복 스케줄)</div>
 
+      {/* ── 캘린더 카드 (신규) ────────────────────── */}
       <div className="card">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 10,
+          }}
+        >
+          <button
+            type="button"
+            onClick={goPrevMonth}
+            style={{
+              padding: "6px 12px",
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "white",
+              cursor: "pointer",
+            }}
+          >
+            ‹
+          </button>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{monthLabel}</div>
+          <button
+            type="button"
+            onClick={goNextMonth}
+            style={{
+              padding: "6px 12px",
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "white",
+              cursor: "pointer",
+            }}
+          >
+            ›
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: 4,
+            fontSize: 12,
+            textAlign: "center",
+            color: "#777",
+            marginBottom: 4,
+          }}
+        >
+          {CAL_WEEKDAY_HEADERS.map((w) => (
+            <div key={w}>{w}</div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: 4,
+          }}
+        >
+          {calendarCells.map((dateStr, idx) => {
+            if (!dateStr) return <div key={`empty-${idx}`} />;
+            const daySessions = sessionsByDate[dateStr] || [];
+            const isSelected = dateStr === selectedDate;
+            const isToday = dateStr === todayStr();
+            const dayNum = Number(dateStr.split("-")[2]);
+
+            return (
+              <button
+                type="button"
+                key={dateStr}
+                onClick={() => {
+                  setSelectedDate(dateStr);
+                  setShowAddSession(false);
+                  setAddMsg("");
+                }}
+                style={{
+                  aspectRatio: "1",
+                  padding: 2,
+                  border: isSelected ? `2px solid ${BLUE}` : "1px solid #eee",
+                  borderRadius: 8,
+                  background: isSelected ? "#e9f1fb" : "white",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 13,
+                  fontWeight: isToday ? 700 : 400,
+                  color: isToday ? BLUE : "#1a1a1a",
+                }}
+              >
+                <span>{dayNum}</span>
+                {daySessions.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: BLUE,
+                      fontWeight: 700,
+                      marginTop: 1,
+                    }}
+                  >
+                    ●{daySessions.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {loadingCalendar && (
+          <p style={{ fontSize: 12, color: "#999", marginTop: 10 }}>
+            불러오는 중...
+          </p>
+        )}
+
+        {/* 선택한 날짜의 세션 목록 */}
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #eee" }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
+            {selectedDate} 수업 ({selectedDaySessions.length}개)
+          </div>
+
+          {selectedDaySessions.length === 0 && (
+            <p style={{ fontSize: 13, color: "#777", margin: 0 }}>
+              이 날짜에 등록된 수업이 없습니다.
+            </p>
+          )}
+
+          {selectedDaySessions.map((s) => {
+            const info = classMap[s.class_id];
+            return (
+              <div
+                key={s.id}
+                style={{
+                  padding: "8px 0",
+                  borderBottom: "1px solid #f5f5f5",
+                  fontSize: 13,
+                }}
+              >
+                <strong>[{info?.program}] {info?.class_name || "(알 수 없는 수업)"}</strong>
+                {" · "}
+                {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)}
+              </div>
+            );
+          })}
+
+          {!showAddSession ? (
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddSession(true);
+                setAddClassId("");
+                setAddMsg("");
+              }}
+              style={{
+                marginTop: 12,
+                padding: "10px 16px",
+                fontSize: 13,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 8,
+                background: BLUE,
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              + 이 날짜에 수업 추가
+            </button>
+          ) : (
+            <div
+              style={{
+                marginTop: 12,
+                padding: 12,
+                background: "#f8fafd",
+                borderRadius: 10,
+              }}
+            >
+              <label style={{ fontSize: 12 }}>추가할 수업(상품)</label>
+              <select
+                value={addClassId}
+                onChange={(e) => {
+                  const c = classMap[e.target.value];
+                  setAddClassId(e.target.value);
+                  if (c) {
+                    setAddStartTime(c.start_time?.slice(0, 5) || "16:00");
+                    setAddEndTime(c.end_time?.slice(0, 5) || "17:00");
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  fontSize: 13,
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  background: "white",
+                }}
+              >
+                <option value="">-- 선택 --</option>
+                {classes
+                  .filter((c) => c.active)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      [{c.program}] {c.class_name} ({WEEKDAY_LABELS[c.weekday]}요일 기본{" "}
+                      {c.start_time?.slice(0, 5)}~{c.end_time?.slice(0, 5)})
+                    </option>
+                  ))}
+              </select>
+
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12 }}>시작 시간</label>
+                  <input
+                    type="time"
+                    value={addStartTime}
+                    onChange={(e) => setAddStartTime(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      fontSize: 13,
+                      border: "1px solid #ddd",
+                      borderRadius: 8,
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12 }}>종료 시간</label>
+                  <input
+                    type="time"
+                    value={addEndTime}
+                    onChange={(e) => setAddEndTime(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      fontSize: 13,
+                      border: "1px solid #ddd",
+                      borderRadius: 8,
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {addMsg && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: addMsg.includes("실패") ? "#b3261e" : BLUE,
+                    marginBottom: 8,
+                    fontWeight: 600,
+                  }}
+                >
+                  {addMsg}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  disabled={addSaving}
+                  onClick={handleAddSession}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "none",
+                    borderRadius: 8,
+                    background: BLUE,
+                    color: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  {addSaving ? "추가 중..." : "추가"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSession(false)}
+                  style={{
+                    padding: "10px 16px",
+                    fontSize: 13,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  닫기
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>
+                * 추가 후에도 이 화면에 그대로 남아있어서, 같은 날짜에 다른 수업을 계속 이어서 추가할 수 있습니다.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 기존 반복 스케줄 생성 폼 (그대로 유지) ────────────────────── */}
+      <div className="card" style={{ marginTop: 20 }}>
         <form onSubmit={handleSubmit}>
           <label>프로그램</label>
           <select
