@@ -1,9 +1,33 @@
-﻿"use client";
+"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+
+const BLUE = "#3B82C4";
+
+function BackIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  );
+}
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+function XIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
 
 function AttendanceInner() {
   const router = useRouter();
@@ -111,195 +135,262 @@ function AttendanceInner() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="subtitle">불러오는 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
       </main>
     );
   }
 
+  const attendedCount = bookings.filter((b) => b.status === "attended").length;
+  const absentCount = bookings.filter((b) => b.status === "absent").length;
+  const totalCount = bookings.filter((b) => b.status !== "cancelled_same_day").length;
+
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">
-        {sessionInfo?.session_date} {sessionInfo?.start_time?.slice(0, 5)} ·{" "}
-        {sessionInfo?.classes?.class_name} 출석 체크
+    <main style={{ background: "#f3f7fc", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      {/* 상단 바 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 18px 4px" }}>
+        <Link href="/coach" style={{ color: "#1b3a63", display: "flex" }}>
+          <BackIcon />
+        </Link>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>출석 체크</div>
       </div>
 
-      <div className="card">
-        {errorMsg && <div className="message error">{errorMsg}</div>}
-
-        {bookings.length === 0 && !errorMsg && (
-          <p style={{ fontSize: 14, color: "#777" }}>
-            이 수업에 출석체크할 회원이 없습니다.
-          </p>
+      <div style={{ padding: "10px 18px 0" }}>
+        {errorMsg && (
+          <div
+            style={{
+              background: "#fdecec",
+              color: "#b3261e",
+              padding: 12,
+              borderRadius: 10,
+              fontSize: 13,
+              marginBottom: 12,
+            }}
+          >
+            {errorMsg}
+          </div>
         )}
 
-        {bookings.map((b) => {
-          const remaining = remainingByMember[b.member_id];
-          const isSameDayCancel = b.status === "cancelled_same_day";
-          const isDecided = b.status === "attended" || b.status === "absent";
-          const showButtons =
-            !isSameDayCancel && (!isDecided || editingBookingId === b.id);
+        {/* 수업 정보 카드 */}
+        <div
+          style={{
+            background: `linear-gradient(135deg, ${BLUE} 0%, #2a5f94 100%)`,
+            borderRadius: 16,
+            padding: 18,
+            color: "white",
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 800 }}>
+            {sessionInfo?.classes?.class_name}
+          </div>
+          <div style={{ fontSize: 13, opacity: 0.9, marginTop: 4 }}>
+            {sessionInfo?.session_date} · {sessionInfo?.start_time?.slice(0, 5)}~
+            {sessionInfo?.end_time?.slice(0, 5)}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              marginTop: 12,
+              fontSize: 12,
+              opacity: 0.95,
+            }}
+          >
+            <span>출석 {attendedCount}</span>
+            <span>결석 {absentCount}</span>
+            <span>전체 {totalCount}명</span>
+          </div>
+        </div>
 
-          return (
-            <div
-              key={b.id}
-              style={{
-                padding: "14px 0",
-                borderBottom: "1px solid #eee",
-              }}
-            >
+        {/* 참가자 목록 */}
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            overflow: "hidden",
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          {bookings.length === 0 && !errorMsg && (
+            <p style={{ fontSize: 14, color: "#8ea0b8", padding: 18, margin: 0 }}>
+              이 수업에 출석체크할 회원이 없습니다.
+            </p>
+          )}
+
+          {bookings.map((b, idx) => {
+            const remaining = remainingByMember[b.member_id];
+            const isSameDayCancel = b.status === "cancelled_same_day";
+            const isDecided = b.status === "attended" || b.status === "absent";
+            const showButtons =
+              !isSameDayCancel && (!isDecided || editingBookingId === b.id);
+
+            return (
               <div
+                key={b.id}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  padding: "14px 16px",
+                  borderBottom: idx === bookings.length - 1 ? "none" : "1px solid #f0f3f8",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 8,
+                    justifyContent: "space-between",
                   }}
                 >
-                  <span style={{ fontSize: 16, fontWeight: 700 }}>
-                    {b.members?.name || "(알 수 없음)"}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                      {b.members?.name || "(알 수 없음)"}
+                    </span>
 
-                  {!showButtons && b.status === "attended" && (
-                    <span
+                    {!showButtons && b.status === "attended" && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#2e7d32",
+                          background: "#e8f5ec",
+                          padding: "3px 9px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        <CheckIcon /> 출석
+                      </span>
+                    )}
+
+                    {!showButtons && b.status === "absent" && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#b3261e",
+                          background: "#fdecec",
+                          padding: "3px 9px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        <XIcon /> 결석
+                      </span>
+                    )}
+
+                    {isSameDayCancel && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#8ea0b8",
+                          background: "#f0f3f8",
+                          padding: "3px 9px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        당일취소
+                      </span>
+                    )}
+                  </div>
+
+                  {remaining !== undefined && (
+                    <div
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                        fontSize: 13,
+                        fontSize: 11,
                         fontWeight: 700,
-                        color: "#0b3d2e",
+                        color: remaining > 0 ? BLUE : "#b3261e",
+                        background: remaining > 0 ? "#e9f1fb" : "#fdecec",
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      <span style={{ color: "#2e7d32" }}>●</span> 출석
-                    </span>
-                  )}
-
-                  {!showButtons && b.status === "absent" && (
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "#b3261e",
-                      }}
-                    >
-                      <span>✕</span> 결석
-                    </span>
-                  )}
-
-                  {isSameDayCancel && (
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "#999",
-                      }}
-                    >
-                      당일취소
-                    </span>
+                      잔여 {remaining}회
+                    </div>
                   )}
                 </div>
 
-                {remaining !== undefined && (
+                {showButtons && (
                   <div
                     style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: remaining > 0 ? "#0b3d2e" : "#b3261e",
-                      background: remaining > 0 ? "#e8f5ec" : "#fdecec",
-                      padding: "4px 10px",
-                      borderRadius: 999,
-                      whiteSpace: "nowrap",
+                      marginTop: 10,
+                      display: "flex",
+                      gap: 8,
                     }}
                   >
-                    잔여 {remaining}회
+                    <button
+                      type="button"
+                      disabled={updatingId === b.id}
+                      onClick={() => handleSetStatus(b.id, "attended")}
+                      style={{
+                        flex: 1,
+                        padding: "11px 0",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        borderRadius: 10,
+                        cursor: "pointer",
+                        border: b.status === "attended" ? "none" : "1px solid #e5eaf2",
+                        background: b.status === "attended" ? "#2e7d32" : "white",
+                        color: b.status === "attended" ? "white" : "#2e7d32",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <CheckIcon /> 출석
+                    </button>
+                    <button
+                      type="button"
+                      disabled={updatingId === b.id}
+                      onClick={() => handleSetStatus(b.id, "absent")}
+                      style={{
+                        flex: 1,
+                        padding: "11px 0",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        borderRadius: 10,
+                        cursor: "pointer",
+                        border: b.status === "absent" ? "none" : "1px solid #e5eaf2",
+                        background: b.status === "absent" ? "#b3261e" : "white",
+                        color: b.status === "absent" ? "white" : "#b3261e",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <XIcon /> 결석
+                    </button>
                   </div>
                 )}
+
+                {!showButtons && isDecided && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingBookingId(b.id)}
+                    style={{
+                      marginTop: 8,
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: "1px solid #e5eaf2",
+                      borderRadius: 8,
+                      background: "white",
+                      color: "#5b7699",
+                      cursor: "pointer",
+                    }}
+                  >
+                    수정
+                  </button>
+                )}
               </div>
-
-              {showButtons && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "flex",
-                    border: "1px solid #ddd",
-                    borderRadius: 10,
-                    overflow: "hidden",
-                  }}
-                >
-                  <button
-                    type="button"
-                    disabled={updatingId === b.id}
-                    onClick={() => handleSetStatus(b.id, "attended")}
-                    style={{
-                      flex: 1,
-                      padding: "12px 0",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      border: "none",
-                      cursor: "pointer",
-                      background:
-                        b.status === "attended" ? "#0b3d2e" : "white",
-                      color: b.status === "attended" ? "white" : "#0b3d2e",
-                    }}
-                  >
-                    ✓ 출석
-                  </button>
-                  <button
-                    type="button"
-                    disabled={updatingId === b.id}
-                    onClick={() => handleSetStatus(b.id, "absent")}
-                    style={{
-                      flex: 1,
-                      padding: "12px 0",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      border: "none",
-                      borderLeft: "1px solid #ddd",
-                      cursor: "pointer",
-                      background: b.status === "absent" ? "#b3261e" : "white",
-                      color: b.status === "absent" ? "white" : "#b3261e",
-                    }}
-                  >
-                    ✕ 결석
-                  </button>
-                </div>
-              )}
-
-              {!showButtons && isDecided && (
-                <button
-                  type="button"
-                  onClick={() => setEditingBookingId(b.id)}
-                  style={{
-                    marginTop: 8,
-                    padding: "6px 14px",
-                    fontSize: 13,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    background: "white",
-                    color: "#333",
-                    cursor: "pointer",
-                  }}
-                >
-                  수정
-                </button>
-              )}
-            </div>
-          );
-        })}
-
-        <div className="link-row">
-          <Link href="/coach">← 코치 홈으로</Link>
+            );
+          })}
         </div>
       </div>
     </main>
@@ -310,8 +401,8 @@ export default function AttendancePage() {
   return (
     <Suspense
       fallback={
-        <main className="page">
-          <div className="subtitle">불러오는 중...</div>
+        <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+          <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
         </main>
       }
     >
