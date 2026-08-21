@@ -329,7 +329,6 @@ export default function DashboardPage() {
   return (
     <main
       style={{
-        minHeight: "100vh",
         background: "#f3f7fc",
         paddingBottom: 12,
       }}
