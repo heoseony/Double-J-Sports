@@ -347,8 +347,8 @@ export default function AdminClassesPage() {
 
   if (loading || !isAdmin) {
     return (
-      <main className="page">
-        <div className="subtitle">확인 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>확인 중...</div>
       </main>
     );
   }
@@ -357,12 +357,20 @@ export default function AdminClassesPage() {
   const selectedDaySessions = sessionsByDate[selectedDate] || [];
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">수업 관리 (반복 스케줄)</div>
+    <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 18px 4px" }}>
+        <Link href="/admin" style={{ color: "#1b3a63", display: "flex" }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>수업 관리</div>
+      </div>
 
-      {/* ── 캘린더 카드 (신규) ────────────────────── */}
-      <div className="card">
+      <div style={{ padding: "10px 18px 0" }}>
+
+      {/* ── 캘린더 카드 ────────────────────── */}
+      <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
         <div
           style={{
             display: "flex",
@@ -663,7 +671,7 @@ export default function AdminClassesPage() {
       </div>
 
       {/* ── 기존 반복 스케줄 생성 폼 (그대로 유지) ────────────────────── */}
-      <div className="card" style={{ marginTop: 20 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
         <form onSubmit={handleSubmit}>
           <label>프로그램</label>
           <select
@@ -736,19 +744,22 @@ export default function AdminClassesPage() {
 
           {errorMsg && <div className="message error">{errorMsg}</div>}
 
-          <button className="primary" type="submit" disabled={saving}>
+          <button
+            type="submit"
+            disabled={saving}
+            style={{ width: "100%", marginTop: 20, padding: 15, fontSize: 15, fontWeight: 700, color: "white", background: "#3B82C4", border: "none", borderRadius: 10, cursor: "pointer" }}
+          >
             {saving ? "생성 중..." : "수업 생성"}
           </button>
         </form>
       </div>
 
-      <div className="card" style={{ marginTop: 20 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
         <div style={{ fontWeight: 700, marginBottom: 10 }}>등록된 수업</div>
 
         {classes.length > 0 && (
           <button
-            className="primary"
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: 16, width: "100%", padding: 14, fontSize: 14, fontWeight: 700, color: "white", background: "#3B82C4", border: "none", borderRadius: 10, cursor: "pointer" }}
             onClick={handleGenerateSessions}
             disabled={generating}
           >
@@ -892,7 +903,7 @@ export default function AdminClassesPage() {
                       fontSize: 13,
                       border: "none",
                       borderRadius: 8,
-                      background: "#0b3d2e",
+                      background: "#3B82C4",
                       color: "white",
                       cursor: "pointer",
                     }}
@@ -986,8 +997,8 @@ export default function AdminClassesPage() {
                     fontSize: 13,
                     border: c.active
                       ? "1px solid #b3261e"
-                      : "1px solid #0b3d2e",
-                    color: c.active ? "#b3261e" : "#0b3d2e",
+                      : "1px solid #3B82C4",
+                    color: c.active ? "#b3261e" : "#3B82C4",
                     borderRadius: 8,
                     background: "white",
                     cursor: "pointer",
@@ -1007,8 +1018,10 @@ export default function AdminClassesPage() {
         })}
       </div>
 
-      <div className="link-row">
-        <Link href="/admin">← 관리자 홈으로</Link>
+      </div>
+
+      <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
+        <Link href="/admin" style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}>← 관리자 홈으로</Link>
       </div>
     </main>
   );
