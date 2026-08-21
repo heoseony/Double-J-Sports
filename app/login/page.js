@@ -61,7 +61,10 @@ export default function LoginPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(180deg, #eaf2fb 0%, #d9e9fa 100%)",
+        backgroundImage: "url(/login-bg.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "top center",
+        backgroundRepeat: "no-repeat",
         display: "flex",
         justifyContent: "center",
         padding: "32px 16px",
@@ -127,10 +130,13 @@ export default function LoginPage() {
                   top: "50%",
                   transform: "translateY(-50%)",
                   color: "#9db3cc",
-                  fontSize: 16,
+                  display: "flex",
                 }}
               >
-                ✉
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="m22 6-10 7L2 6" />
+                </svg>
               </span>
               <input
                 type="email"
@@ -169,10 +175,13 @@ export default function LoginPage() {
                   top: "50%",
                   transform: "translateY(-50%)",
                   color: "#9db3cc",
-                  fontSize: 16,
+                  display: "flex",
                 }}
               >
-                🔒
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
               </span>
               <input
                 type={showPassword ? "text" : "password"}
@@ -203,11 +212,23 @@ export default function LoginPage() {
                   border: "none",
                   cursor: "pointer",
                   color: "#9db3cc",
-                  fontSize: 16,
                   padding: 4,
+                  display: "flex",
                 }}
               >
-                {showPassword ? "🙈" : "👁"}
+                {showPassword ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" />
+                    <path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61" />
+                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                    <line x1="2" y1="2" x2="22" y2="22" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
               </button>
             </div>
 
@@ -354,45 +375,6 @@ export default function LoginPage() {
               회원가입
             </Link>
           </div>
-        </div>
-
-        {/* 하단 장식: 언덕 + 축구공 + 골대 */}
-        <div style={{ marginTop: 32, marginBottom: -32 }}>
-          <svg
-            viewBox="0 0 420 140"
-            width="100%"
-            height="140"
-            preserveAspectRatio="xMidYMax meet"
-            aria-hidden="true"
-          >
-            <path
-              d="M0 90 Q 90 40 180 85 T 420 80 L420 140 L0 140 Z"
-              fill="#c9def4"
-            />
-            <path
-              d="M0 110 Q 110 70 220 108 T 420 105 L420 140 L0 140 Z"
-              fill="#aecdec"
-            />
-            {/* 골대 */}
-            <g transform="translate(300, 55)" stroke="#8fb3dc" strokeWidth="3" fill="none">
-              <path d="M0 55 L0 0 L55 0 L55 55" />
-              <path d="M0 55 L10 62 M55 55 L45 62" />
-              <line x1="0" y1="10" x2="0" y2="55" strokeDasharray="4 4" strokeWidth="1.5" />
-            </g>
-            {/* 축구공 */}
-            <g transform="translate(95, 95)">
-              <circle r="20" fill="white" stroke="#8fb3dc" strokeWidth="2.5" />
-              <polygon
-                points="0,-9 8,-3 5,7 -5,7 -8,-3"
-                fill="#8fb3dc"
-              />
-              <line x1="0" y1="-20" x2="0" y2="-9" stroke="#8fb3dc" strokeWidth="2" />
-              <line x1="17" y1="-11" x2="8" y2="-3" stroke="#8fb3dc" strokeWidth="2" />
-              <line x1="10" y1="18" x2="5" y2="7" stroke="#8fb3dc" strokeWidth="2" />
-              <line x1="-10" y1="18" x2="-5" y2="7" stroke="#8fb3dc" strokeWidth="2" />
-              <line x1="-17" y1="-11" x2="-8" y2="-3" stroke="#8fb3dc" strokeWidth="2" />
-            </g>
-          </svg>
         </div>
       </div>
     </main>
