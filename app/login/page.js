@@ -355,6 +355,45 @@ export default function LoginPage() {
             </Link>
           </div>
         </div>
+
+        {/* 하단 장식: 언덕 + 축구공 + 골대 */}
+        <div style={{ marginTop: 32, marginBottom: -32 }}>
+          <svg
+            viewBox="0 0 420 140"
+            width="100%"
+            height="140"
+            preserveAspectRatio="xMidYMax meet"
+            aria-hidden="true"
+          >
+            <path
+              d="M0 90 Q 90 40 180 85 T 420 80 L420 140 L0 140 Z"
+              fill="#c9def4"
+            />
+            <path
+              d="M0 110 Q 110 70 220 108 T 420 105 L420 140 L0 140 Z"
+              fill="#aecdec"
+            />
+            {/* 골대 */}
+            <g transform="translate(300, 55)" stroke="#8fb3dc" strokeWidth="3" fill="none">
+              <path d="M0 55 L0 0 L55 0 L55 55" />
+              <path d="M0 55 L10 62 M55 55 L45 62" />
+              <line x1="0" y1="10" x2="0" y2="55" strokeDasharray="4 4" strokeWidth="1.5" />
+            </g>
+            {/* 축구공 */}
+            <g transform="translate(95, 95)">
+              <circle r="20" fill="white" stroke="#8fb3dc" strokeWidth="2.5" />
+              <polygon
+                points="0,-9 8,-3 5,7 -5,7 -8,-3"
+                fill="#8fb3dc"
+              />
+              <line x1="0" y1="-20" x2="0" y2="-9" stroke="#8fb3dc" strokeWidth="2" />
+              <line x1="17" y1="-11" x2="8" y2="-3" stroke="#8fb3dc" strokeWidth="2" />
+              <line x1="10" y1="18" x2="5" y2="7" stroke="#8fb3dc" strokeWidth="2" />
+              <line x1="-10" y1="18" x2="-5" y2="7" stroke="#8fb3dc" strokeWidth="2" />
+              <line x1="-17" y1="-11" x2="-8" y2="-3" stroke="#8fb3dc" strokeWidth="2" />
+            </g>
+          </svg>
+        </div>
       </div>
     </main>
   );
