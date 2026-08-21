@@ -70,8 +70,8 @@ const NAV_BY_ROLE = {
   ],
   coach: [
     { label: "홈", href: "/dashboard", Icon: HomeIcon },
-    { label: "출석체크", href: "/coach", Icon: CheckCircleIcon },
     { label: "수업관리", href: "/coach", Icon: CalendarIcon },
+    { label: "프로필 변경", href: null, Icon: PeopleIcon, disabled: true },
     { label: "갤러리", href: "/photos", Icon: ImageIcon },
     { label: "더보기", href: "/more", Icon: MenuIcon },
   ],
@@ -127,6 +127,12 @@ export default function BottomNav() {
 
   const items = NAV_BY_ROLE[role] || NAV_BY_ROLE.guardian;
 
+  // 여러 탭이 같은 경로를 가리키는 경우(예: 코치의 "출석체크"/"수업관리"가 둘 다 /coach)
+  // 동시에 활성화되지 않도록, 정확히 하나의 탭만 활성 상태로 고른다.
+  const activeIndex = items.findIndex((item) =>
+    item.href === "/dashboard" ? pathname === "/dashboard" : pathname?.startsWith(item.href)
+  );
+
   return (
     <div
       style={{
@@ -141,27 +147,27 @@ export default function BottomNav() {
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
         paddingTop: 10,
         zIndex: 50,
-        zIndex: 50,
       }}
     >
-      {items.map((item) => {
-        const active =
-          item.href === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname?.startsWith(item.href);
-        const color = active ? BLUE : "#9aa8bc";
+      {items.map((item, i) => {
+        const active = i === activeIndex;
+        const color = item.disabled ? "#c2cbd9" : active ? BLUE : "#9aa8bc";
 
         return (
           <button
             key={item.label}
             type="button"
-            onClick={() => router.push(item.href)}
+            disabled={item.disabled}
+            onClick={() => {
+              if (item.disabled || !item.href) return;
+              router.push(item.href);
+            }}
             style={{
               flex: 1,
               padding: "6px 0 8px",
               border: "none",
               background: "none",
-              cursor: "pointer",
+              cursor: item.disabled ? "default" : "pointer",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
