@@ -19,7 +19,7 @@ function monthLabelEn(d) {
 export async function POST(request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { paymentId } = await request.json();
+    const { paymentId, descriptionOverride } = await request.json();
 
     if (!paymentId) {
       return NextResponse.json(
@@ -110,13 +110,19 @@ export async function POST(request) {
         : Number(payment.total_amount);
 
     // 5. PDF 생성
+    const autoDescription = `Double J GmbH --\nAkademie-Training (${monthLabelEn(
+      issueDate
+    )})`;
+    const finalDescription =
+      descriptionOverride && descriptionOverride.trim()
+        ? descriptionOverride
+        : autoDescription;
+
     const pdfBuffer = await generateInvoicePdfBuffer({
       invoiceNumber,
       issueDate: formatDateDE(issueDate),
       memberNameEn: member.name_en,
-      description: `Double J GmbH --\nAkademie-Training (${monthLabelEn(
-        issueDate
-      )})`,
+      description: finalDescription,
       quantity: sessionsPerMonth,
       unitPrice,
       netAmount: payment.net_amount,

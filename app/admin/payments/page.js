@@ -13,6 +13,16 @@ function todayStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// route.js와 동일한 방식으로 "이번 달" 기본 문구를 미리 계산해서 보여준다.
+// (실제 저장되는 값은 서버에서 다시 한 번 만들어지므로, 여기 값은 어디까지나 미리보기/초안용)
+function defaultDescription() {
+  const monthLabel = new Date().toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+  return `Double J GmbH --\nAkademie-Training (${monthLabel})`;
+}
+
 export default function AdminPaymentsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -24,6 +34,10 @@ export default function AdminPaymentsPage() {
   const [confirmingId, setConfirmingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // 입금확인 클릭 시 뜨는 확인 모달 상태
+  const [modalPayment, setModalPayment] = useState(null); // 확인 중인 결제 건
+  const [descriptionDraft, setDescriptionDraft] = useState("");
 
   async function loadPayments() {
     const { data: pending } = await supabase
@@ -77,10 +91,21 @@ export default function AdminPaymentsPage() {
     check();
   }, [router]);
 
-  async function handleConfirm(payment) {
+  function openConfirmModal(payment) {
+    setModalPayment(payment);
+    setDescriptionDraft(defaultDescription());
+  }
+
+  function closeConfirmModal() {
+    setModalPayment(null);
+    setDescriptionDraft("");
+  }
+
+  async function handleConfirm(payment, description) {
     setErrorMsg("");
     setSuccessMsg("");
     setConfirmingId(payment.id);
+    closeConfirmModal();
 
     // 1. 결제 상태를 confirmed로 변경
     const { error: paymentUpdateError } = await supabase
@@ -128,7 +153,10 @@ export default function AdminPaymentsPage() {
       const res = await fetch("/api/generate-invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId: payment.id }),
+        body: JSON.stringify({
+          paymentId: payment.id,
+          descriptionOverride: description,
+        }),
       });
       const result = await res.json();
 
@@ -229,7 +257,7 @@ export default function AdminPaymentsPage() {
                 cursor: "pointer",
               }}
               disabled={confirmingId === p.id}
-              onClick={() => handleConfirm(p)}
+              onClick={() => openConfirmModal(p)}
             >
               {confirmingId === p.id ? "처리 중..." : "입금확인 · 회원권 활성화"}
             </button>
@@ -272,6 +300,101 @@ export default function AdminPaymentsPage() {
       <div className="link-row">
         <Link href="/admin">← 관리자 홈으로</Link>
       </div>
+
+      {modalPayment && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+          onClick={closeConfirmModal}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: 12,
+              padding: 20,
+              width: "100%",
+              maxWidth: 420,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
+              입금 확인 · 인보이스 발급
+            </div>
+            <p style={{ fontSize: 13, color: "#666", marginTop: 0 }}>
+              {modalPayment.members?.name || "회원"}님 ·{" "}
+              {modalPayment.membership_plans?.name} ·{" "}
+              <strong>{modalPayment.total_amount} EUR</strong>
+            </p>
+
+            <label style={{ fontSize: 13, fontWeight: 700 }}>
+              인보이스 항목 설명 (Description)
+            </label>
+            <textarea
+              value={descriptionDraft}
+              onChange={(e) => setDescriptionDraft(e.target.value)}
+              rows={3}
+              style={{
+                width: "100%",
+                marginTop: 6,
+                padding: 10,
+                fontSize: 14,
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                resize: "vertical",
+                fontFamily: "inherit",
+              }}
+            />
+            <p style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
+              보통 자동으로 채워진 이번 달 문구 그대로 발급하면 됩니다. 필요할
+              때만 수정해주세요. (회차·금액은 자동 계산되어 여기서 바뀌지
+              않습니다)
+            </p>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => handleConfirm(modalPayment, descriptionDraft)}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 8,
+                  background: "#0b3d2e",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                이대로 발급
+              </button>
+              <button
+                type="button"
+                onClick={closeConfirmModal}
+                style={{
+                  padding: "10px 16px",
+                  fontSize: 14,
+                  border: "1px solid #ccc",
+                  borderRadius: 8,
+                  background: "white",
+                  color: "#555",
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
