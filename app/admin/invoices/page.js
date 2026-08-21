@@ -79,6 +79,11 @@ export default function AdminInvoicesPage() {
     setErrorMsg("");
     setOpeningId(invoiceId);
 
+    // 모바일 사파리 등은 fetch(비동기) 이후에 호출되는 window.open을
+    // 팝업으로 간주해서 차단하는 경우가 많다. 그래서 클릭한 "그 순간"에
+    // 곧바로 빈 탭부터 열어두고, URL이 준비되면 그 탭의 주소만 바꿔준다.
+    const newTab = window.open("", "_blank");
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -97,10 +102,15 @@ export default function AdminInvoicesPage() {
 
     if (!res.ok) {
       setErrorMsg(result.error || "다운로드 링크 생성 실패");
+      if (newTab) newTab.close();
       return;
     }
 
-    window.open(result.url, "_blank");
+    if (newTab) {
+      newTab.location.href = result.url;
+    } else {
+      window.location.href = result.url;
+    }
   }
 
   if (loading || !isAdmin) {
