@@ -359,7 +359,7 @@ export default function DashboardPage() {
               ? `linear-gradient(90deg, rgba(15,35,70,0.55) 0%, rgba(15,35,70,0.15) 60%), url(/banner-coach.jpg)`
               : isAdmin
               ? `linear-gradient(90deg, rgba(10,20,50,0.55) 0%, rgba(10,20,50,0.15) 60%), url(/banner-admin.jpg)`
-              : `linear-gradient(rgba(59,130,196,0.45), rgba(59,130,196,0.45)), url(/banner-guardian.jpg)`,
+              : `url(/banner-guardian.jpg)`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             borderRadius: 18,
