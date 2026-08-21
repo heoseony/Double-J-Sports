@@ -9,6 +9,7 @@ export default function NewMemberPage() {
   const router = useRouter();
 
   const [name, setName] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
@@ -55,6 +56,7 @@ export default function NewMemberPage() {
       guardian_id: guardian.id,
       program: "kids",
       name,
+      name_en: nameEn || null,
       birth_date: birthDate,
       gender: gender || null,
       experience_level: experienceLevel || null,
@@ -85,6 +87,14 @@ export default function NewMemberPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="예: 김민수"
+          />
+
+          <label>영문 이름 (선택, 인보이스 발급 시 사용)</label>
+          <input
+            type="text"
+            value={nameEn}
+            onChange={(e) => setNameEn(e.target.value)}
+            placeholder="예: Minsu Kim"
           />
 
           <label>생년월일</label>
