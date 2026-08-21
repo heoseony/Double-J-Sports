@@ -1,10 +1,17 @@
-﻿"use client";
+"use client";
 
 import { useRouter, usePathname } from "next/navigation";
+
+const HIDDEN_PATHS = ["/login", "/signup", "/auth"];
 
 export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+
+  // 로그인/회원가입 화면 등에서는 하단 네비게이션을 아예 표시하지 않는다.
+  if (HIDDEN_PATHS.some((p) => pathname?.startsWith(p))) {
+    return null;
+  }
 
   const itemStyle = (active) => ({
     flex: 1,
