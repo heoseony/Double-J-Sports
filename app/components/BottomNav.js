@@ -138,8 +138,8 @@ export default function BottomNav() {
         alignItems: "center",
         borderTop: "1px solid #e5eaf2",
         background: "white",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        paddingTop: 6,
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2px)",
+        paddingTop: 4,
         zIndex: 50,
       }}
     >
@@ -157,7 +157,7 @@ export default function BottomNav() {
             onClick={() => router.push(item.href)}
             style={{
               flex: 1,
-              padding: "6px 0 8px",
+              padding: "4px 0 6px",
               border: "none",
               background: "none",
               cursor: "pointer",
