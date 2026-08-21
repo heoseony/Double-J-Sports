@@ -61,16 +61,28 @@ export default function LoginPage() {
     <main
       style={{
         minHeight: "100vh",
-        backgroundImage: "url(/login-bg.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "top center",
-        backgroundRepeat: "no-repeat",
+        position: "relative",
         display: "flex",
         justifyContent: "center",
         padding: "32px 16px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 420 }}>
+      <img
+        src="/login-bg.png"
+        alt=""
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          objectFit: "cover",
+          objectPosition: "top center",
+          zIndex: 0,
+        }}
+      />
+      <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
         {/* 로고 + 브랜드 */}
         <div style={{ textAlign: "center", marginBottom: 12 }}>
           <img
