@@ -330,7 +330,7 @@ export default function DashboardPage() {
     <main
       style={{
         background: "#f3f7fc",
-        paddingBottom: 12,
+        paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
       }}
     >
       {/* 상단 브랜드 바 */}

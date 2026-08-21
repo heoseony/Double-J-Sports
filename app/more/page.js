@@ -132,7 +132,7 @@ export default function MorePage() {
   const menu = MENU_BY_ROLE[role] || MENU_BY_ROLE.guardian;
 
   return (
-    <main style={{ background: "#f3f7fc", paddingBottom: 12 }}>
+    <main style={{ background: "#f3f7fc", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       <div style={{ padding: "18px 18px 8px", fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
         더보기
       </div>

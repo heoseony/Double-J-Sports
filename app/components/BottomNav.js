@@ -130,14 +130,17 @@ export default function BottomNav() {
   return (
     <div
       style={{
-        position: "sticky",
+        position: "fixed",
         bottom: 0,
+        left: 0,
+        right: 0,
         display: "flex",
         alignItems: "center",
         borderTop: "1px solid #e5eaf2",
         background: "white",
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2px)",
-        paddingTop: 4,
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+        paddingTop: 10,
+        zIndex: 50,
         zIndex: 50,
       }}
     >
@@ -155,7 +158,7 @@ export default function BottomNav() {
             onClick={() => router.push(item.href)}
             style={{
               flex: 1,
-              padding: "4px 0 6px",
+              padding: "6px 0 8px",
               border: "none",
               background: "none",
               cursor: "pointer",
