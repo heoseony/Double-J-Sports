@@ -56,6 +56,10 @@ export default function AdminClassesPage() {
   const [editLocation, setEditLocation] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [togglingId, setTogglingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteMsg, setDeleteMsg] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(true);
+  const [showClassList, setShowClassList] = useState(true);
 
   // ── 캘린더 관련 상태 ──────────────────────────
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -316,6 +320,34 @@ export default function AdminClassesPage() {
       .eq("id", classId);
     await loadClasses();
     setTogglingId(null);
+  }
+
+  async function handleDeleteClass(classId, classLabel) {
+    setDeleteMsg("");
+
+    const ok = window.confirm(
+      `"${classLabel}" 수업을 정말 삭제할까요?\n\n이미 생성된 세션/예약이 있으면 삭제가 안 될 수 있어요 (그런 경우엔 "비활성화"를 대신 사용해주세요).`
+    );
+    if (!ok) return;
+
+    setDeletingId(classId);
+
+    const { error } = await supabase.from("classes").delete().eq("id", classId);
+
+    setDeletingId(null);
+
+    if (error) {
+      setDeleteMsg(
+        "삭제 실패: 이미 생성된 세션/예약 기록이 연결되어 있어서 삭제할 수 없습니다. 대신 '비활성화'를 사용해주세요. (" +
+          error.message +
+          ")"
+      );
+      return;
+    }
+
+    setDeleteMsg("수업이 삭제되었습니다.");
+    await loadClasses();
+    await loadMonthSessions(currentMonth);
   }
 
   async function handleSubmit(e) {
@@ -670,9 +702,45 @@ export default function AdminClassesPage() {
         </div>
       </div>
 
-      {/* ── 기존 반복 스케줄 생성 폼 (그대로 유지) ────────────────────── */}
+      {/* ── 기존 반복 스케줄 생성 폼 (그대로 유지, 접기 가능) ────────────────────── */}
       <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
-        <form onSubmit={handleSubmit}>
+        <button
+          type="button"
+          onClick={() => setShowCreateForm((v) => !v)}
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
+            새 반복 수업 만들기
+          </span>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#9aa8bc"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: showCreateForm ? "rotate(180deg)" : "none",
+              transition: "transform 0.15s",
+            }}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        {showCreateForm && (
+        <form onSubmit={handleSubmit} style={{ marginTop: 14 }}>
           <label>프로그램</label>
           <select
             value={program}
@@ -752,10 +820,48 @@ export default function AdminClassesPage() {
             {saving ? "생성 중..." : "수업 생성"}
           </button>
         </form>
+        )}
       </div>
 
       <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>등록된 수업</div>
+        <button
+          type="button"
+          onClick={() => setShowClassList((v) => !v)}
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "none",
+            border: "none",
+            padding: 0,
+            marginBottom: showClassList ? 10 : 0,
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
+            등록된 수업 ({classes.length}개)
+          </span>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#9aa8bc"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: showClassList ? "rotate(180deg)" : "none",
+              transition: "transform 0.15s",
+            }}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        {showClassList && (
+        <>
 
         {classes.length > 0 && (
           <button
@@ -1012,16 +1118,51 @@ export default function AdminClassesPage() {
                     ? "비활성화"
                     : "활성화"}
                 </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    border: "1px solid #b3261e",
+                    color: "#b3261e",
+                    borderRadius: 8,
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                  disabled={deletingId === c.id}
+                  onClick={() =>
+                    handleDeleteClass(
+                      c.id,
+                      `[${c.program}] ${c.class_name} (${WEEKDAY_LABELS[c.weekday]}요일)`
+                    )
+                  }
+                >
+                  {deletingId === c.id ? "삭제 중..." : "삭제"}
+                </button>
               </div>
+              {deleteMsg && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: deleteMsg.includes("실패") ? "#b3261e" : "#3B82C4",
+                  }}
+                >
+                  {deleteMsg}
+                </div>
+              )}
             </div>
           );
         })}
-      </div>
-
+        </>
+        )}
       </div>
 
       <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
         <Link href="/admin" style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}>← 관리자 홈으로</Link>
+      </div>
+      </div>
       </div>
     </main>
   );
