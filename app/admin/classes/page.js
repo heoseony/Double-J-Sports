@@ -64,6 +64,14 @@ export default function AdminClassesPage() {
   const [generating, setGenerating] = useState(false);
   const [generateMsg, setGenerateMsg] = useState("");
   const [coaches, setCoaches] = useState([]);
+  const [coachProfiles, setCoachProfiles] = useState([]);
+  const [classCoachesByClass, setClassCoachesByClass] = useState({});
+  const [addingCoachForClassId, setAddingCoachForClassId] = useState(null);
+  const [addCoachProfileId, setAddCoachProfileId] = useState("");
+  const [addCoachRole, setAddCoachRole] = useState("main");
+  const [savingClassCoach, setSavingClassCoach] = useState(false);
+  const [removingClassCoachId, setRemovingClassCoachId] = useState(null);
+  const [classCoachMsg, setClassCoachMsg] = useState("");
   const [assigningClassId, setAssigningClassId] = useState(null);
   const [editingClassId, setEditingClassId] = useState(null);
   const [editProgram, setEditProgram] = useState("kids");
@@ -116,6 +124,30 @@ export default function AdminClassesPage() {
     setCoaches(data || []);
   }
 
+  async function loadCoachProfiles() {
+    const { data } = await supabase
+      .from("coach_profiles")
+      .select("id, name, profile_type, is_active")
+      .eq("is_active", true)
+      .order("profile_type", { ascending: true })
+      .order("name", { ascending: true });
+    setCoachProfiles(data || []);
+  }
+
+  async function loadClassCoaches() {
+    const { data } = await supabase
+      .from("class_coaches")
+      .select("id, class_id, coach_role, coach_profiles(id, name, profile_type)")
+      .order("coach_role", { ascending: true });
+
+    const map = {};
+    (data || []).forEach((row) => {
+      if (!map[row.class_id]) map[row.class_id] = [];
+      map[row.class_id].push(row);
+    });
+    setClassCoachesByClass(map);
+  }
+
   async function loadMonthSessions(monthDate) {
     setLoadingCalendar(true);
     const year = monthDate.getFullYear();
@@ -159,6 +191,8 @@ export default function AdminClassesPage() {
       setIsAdmin(true);
       await loadClasses();
       await loadCoaches();
+      await loadCoachProfiles();
+      await loadClassCoaches();
       await loadMonthSessions(currentMonth);
       setLoading(false);
     }
@@ -291,6 +325,42 @@ export default function AdminClassesPage() {
       .eq("id", classId);
     await loadClasses();
     setAssigningClassId(null);
+  }
+
+  async function handleAddClassCoach(classId) {
+    setClassCoachMsg("");
+    if (!addCoachProfileId) {
+      setClassCoachMsg("추가할 코치/감독을 선택해주세요.");
+      return;
+    }
+
+    setSavingClassCoach(true);
+    const { error } = await supabase.from("class_coaches").insert({
+      class_id: classId,
+      coach_profile_id: addCoachProfileId,
+      coach_role: addCoachRole,
+    });
+    setSavingClassCoach(false);
+
+    if (error) {
+      setClassCoachMsg(
+        error.code === "23505"
+          ? "이미 이 수업에 배정된 코치/감독입니다."
+          : "배정 실패: " + error.message
+      );
+      return;
+    }
+
+    setAddCoachProfileId("");
+    setAddCoachRole("main");
+    await loadClassCoaches();
+  }
+
+  async function handleRemoveClassCoach(classCoachId) {
+    setRemovingClassCoachId(classCoachId);
+    await supabase.from("class_coaches").delete().eq("id", classCoachId);
+    await loadClassCoaches();
+    setRemovingClassCoachId(null);
   }
 
   function startEdit(c) {
@@ -787,21 +857,133 @@ export default function AdminClassesPage() {
                     {"[" + c.program + "] " + c.class_name + " — " + WEEKDAY_LABELS[c.weekday] + "요일 " + (c.start_time ? c.start_time.slice(0, 5) : "") + "~" + (c.end_time ? c.end_time.slice(0, 5) : "") + (c.active ? "" : " (비활성)")}
                   </div>
                   <div style={{ color: "#777", marginTop: 2 }}>{c.location || "장소 미입력"}</div>
-                  <div style={{ marginTop: 8 }}>
-                    <label style={{ fontSize: 12, marginBottom: 4 }}>담당 코치</label>
-                    <select
-                      value={c.coach_id || ""}
-                      onChange={(e) => handleAssignCoach(c.id, e.target.value)}
-                      disabled={assigningClassId === c.id}
-                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, background: "#fafafa" }}
-                    >
-                      <option value="">-- 미지정 --</option>
-                      {coaches.map((co) => (
-                        <option key={co.id} value={co.id}>
-                          {co.email}
-                        </option>
-                      ))}
-                    </select>
+
+                  <div style={{ marginTop: 10 }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, display: "block" }}>담당 코치/감독</label>
+
+                    {(classCoachesByClass[c.id] || []).length === 0 && (
+                      <p style={{ fontSize: 12, color: "#999", margin: "0 0 6px" }}>아직 배정된 코치/감독이 없습니다.</p>
+                    )}
+
+                    {(classCoachesByClass[c.id] || []).map((cc) => (
+                      <div
+                        key={cc.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "6px 10px",
+                          background: "#f8fafd",
+                          borderRadius: 8,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <span style={{ fontSize: 13 }}>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: cc.coach_role === "main" ? "#3B82C4" : "#8ea0b8",
+                              background: cc.coach_role === "main" ? "#e9f1fb" : "#eef1f5",
+                              borderRadius: 999,
+                              padding: "2px 7px",
+                              marginRight: 6,
+                            }}
+                          >
+                            {cc.coach_role === "main" ? "메인" : "보조"}
+                          </span>
+                          {cc.coach_profiles?.name}
+                          {cc.coach_profiles?.profile_type === "director" ? " (감독)" : ""}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={removingClassCoachId === cc.id}
+                          onClick={() => handleRemoveClassCoach(cc.id)}
+                          style={{ border: "none", background: "none", color: "#b3261e", fontSize: 12, cursor: "pointer" }}
+                        >
+                          {removingClassCoachId === cc.id ? "삭제 중..." : "삭제"}
+                        </button>
+                      </div>
+                    ))}
+
+                    {addingCoachForClassId === c.id ? (
+                      <div style={{ marginTop: 6, padding: 10, background: "#f8fafd", borderRadius: 8 }}>
+                        <select
+                          value={addCoachProfileId}
+                          onChange={(e) => setAddCoachProfileId(e.target.value)}
+                          style={{ width: "100%", padding: 8, fontSize: 13, border: "1px solid #ddd", borderRadius: 6, marginBottom: 6, background: "white" }}
+                        >
+                          <option value="">-- 코치/감독 선택 --</option>
+                          {coachProfiles.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name + (p.profile_type === "director" ? " (감독)" : "")}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => setAddCoachRole("main")}
+                            style={{
+                              flex: 1, padding: 7, fontSize: 12, fontWeight: 700, borderRadius: 6, cursor: "pointer",
+                              border: addCoachRole === "main" ? "none" : "1px solid #ddd",
+                              background: addCoachRole === "main" ? BLUE : "white",
+                              color: addCoachRole === "main" ? "white" : "#5b7699",
+                            }}
+                          >
+                            메인 코치
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAddCoachRole("assistant")}
+                            style={{
+                              flex: 1, padding: 7, fontSize: 12, fontWeight: 700, borderRadius: 6, cursor: "pointer",
+                              border: addCoachRole === "assistant" ? "none" : "1px solid #ddd",
+                              background: addCoachRole === "assistant" ? BLUE : "white",
+                              color: addCoachRole === "assistant" ? "white" : "#5b7699",
+                            }}
+                          >
+                            보조 코치
+                          </button>
+                        </div>
+                        {classCoachMsg && (
+                          <div style={{ fontSize: 12, color: "#b3261e", marginBottom: 6 }}>{classCoachMsg}</div>
+                        )}
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            type="button"
+                            disabled={savingClassCoach}
+                            onClick={() => handleAddClassCoach(c.id)}
+                            style={{ flex: 1, padding: 8, fontSize: 12, fontWeight: 700, border: "none", borderRadius: 6, background: BLUE, color: "white", cursor: "pointer" }}
+                          >
+                            {savingClassCoach ? "추가 중..." : "추가"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddingCoachForClassId(null);
+                              setClassCoachMsg("");
+                            }}
+                            style={{ padding: "8px 12px", fontSize: 12, border: "1px solid #ddd", borderRadius: 6, background: "white", cursor: "pointer" }}
+                          >
+                            닫기
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddingCoachForClassId(c.id);
+                          setAddCoachProfileId("");
+                          setAddCoachRole("main");
+                          setClassCoachMsg("");
+                        }}
+                        style={{ fontSize: 12, fontWeight: 700, color: BLUE, background: "none", border: "1px dashed #b7d2ec", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}
+                      >
+                        + 코치/감독 추가
+                      </button>
+                    )}
                   </div>
 
                   <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
