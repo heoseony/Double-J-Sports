@@ -27,6 +27,24 @@ function todayStr() {
   return toDateStr(new Date());
 }
 
+function ChevronDown({ open }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#9aa8bc"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ transform: open ? "rotate(180deg)" : "none" }}
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
 export default function AdminClassesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -61,14 +79,13 @@ export default function AdminClassesPage() {
   const [showCreateForm, setShowCreateForm] = useState(true);
   const [showClassList, setShowClassList] = useState(true);
 
-  // ── 캘린더 관련 상태 ──────────────────────────
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date();
     d.setDate(1);
     return d;
   });
   const [selectedDate, setSelectedDate] = useState(todayStr());
-  const [monthSessions, setMonthSessions] = useState([]); // 이번 달 전체 세션(클래스 정보 포함)
+  const [monthSessions, setMonthSessions] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [showAddSession, setShowAddSession] = useState(false);
   const [addClassId, setAddClassId] = useState("");
@@ -338,9 +355,7 @@ export default function AdminClassesPage() {
 
     if (error) {
       setDeleteMsg(
-        "삭제 실패: 이미 생성된 세션/예약 기록이 연결되어 있어서 삭제할 수 없습니다. 대신 '비활성화'를 사용해주세요. (" +
-          error.message +
-          ")"
+        "삭제 실패: 이미 생성된 세션/예약 기록이 연결되어 있어서 삭제할 수 없습니다. 대신 '비활성화'를 사용해주세요."
       );
       return;
     }
@@ -400,554 +415,138 @@ export default function AdminClassesPage() {
       </div>
 
       <div style={{ padding: "10px 18px 0" }}>
-
-      {/* ── 캘린더 카드 ────────────────────── */}
-      <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 10,
-          }}
-        >
-          <button
-            type="button"
-            onClick={goPrevMonth}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            ‹
-          </button>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{monthLabel}</div>
-          <button
-            type="button"
-            onClick={goNextMonth}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            ›
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
-            gap: 4,
-            fontSize: 12,
-            textAlign: "center",
-            color: "#777",
-            marginBottom: 4,
-          }}
-        >
-          {CAL_WEEKDAY_HEADERS.map((w) => (
-            <div key={w}>{w}</div>
-          ))}
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
-            gap: 4,
-          }}
-        >
-          {calendarCells.map((dateStr, idx) => {
-            if (!dateStr) return <div key={`empty-${idx}`} />;
-            const daySessions = sessionsByDate[dateStr] || [];
-            const isSelected = dateStr === selectedDate;
-            const isToday = dateStr === todayStr();
-            const dayNum = Number(dateStr.split("-")[2]);
-
-            return (
-              <button
-                type="button"
-                key={dateStr}
-                onClick={() => {
-                  setSelectedDate(dateStr);
-                  setShowAddSession(false);
-                  setAddMsg("");
-                }}
-                style={{
-                  aspectRatio: "1",
-                  padding: 2,
-                  border: isSelected ? `2px solid ${BLUE}` : "1px solid #eee",
-                  borderRadius: 8,
-                  background: isSelected ? "#e9f1fb" : "white",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  fontWeight: isToday ? 700 : 400,
-                  color: isToday ? BLUE : "#1a1a1a",
-                }}
-              >
-                <span>{dayNum}</span>
-                {daySessions.length > 0 && (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      color: BLUE,
-                      fontWeight: 700,
-                      marginTop: 1,
-                    }}
-                  >
-                    ●{daySessions.length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {loadingCalendar && (
-          <p style={{ fontSize: 12, color: "#999", marginTop: 10 }}>
-            불러오는 중...
-          </p>
-        )}
-
-        {/* 선택한 날짜의 세션 목록 */}
-        <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #eee" }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-            {selectedDate} 수업 ({selectedDaySessions.length}개)
-          </div>
-
-          {selectedDaySessions.length === 0 && (
-            <p style={{ fontSize: 13, color: "#777", margin: 0 }}>
-              이 날짜에 등록된 수업이 없습니다.
-            </p>
-          )}
-
-          {selectedDaySessions.map((s) => {
-            const info = classMap[s.class_id];
-            return (
-              <div
-                key={s.id}
-                style={{
-                  padding: "8px 0",
-                  borderBottom: "1px solid #f5f5f5",
-                  fontSize: 13,
-                }}
-              >
-                <strong>[{info?.program}] {info?.class_name || "(알 수 없는 수업)"}</strong>
-                {" · "}
-                {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)}
-              </div>
-            );
-          })}
-
-          {!showAddSession ? (
+        <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <button
               type="button"
-              onClick={() => {
-                setShowAddSession(true);
-                setAddClassId("");
-                setAddMsg("");
-              }}
-              style={{
-                marginTop: 12,
-                padding: "10px 16px",
-                fontSize: 13,
-                fontWeight: 700,
-                border: "none",
-                borderRadius: 8,
-                background: BLUE,
-                color: "white",
-                cursor: "pointer",
-              }}
+              onClick={goPrevMonth}
+              style={{ padding: "6px 12px", border: "1px solid #ddd", borderRadius: 8, background: "white", cursor: "pointer" }}
             >
-              + 이 날짜에 수업 추가
+              ‹
             </button>
-          ) : (
-            <div
-              style={{
-                marginTop: 12,
-                padding: 12,
-                background: "#f8fafd",
-                borderRadius: 10,
-              }}
+            <div style={{ fontWeight: 700, fontSize: 15 }}>{monthLabel}</div>
+            <button
+              type="button"
+              onClick={goNextMonth}
+              style={{ padding: "6px 12px", border: "1px solid #ddd", borderRadius: 8, background: "white", cursor: "pointer" }}
             >
-              <label style={{ fontSize: 12 }}>추가할 수업(상품)</label>
-              <select
-                value={addClassId}
-                onChange={(e) => {
-                  const c = classMap[e.target.value];
-                  setAddClassId(e.target.value);
-                  if (c) {
-                    setAddStartTime(c.start_time?.slice(0, 5) || "16:00");
-                    setAddEndTime(c.end_time?.slice(0, 5) || "17:00");
-                  }
+              ›
+            </button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, fontSize: 12, textAlign: "center", color: "#777", marginBottom: 4 }}>
+            {CAL_WEEKDAY_HEADERS.map((w) => (
+              <div key={w}>{w}</div>
+            ))}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+            {calendarCells.map((dateStr, idx) => {
+              if (!dateStr) {
+                return <div key={"empty-" + idx} />;
+              }
+              const daySessions = sessionsByDate[dateStr] || [];
+              const isSelected = dateStr === selectedDate;
+              const isToday = dateStr === todayStr();
+              const dayNum = Number(dateStr.split("-")[2]);
+
+              return (
+                <button
+                  type="button"
+                  key={dateStr}
+                  onClick={() => {
+                    setSelectedDate(dateStr);
+                    setShowAddSession(false);
+                    setAddMsg("");
+                  }}
+                  style={{
+                    aspectRatio: "1",
+                    padding: 2,
+                    border: isSelected ? "2px solid " + BLUE : "1px solid #eee",
+                    borderRadius: 8,
+                    background: isSelected ? "#e9f1fb" : "white",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 13,
+                    fontWeight: isToday ? 700 : 400,
+                    color: isToday ? BLUE : "#1a1a1a",
+                  }}
+                >
+                  <span>{dayNum}</span>
+                  {daySessions.length > 0 && (
+                    <span style={{ fontSize: 9, color: BLUE, fontWeight: 700, marginTop: 1 }}>
+                      {"●" + daySessions.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {loadingCalendar && (
+            <p style={{ fontSize: 12, color: "#999", marginTop: 10 }}>불러오는 중...</p>
+          )}
+
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #eee" }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
+              {selectedDate} 수업 ({selectedDaySessions.length}개)
+            </div>
+
+            {selectedDaySessions.length === 0 && (
+              <p style={{ fontSize: 13, color: "#777", margin: 0 }}>이 날짜에 등록된 수업이 없습니다.</p>
+            )}
+
+            {selectedDaySessions.map((s) => {
+              const info = classMap[s.class_id];
+              return (
+                <div key={s.id} style={{ padding: "8px 0", borderBottom: "1px solid #f5f5f5", fontSize: 13 }}>
+                  <strong>
+                    {"[" + (info ? info.program : "") + "] " + (info ? info.class_name : "(알 수 없는 수업)")}
+                  </strong>
+                  {" · "}
+                  {s.start_time ? s.start_time.slice(0, 5) : ""}~{s.end_time ? s.end_time.slice(0, 5) : ""}
+                </div>
+              );
+            })}
+
+            {!showAddSession && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddSession(true);
+                  setAddClassId("");
+                  setAddMsg("");
                 }}
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  fontSize: 13,
-                  border: "1px solid #ddd",
-                  borderRadius: 8,
-                  marginBottom: 8,
-                  background: "white",
-                }}
+                style={{ marginTop: 12, padding: "10px 16px", fontSize: 13, fontWeight: 700, border: "none", borderRadius: 8, background: BLUE, color: "white", cursor: "pointer" }}
               >
-                <option value="">-- 선택 --</option>
-                {classes
-                  .filter((c) => c.active)
-                  .map((c) => (
+                + 이 날짜에 수업 추가
+              </button>
+            )}
+
+            {showAddSession && (
+              <div style={{ marginTop: 12, padding: 12, background: "#f8fafd", borderRadius: 10 }}>
+                <label style={{ fontSize: 12 }}>추가할 수업(상품)</label>
+                <select
+                  value={addClassId}
+                  onChange={(e) => {
+                    const c = classMap[e.target.value];
+                    setAddClassId(e.target.value);
+                    if (c) {
+                      setAddStartTime(c.start_time ? c.start_time.slice(0, 5) : "16:00");
+                      setAddEndTime(c.end_time ? c.end_time.slice(0, 5) : "17:00");
+                    }
+                  }}
+                  style={{ width: "100%", padding: 10, fontSize: 13, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8, background: "white" }}
+                >
+                  <option value="">-- 선택 --</option>
+                  {classes.filter((c) => c.active).map((c) => (
                     <option key={c.id} value={c.id}>
-                      [{c.program}] {c.class_name} ({WEEKDAY_LABELS[c.weekday]}요일 기본{" "}
-                      {c.start_time?.slice(0, 5)}~{c.end_time?.slice(0, 5)})
+                      {"[" + c.program + "] " + c.class_name + " (" + WEEKDAY_LABELS[c.weekday] + "요일 기본 " + (c.start_time ? c.start_time.slice(0, 5) : "") + "~" + (c.end_time ? c.end_time.slice(0, 5) : "") + ")"}
                     </option>
                   ))}
-              </select>
-
-              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12 }}>시작 시간</label>
-                  <input
-                    type="time"
-                    value={addStartTime}
-                    onChange={(e) => setAddStartTime(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: 10,
-                      fontSize: 13,
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12 }}>종료 시간</label>
-                  <input
-                    type="time"
-                    value={addEndTime}
-                    onChange={(e) => setAddEndTime(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: 10,
-                      fontSize: 13,
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-              </div>
-
-              {addMsg && (
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: addMsg.includes("실패") ? "#b3261e" : BLUE,
-                    marginBottom: 8,
-                    fontWeight: 600,
-                  }}
-                >
-                  {addMsg}
-                </div>
-              )}
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  disabled={addSaving}
-                  onClick={handleAddSession}
-                  style={{
-                    flex: 1,
-                    padding: "10px 0",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    border: "none",
-                    borderRadius: 8,
-                    background: BLUE,
-                    color: "white",
-                    cursor: "pointer",
-                  }}
-                >
-                  {addSaving ? "추가 중..." : "추가"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddSession(false)}
-                  style={{
-                    padding: "10px 16px",
-                    fontSize: 13,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                >
-                  닫기
-                </button>
-              </div>
-              <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>
-                * 추가 후에도 이 화면에 그대로 남아있어서, 같은 날짜에 다른 수업을 계속 이어서 추가할 수 있습니다.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── 기존 반복 스케줄 생성 폼 (그대로 유지, 접기 가능) ────────────────────── */}
-      <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
-        <button
-          type="button"
-          onClick={() => setShowCreateForm((v) => !v)}
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            background: "none",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-          }}
-        >
-          <span style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
-            새 반복 수업 만들기
-          </span>
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#9aa8bc"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              transform: showCreateForm ? "rotate(180deg)" : "none",
-              transition: "transform 0.15s",
-            }}
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-
-        {showCreateForm && (
-        <form onSubmit={handleSubmit} style={{ marginTop: 14 }}>
-          <label>프로그램</label>
-          <select
-            value={program}
-            onChange={(e) => setProgram(e.target.value)}
-            style={{
-              width: "100%",
-              padding: 14,
-              fontSize: 16,
-              border: "1px solid #ddd",
-              borderRadius: 10,
-              background: "#fafafa",
-            }}
-          >
-            <option value="kids">Kids</option>
-            <option value="women">Women's</option>
-            <option value="men">Men's</option>
-          </select>
-
-          <label>수업 이름</label>
-          <input
-            type="text"
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            placeholder="예: Kids"
-          />
-
-          <label>요일</label>
-          <select
-            value={weekday}
-            onChange={(e) => setWeekday(e.target.value)}
-            style={{
-              width: "100%",
-              padding: 14,
-              fontSize: 16,
-              border: "1px solid #ddd",
-              borderRadius: 10,
-              background: "#fafafa",
-            }}
-          >
-            <option value="1">월요일</option>
-            <option value="2">화요일</option>
-            <option value="3">수요일</option>
-            <option value="4">목요일</option>
-            <option value="5">금요일</option>
-            <option value="6">토요일</option>
-          </select>
-
-          <label>시작 시간</label>
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-          />
-
-          <label>종료 시간</label>
-          <input
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-          />
-
-          <label>장소 (선택)</label>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="예: Frankfurt Training Center"
-          />
-
-          {errorMsg && <div className="message error">{errorMsg}</div>}
-
-          <button
-            type="submit"
-            disabled={saving}
-            style={{ width: "100%", marginTop: 20, padding: 15, fontSize: 15, fontWeight: 700, color: "white", background: "#3B82C4", border: "none", borderRadius: 10, cursor: "pointer" }}
-          >
-            {saving ? "생성 중..." : "수업 생성"}
-          </button>
-        </form>
-        )}
-      </div>
-
-      <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
-        <button
-          type="button"
-          onClick={() => setShowClassList((v) => !v)}
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            background: "none",
-            border: "none",
-            padding: 0,
-            marginBottom: showClassList ? 10 : 0,
-            cursor: "pointer",
-          }}
-        >
-          <span style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
-            등록된 수업 ({classes.length}개)
-          </span>
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#9aa8bc"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              transform: showClassList ? "rotate(180deg)" : "none",
-              transition: "transform 0.15s",
-            }}
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-
-        {showClassList && (
-        <>
-
-        {classes.length > 0 && (
-          <button
-            style={{ marginBottom: 16, width: "100%", padding: 14, fontSize: 14, fontWeight: 700, color: "white", background: "#3B82C4", border: "none", borderRadius: 10, cursor: "pointer" }}
-            onClick={handleGenerateSessions}
-            disabled={generating}
-          >
-            {generating ? "생성 중..." : "앞으로 4주 실제 날짜 세션 생성"}
-          </button>
-        )}
-
-        {generateMsg && <div className="message success">{generateMsg}</div>}
-
-        {classes.length === 0 && (
-          <p style={{ fontSize: 14, color: "#777" }}>
-            아직 등록된 수업이 없습니다.
-          </p>
-        )}
-
-        {classes.map((c) => {
-          const isEditing = editingClassId === c.id;
-
-          if (isEditing) {
-            return (
-              <div
-                key={c.id}
-                style={{
-                  padding: "12px 0",
-                  borderBottom: "1px solid #eee",
-                  fontSize: 14,
-                  background: "#fafafa",
-                }}
-              >
-                <label style={{ fontSize: 12 }}>프로그램</label>
-                <select
-                  value={editProgram}
-                  onChange={(e) => setEditProgram(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    fontSize: 14,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <option value="kids">Kids</option>
-                  <option value="women">Women's</option>
-                  <option value="men">Men's</option>
-                </select>
-
-                <label style={{ fontSize: 12 }}>수업 이름</label>
-                <input
-                  type="text"
-                  value={editClassName}
-                  onChange={(e) => setEditClassName(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    fontSize: 14,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    marginBottom: 8,
-                    boxSizing: "border-box",
-                  }}
-                />
-
-                <label style={{ fontSize: 12 }}>요일</label>
-                <select
-                  value={editWeekday}
-                  onChange={(e) => setEditWeekday(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    fontSize: 14,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <option value="1">월요일</option>
-                  <option value="2">화요일</option>
-                  <option value="3">수요일</option>
-                  <option value="4">목요일</option>
-                  <option value="5">금요일</option>
-                  <option value="6">토요일</option>
                 </select>
 
                 <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -955,214 +554,304 @@ export default function AdminClassesPage() {
                     <label style={{ fontSize: 12 }}>시작 시간</label>
                     <input
                       type="time"
-                      value={editStartTime}
-                      onChange={(e) => setEditStartTime(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: 10,
-                        fontSize: 14,
-                        border: "1px solid #ddd",
-                        borderRadius: 8,
-                        boxSizing: "border-box",
-                      }}
+                      value={addStartTime}
+                      onChange={(e) => setAddStartTime(e.target.value)}
+                      style={{ width: "100%", padding: 10, fontSize: 13, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 12 }}>종료 시간</label>
                     <input
                       type="time"
-                      value={editEndTime}
-                      onChange={(e) => setEditEndTime(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: 10,
-                        fontSize: 14,
-                        border: "1px solid #ddd",
-                        borderRadius: 8,
-                        boxSizing: "border-box",
-                      }}
+                      value={addEndTime}
+                      onChange={(e) => setAddEndTime(e.target.value)}
+                      style={{ width: "100%", padding: 10, fontSize: 13, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
                     />
                   </div>
                 </div>
 
-                <label style={{ fontSize: 12 }}>장소</label>
-                <input
-                  type="text"
-                  value={editLocation}
-                  onChange={(e) => setEditLocation(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    fontSize: 14,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    marginBottom: 10,
-                    boxSizing: "border-box",
-                  }}
-                />
+                {addMsg && (
+                  <div style={{ fontSize: 12, color: addMsg.indexOf("실패") >= 0 ? "#b3261e" : BLUE, marginBottom: 8, fontWeight: 600 }}>
+                    {addMsg}
+                  </div>
+                )}
 
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     type="button"
-                    style={{
-                      padding: "8px 14px",
-                      fontSize: 13,
-                      border: "none",
-                      borderRadius: 8,
-                      background: "#3B82C4",
-                      color: "white",
-                      cursor: "pointer",
-                    }}
-                    disabled={savingEdit}
-                    onClick={() => saveEdit(c.id)}
+                    disabled={addSaving}
+                    onClick={handleAddSession}
+                    style={{ flex: 1, padding: "10px 0", fontSize: 13, fontWeight: 700, border: "none", borderRadius: 8, background: BLUE, color: "white", cursor: "pointer" }}
                   >
-                    {savingEdit ? "저장 중..." : "저장"}
+                    {addSaving ? "추가 중..." : "추가"}
                   </button>
                   <button
                     type="button"
-                    style={{
-                      padding: "8px 14px",
-                      fontSize: 13,
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                      background: "white",
-                      cursor: "pointer",
-                    }}
-                    onClick={cancelEdit}
+                    onClick={() => setShowAddSession(false)}
+                    style={{ padding: "10px 16px", fontSize: 13, border: "1px solid #ddd", borderRadius: 8, background: "white", cursor: "pointer" }}
                   >
-                    취소
+                    닫기
                   </button>
                 </div>
+                <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>
+                  추가 후에도 이 화면에 그대로 남아있어서, 같은 날짜에 다른 수업을 계속 이어서 추가할 수 있습니다.
+                </p>
               </div>
-            );
-          }
+            )}
+          </div>
+        </div>
 
-          return (
-            <div
-              key={c.id}
-              style={{
-                padding: "12px 0",
-                borderBottom: "1px solid #eee",
-                fontSize: 14,
-                opacity: c.active ? 1 : 0.5,
-              }}
+        <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+          <button
+            type="button"
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>새 반복 수업 만들기</span>
+            <ChevronDown open={showCreateForm} />
+          </button>
+
+          {showCreateForm && (
+            <form onSubmit={handleSubmit} style={{ marginTop: 14 }}>
+              <label>프로그램</label>
+              <select
+                value={program}
+                onChange={(e) => setProgram(e.target.value)}
+                style={{ width: "100%", padding: 14, fontSize: 16, border: "1px solid #ddd", borderRadius: 10, background: "#fafafa" }}
+              >
+                <option value="kids">Kids</option>
+                <option value="women">Women's</option>
+                <option value="men">Men's</option>
+              </select>
+
+              <label>수업 이름</label>
+              <input type="text" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="예: Kids" />
+
+              <label>요일</label>
+              <select
+                value={weekday}
+                onChange={(e) => setWeekday(e.target.value)}
+                style={{ width: "100%", padding: 14, fontSize: 16, border: "1px solid #ddd", borderRadius: 10, background: "#fafafa" }}
+              >
+                <option value="1">월요일</option>
+                <option value="2">화요일</option>
+                <option value="3">수요일</option>
+                <option value="4">목요일</option>
+                <option value="5">금요일</option>
+                <option value="6">토요일</option>
+              </select>
+
+              <label>시작 시간</label>
+              <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+
+              <label>종료 시간</label>
+              <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+
+              <label>장소 (선택)</label>
+              <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="예: Frankfurt Training Center" />
+
+              {errorMsg && <div className="message error">{errorMsg}</div>}
+
+              <button
+                type="submit"
+                disabled={saving}
+                style={{ width: "100%", marginTop: 20, padding: 15, fontSize: 15, fontWeight: 700, color: "white", background: BLUE, border: "none", borderRadius: 10, cursor: "pointer" }}
+              >
+                {saving ? "생성 중..." : "수업 생성"}
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+          <button
+            type="button"
+            onClick={() => setShowClassList(!showClassList)}
+            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", padding: 0, marginBottom: showClassList ? 10 : 0, cursor: "pointer" }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
+              {"등록된 수업 (" + classes.length + "개)"}
+            </span>
+            <ChevronDown open={showClassList} />
+          </button>
+
+          {showClassList && classes.length > 0 && (
+            <button
+              onClick={handleGenerateSessions}
+              disabled={generating}
+              style={{ marginBottom: 16, width: "100%", padding: 14, fontSize: 14, fontWeight: 700, color: "white", background: BLUE, border: "none", borderRadius: 10, cursor: "pointer" }}
             >
-              <div style={{ fontWeight: 700 }}>
-                [{c.program}] {c.class_name} — {WEEKDAY_LABELS[c.weekday]}요일{" "}
-                {c.start_time?.slice(0, 5)}~{c.end_time?.slice(0, 5)}
-                {!c.active && " (비활성)"}
-              </div>
-              <div style={{ color: "#777", marginTop: 2 }}>
-                {c.location || "장소 미입력"}
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 12, marginBottom: 4 }}>
-                  담당 코치
-                </label>
-                <select
-                  value={c.coach_id || ""}
-                  onChange={(e) => handleAssignCoach(c.id, e.target.value)}
-                  disabled={assigningClassId === c.id}
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    fontSize: 14,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    background: "#fafafa",
-                  }}
-                >
-                  <option value="">-- 미지정 --</option>
-                  {coaches.map((co) => (
-                    <option key={co.id} value={co.id}>
-                      {co.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {generating ? "생성 중..." : "앞으로 4주 실제 날짜 세션 생성"}
+            </button>
+          )}
 
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <button
-                  type="button"
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => startEdit(c)}
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    border: c.active
-                      ? "1px solid #b3261e"
-                      : "1px solid #3B82C4",
-                    color: c.active ? "#b3261e" : "#3B82C4",
-                    borderRadius: 8,
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                  disabled={togglingId === c.id}
-                  onClick={() => toggleActive(c.id, c.active)}
-                >
-                  {togglingId === c.id
-                    ? "처리 중..."
-                    : c.active
-                    ? "비활성화"
-                    : "활성화"}
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    border: "1px solid #b3261e",
-                    color: "#b3261e",
-                    borderRadius: 8,
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                  disabled={deletingId === c.id}
-                  onClick={() =>
-                    handleDeleteClass(
-                      c.id,
-                      `[${c.program}] ${c.class_name} (${WEEKDAY_LABELS[c.weekday]}요일)`
-                    )
-                  }
-                >
-                  {deletingId === c.id ? "삭제 중..." : "삭제"}
-                </button>
-              </div>
-              {deleteMsg && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: deleteMsg.includes("실패") ? "#b3261e" : "#3B82C4",
-                  }}
-                >
-                  {deleteMsg}
+          {showClassList && generateMsg && <div className="message success">{generateMsg}</div>}
+
+          {showClassList && classes.length === 0 && (
+            <p style={{ fontSize: 14, color: "#777" }}>아직 등록된 수업이 없습니다.</p>
+          )}
+
+          {showClassList &&
+            classes.map((c) => {
+              const isEditing = editingClassId === c.id;
+
+              if (isEditing) {
+                return (
+                  <div key={c.id} style={{ padding: "12px 0", borderBottom: "1px solid #eee", fontSize: 14, background: "#fafafa" }}>
+                    <label style={{ fontSize: 12 }}>프로그램</label>
+                    <select
+                      value={editProgram}
+                      onChange={(e) => setEditProgram(e.target.value)}
+                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8 }}
+                    >
+                      <option value="kids">Kids</option>
+                      <option value="women">Women's</option>
+                      <option value="men">Men's</option>
+                    </select>
+
+                    <label style={{ fontSize: 12 }}>수업 이름</label>
+                    <input
+                      type="text"
+                      value={editClassName}
+                      onChange={(e) => setEditClassName(e.target.value)}
+                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8, boxSizing: "border-box" }}
+                    />
+
+                    <label style={{ fontSize: 12 }}>요일</label>
+                    <select
+                      value={editWeekday}
+                      onChange={(e) => setEditWeekday(e.target.value)}
+                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8 }}
+                    >
+                      <option value="1">월요일</option>
+                      <option value="2">화요일</option>
+                      <option value="3">수요일</option>
+                      <option value="4">목요일</option>
+                      <option value="5">금요일</option>
+                      <option value="6">토요일</option>
+                    </select>
+
+                    <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 12 }}>시작 시간</label>
+                        <input
+                          type="time"
+                          value={editStartTime}
+                          onChange={(e) => setEditStartTime(e.target.value)}
+                          style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 12 }}>종료 시간</label>
+                        <input
+                          type="time"
+                          value={editEndTime}
+                          onChange={(e) => setEditEndTime(e.target.value)}
+                          style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, boxSizing: "border-box" }}
+                        />
+                      </div>
+                    </div>
+
+                    <label style={{ fontSize: 12 }}>장소</label>
+                    <input
+                      type="text"
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 10, boxSizing: "border-box" }}
+                    />
+
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        style={{ padding: "8px 14px", fontSize: 13, border: "none", borderRadius: 8, background: BLUE, color: "white", cursor: "pointer" }}
+                        disabled={savingEdit}
+                        onClick={() => saveEdit(c.id)}
+                      >
+                        {savingEdit ? "저장 중..." : "저장"}
+                      </button>
+                      <button
+                        type="button"
+                        style={{ padding: "8px 14px", fontSize: 13, border: "1px solid #ddd", borderRadius: 8, background: "white", cursor: "pointer" }}
+                        onClick={cancelEdit}
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={c.id} style={{ padding: "12px 0", borderBottom: "1px solid #eee", fontSize: 14, opacity: c.active ? 1 : 0.5 }}>
+                  <div style={{ fontWeight: 700 }}>
+                    {"[" + c.program + "] " + c.class_name + " — " + WEEKDAY_LABELS[c.weekday] + "요일 " + (c.start_time ? c.start_time.slice(0, 5) : "") + "~" + (c.end_time ? c.end_time.slice(0, 5) : "") + (c.active ? "" : " (비활성)")}
+                  </div>
+                  <div style={{ color: "#777", marginTop: 2 }}>{c.location || "장소 미입력"}</div>
+                  <div style={{ marginTop: 8 }}>
+                    <label style={{ fontSize: 12, marginBottom: 4 }}>담당 코치</label>
+                    <select
+                      value={c.coach_id || ""}
+                      onChange={(e) => handleAssignCoach(c.id, e.target.value)}
+                      disabled={assigningClassId === c.id}
+                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, background: "#fafafa" }}
+                    >
+                      <option value="">-- 미지정 --</option>
+                      {coaches.map((co) => (
+                        <option key={co.id} value={co.id}>
+                          {co.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      style={{ padding: "8px 14px", fontSize: 13, border: "1px solid #ddd", borderRadius: 8, background: "white", cursor: "pointer" }}
+                      onClick={() => startEdit(c)}
+                    >
+                      수정
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        border: c.active ? "1px solid #b3261e" : "1px solid " + BLUE,
+                        color: c.active ? "#b3261e" : BLUE,
+                        borderRadius: 8,
+                        background: "white",
+                        cursor: "pointer",
+                      }}
+                      disabled={togglingId === c.id}
+                      onClick={() => toggleActive(c.id, c.active)}
+                    >
+                      {togglingId === c.id ? "처리 중..." : c.active ? "비활성화" : "활성화"}
+                    </button>
+                    <button
+                      type="button"
+                      style={{ padding: "8px 14px", fontSize: 13, border: "1px solid #b3261e", color: "#b3261e", borderRadius: 8, background: "white", cursor: "pointer" }}
+                      disabled={deletingId === c.id}
+                      onClick={() => handleDeleteClass(c.id, "[" + c.program + "] " + c.class_name + " (" + WEEKDAY_LABELS[c.weekday] + "요일)")}
+                    >
+                      {deletingId === c.id ? "삭제 중..." : "삭제"}
+                    </button>
+                  </div>
+                  {deleteMsg && (
+                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: deleteMsg.indexOf("실패") >= 0 ? "#b3261e" : BLUE }}>
+                      {deleteMsg}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-        </>
-        )}
-      </div>
+              );
+            })}
+        </div>
 
-      <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
-        <Link href="/admin" style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}>← 관리자 홈으로</Link>
-      </div>
-      </div>
+        <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
+          <Link href="/admin" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 관리자 홈으로
+          </Link>
+        </div>
       </div>
     </main>
   );

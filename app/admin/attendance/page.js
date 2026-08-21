@@ -1,18 +1,18 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 
+const BLUE = "#3B82C4";
+
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
-
 function toDateStr(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
-
 function getMonday(date) {
   const d = new Date(date);
   const day = d.getDay();
@@ -20,11 +20,24 @@ function getMonday(date) {
   d.setDate(d.getDate() + diff);
   return d;
 }
-
 function addDays(date, days) {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
   return d;
+}
+function ChevronLeft() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  );
+}
+function ChevronRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
 }
 
 export default function AdminAttendancePage() {
@@ -81,9 +94,7 @@ export default function AdminAttendancePage() {
 
       const coachIds = [
         ...new Set(
-          (sessionData || [])
-            .map((s) => s.classes?.coach_id)
-            .filter(Boolean)
+          (sessionData || []).map((s) => s.classes?.coach_id).filter(Boolean)
         ),
       ];
 
@@ -116,132 +127,125 @@ export default function AdminAttendancePage() {
   function goPrevWeek() {
     setWeekStart((prev) => addDays(prev, -7));
   }
-
   function goNextWeek() {
     setWeekStart((prev) => addDays(prev, 7));
   }
-
   function goThisWeek() {
     setWeekStart(getMonday(new Date()));
   }
 
   if (loading || !isAdmin) {
     return (
-      <main className="page">
-        <div className="subtitle">확인 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>확인 중...</div>
       </main>
     );
   }
 
   const weekEnd = addDays(weekStart, 6);
-  const rangeLabel = `${toDateStr(weekStart)} ~ ${toDateStr(weekEnd)}`;
+  const rangeLabel = toDateStr(weekStart) + " ~ " + toDateStr(weekEnd);
+
+  const sessionsByDate = {};
+  sessions.forEach((s) => {
+    if (!sessionsByDate[s.session_date]) sessionsByDate[s.session_date] = [];
+    sessionsByDate[s.session_date].push(s);
+  });
+  const dateKeys = Object.keys(sessionsByDate).sort();
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">출석 현황 (전체)</div>
-
-      <div className="card">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 10,
-          }}
-        >
-          <button
-            type="button"
-            onClick={goPrevWeek}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            ‹ 이전 주
-          </button>
-          <button
-            type="button"
-            onClick={goThisWeek}
-            style={{
-              padding: "6px 10px",
-              fontSize: 13,
-              border: "none",
-              background: "transparent",
-              color: "#0b3d2e",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            이번 주
-          </button>
-          <button
-            type="button"
-            onClick={goNextWeek}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            다음 주 ›
-          </button>
-        </div>
-
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: 13,
-            color: "#777",
-            marginBottom: 10,
-          }}
-        >
-          {rangeLabel}
-        </div>
-
-        {errorMsg && <div className="message error">{errorMsg}</div>}
-
-        {sessions.length === 0 && !errorMsg && (
-          <p style={{ fontSize: 14, color: "#777" }}>
-            이 기간에 예정된 수업이 없습니다.
-          </p>
-        )}
-
-        {sessions.map((s) => (
-          <div
-            key={s.id}
-            style={{
-              padding: "14px 0",
-              borderBottom: "1px solid #eee",
-            }}
-          >
-            <div style={{ fontSize: 15, fontWeight: 700 }}>
-              {s.session_date} · {s.start_time?.slice(0, 5)}~
-              {s.end_time?.slice(0, 5)} · {s.classes?.class_name} (
-              {s.classes?.program})
-            </div>
-            <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-              담당 코치: {s.coachEmail}
-            </div>
-            <Link href={`/coach/attendance?sessionId=${s.id}`}>
-              <button
-                className="primary"
-                style={{ marginTop: 10, padding: "10px 16px" }}
-              >
-                출석 체크
-              </button>
-            </Link>
-          </div>
-        ))}
+    <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 18px 4px" }}>
+        <Link href="/admin" style={{ color: "#1b3a63", display: "flex" }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>출석 현황 (전체)</div>
       </div>
 
-      <div className="link-row">
-        <Link href="/admin">← 관리자 홈으로</Link>
+      <div style={{ padding: "10px 18px 0" }}>
+        <div style={{ background: "white", borderRadius: 16, padding: 14, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <button
+              type="button"
+              onClick={goPrevWeek}
+              style={{ width: 34, height: 34, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#5b7699", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <ChevronLeft />
+            </button>
+            <button
+              type="button"
+              onClick={goThisWeek}
+              style={{ padding: "6px 14px", fontSize: 13, fontWeight: 700, border: "none", background: "#e9f1fb", color: BLUE, borderRadius: 999, cursor: "pointer" }}
+            >
+              이번 주
+            </button>
+            <button
+              type="button"
+              onClick={goNextWeek}
+              style={{ width: 34, height: 34, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#5b7699", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <ChevronRight />
+            </button>
+          </div>
+          <div style={{ textAlign: "center", fontSize: 12, color: "#8ea0b8", marginTop: 8 }}>
+            {rangeLabel}
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div style={{ background: "#fdecec", color: "#b3261e", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 12 }}>
+            {errorMsg}
+          </div>
+        )}
+
+        {sessions.length === 0 && !errorMsg && (
+          <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+            <p style={{ fontSize: 14, color: "#8ea0b8", margin: 0 }}>이 기간에 예정된 수업이 없습니다.</p>
+          </div>
+        )}
+
+        {dateKeys.map((dateStr) => (
+          <div key={dateStr} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#1b3a63", marginBottom: 8 }}>
+              {dateStr}
+            </div>
+            <div style={{ background: "white", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              {sessionsByDate[dateStr].map((s, idx) => (
+                <div
+                  key={s.id}
+                  style={{
+                    padding: "14px 16px",
+                    borderBottom: idx === sessionsByDate[dateStr].length - 1 ? "none" : "1px solid #f0f3f8",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
+                      {s.start_time ? s.start_time.slice(0, 5) : ""}~{s.end_time ? s.end_time.slice(0, 5) : ""}
+                      {" · "}
+                      {s.classes?.class_name}
+                      <span style={{ fontWeight: 500, color: "#8ea0b8" }}> ({s.classes?.program})</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
+                      담당 코치: {s.coachEmail}
+                    </div>
+                  </div>
+                  <Link href={"/coach/attendance?sessionId=" + s.id}>
+                    <button
+                      style={{ padding: "9px 16px", fontSize: 13, fontWeight: 700, color: "white", background: BLUE, border: "none", borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      출석 체크
+                    </button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </main>
   );
