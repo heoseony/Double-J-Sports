@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin";
 import { generateInvoicePdfBuffer } from "../../../lib/invoicePdf";
 
@@ -114,7 +114,7 @@ export async function POST(request) {
       invoiceNumber,
       issueDate: formatDateDE(issueDate),
       memberNameEn: member.name_en,
-      description: `Double J GmbH -- Akademie-Training (${monthLabelEn(
+      description: `Double J GmbH --\nAkademie-Training (${monthLabelEn(
         issueDate
       )})`,
       quantity: sessionsPerMonth,
@@ -180,39 +180,37 @@ export async function POST(request) {
     let emailSent = false;
     let emailError = null;
 
-    if (guardianEmail && process.env.RESEND_API_KEY) {
+    if (guardianEmail && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
       try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const { data, error: resendError } = await resend.emails.send({
-          from: "Double J Sports <onboarding@resend.dev>",
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_APP_PASSWORD,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `"Double J Sports" <${process.env.GMAIL_USER}>`,
           to: guardianEmail,
           subject: `[Double J Sports] Invoice ${invoiceNumber}`,
           html: `<p>안녕하세요,<br/>${member.name}님의 인보이스(${invoiceNumber})가 발급되었습니다. 첨부된 PDF를 확인해주세요.</p>`,
           attachments: [
             {
               filename: `${invoiceNumber}.pdf`,
-              content: pdfBuffer.toString("base64"),
+              content: pdfBuffer,
             },
           ],
         });
 
-        // Resend 최신 SDK는 실패해도 예외를 던지지 않고 { data, error } 형태로
-        // 조용히 반환하는 경우가 있어, error 필드를 반드시 직접 확인해야 한다.
-        if (resendError) {
-          emailError =
-            resendError.message ||
-            JSON.stringify(resendError) ||
-            "알 수 없는 Resend 오류";
-        } else {
-          emailSent = true;
-        }
+        emailSent = true;
       } catch (e) {
         emailError = e.message;
       }
     } else if (!guardianEmail) {
       emailError = "학부모 이메일 주소를 찾을 수 없습니다.";
-    } else if (!process.env.RESEND_API_KEY) {
-      emailError = "RESEND_API_KEY 환경변수가 설정되지 않았습니다.";
+    } else if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      emailError = "GMAIL_USER 또는 GMAIL_APP_PASSWORD 환경변수가 설정되지 않았습니다.";
     }
 
     return NextResponse.json({
