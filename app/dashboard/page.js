@@ -69,6 +69,7 @@ export default function DashboardPage() {
   // 학부모용
   const [children, setChildren] = useState([]);
   const [weekBookings, setWeekBookings] = useState([]);
+  const [membershipByChild, setMembershipByChild] = useState({});
 
   // 코치용
   const [coachTodaySessions, setCoachTodaySessions] = useState([]);
@@ -164,6 +165,29 @@ export default function DashboardPage() {
         }
 
         const childIds = (childList || []).map((c) => c.id);
+
+        if (childIds.length > 0) {
+          const { data: activeMemberships } = await supabase
+            .from("memberships")
+            .select(
+              "member_id, sessions_used, start_date, membership_plans(sessions_per_month)"
+            )
+            .in("member_id", childIds)
+            .eq("status", "active")
+            .order("start_date", { ascending: false });
+
+          const membershipMap = {};
+          (activeMemberships || []).forEach((ms) => {
+            // 자녀당 가장 최근(첫 번째로 걸리는) 활성 회원권 하나만 사용
+            if (membershipMap[ms.member_id] !== undefined) return;
+            const total = ms.membership_plans?.sessions_per_month || 0;
+            membershipMap[ms.member_id] = {
+              remaining: Math.max(total - (ms.sessions_used || 0), 0),
+              total,
+            };
+          });
+          setMembershipByChild(membershipMap);
+        }
 
         if (childIds.length > 0) {
           const { data: bk } = await supabase
@@ -446,10 +470,39 @@ export default function DashboardPage() {
                 </p>
               )}
 
-              {children.map((c) => (
+              {children.map((c) => {
+                const ms = membershipByChild[c.id];
+                return (
                 <div key={c.id} style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginBottom: 6 }}>
-                    {c.name}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
+                      {c.name}
+                    </span>
+                    {ms ? (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: ms.remaining > 0 ? BLUE : "#b3261e",
+                          background: ms.remaining > 0 ? "#e9f1fb" : "#fdecec",
+                          padding: "3px 9px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        잔여 {ms.remaining}/{ms.total}회
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 11, color: "#c2cbd9" }}>
+                        회원권 없음
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {attendanceGridFor(c.id).map((cell, i) => (
@@ -464,7 +517,8 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={cardStyle}>
