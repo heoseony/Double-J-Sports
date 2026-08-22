@@ -101,14 +101,42 @@ export default function AdminPaymentsPage() {
   }
 
   async function loadInvoices() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("invoices")
       .select(
-        "id, invoice_number, issued_at, total_amount, pdf_url, payments(members(name), membership_plans(name))"
+        "id, invoice_number, issued_at, total_amount, payment_id, pdf_url"
       )
       .order("issued_at", { ascending: false })
       .limit(50);
-    setInvoices(data || []);
+
+    if (error) {
+      console.error("인보이스 조회 실패:", error);
+      setInvoices([]);
+      setInvoicesLoaded(true);
+      return;
+    }
+
+    const invoiceList = data || [];
+    const paymentIds = invoiceList.map((inv) => inv.payment_id).filter(Boolean);
+
+    let paymentsMap = {};
+    if (paymentIds.length > 0) {
+      const { data: paymentsData } = await supabase
+        .from("payments")
+        .select("id, members(name), membership_plans(name)")
+        .in("id", paymentIds);
+
+      (paymentsData || []).forEach((p) => {
+        paymentsMap[p.id] = p;
+      });
+    }
+
+    const merged = invoiceList.map((inv) => ({
+      ...inv,
+      payments: paymentsMap[inv.payment_id] || null,
+    }));
+
+    setInvoices(merged);
     setInvoicesLoaded(true);
   }
 
@@ -132,10 +160,12 @@ export default function AdminPaymentsPage() {
   }
 
   async function loadRevenue() {
+    // 2026년 8월까지는 테스트 운영 기간이라 매출 집계에서 제외, 9월부터 정식 집계
     const { data } = await supabase
       .from("payments")
       .select("total_amount, confirmed_at")
       .eq("status", "confirmed")
+      .gte("confirmed_at", "2026-09-01")
       .order("confirmed_at", { ascending: true });
     setAllConfirmedPayments(data || []);
     setRevenueLoaded(true);
