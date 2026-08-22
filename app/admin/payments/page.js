@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 
+const BLUE = "#3B82C4";
+
 function todayStr() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -13,8 +15,6 @@ function todayStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// route.js와 동일한 방식으로 "이번 달" 기본 문구를 미리 계산해서 보여준다.
-// (실제 저장되는 값은 서버에서 다시 한 번 만들어지므로, 여기 값은 어디까지나 미리보기/초안용)
 function defaultDescription() {
   const monthLabel = new Date().toLocaleDateString("en-US", {
     month: "short",
@@ -35,8 +35,7 @@ export default function AdminPaymentsPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  // 입금확인 클릭 시 뜨는 확인 모달 상태
-  const [modalPayment, setModalPayment] = useState(null); // 확인 중인 결제 건
+  const [modalPayment, setModalPayment] = useState(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
 
   async function loadPayments() {
@@ -107,7 +106,6 @@ export default function AdminPaymentsPage() {
     setConfirmingId(payment.id);
     closeConfirmModal();
 
-    // 1. 결제 상태를 confirmed로 변경
     const { error: paymentUpdateError } = await supabase
       .from("payments")
       .update({
@@ -123,7 +121,6 @@ export default function AdminPaymentsPage() {
       return;
     }
 
-    // 2. 회원권 자동 배정 (기존 admin/memberships 페이지와 같은 방식)
     const { error: membershipError } = await supabase
       .from("memberships")
       .insert({
@@ -145,9 +142,6 @@ export default function AdminPaymentsPage() {
       return;
     }
 
-    // 3. 인보이스 생성 + PDF 저장 + 이메일 발송 (API 라우트 호출)
-    //    이 단계가 실패해도 결제확인/회원권배정 자체는 이미 완료된 상태이므로,
-    //    에러를 안내 메시지에 덧붙이기만 하고 흐름은 막지 않는다.
     let invoiceNote = "";
     try {
       const res = await fetch("/api/generate-invoice", {
@@ -182,123 +176,137 @@ export default function AdminPaymentsPage() {
 
   if (loading || !isAdmin) {
     return (
-      <main className="page">
-        <div className="subtitle">확인 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>확인 중...</div>
       </main>
     );
   }
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">결제 관리</div>
+    <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 18px 4px" }}>
+        <Link href="/admin" style={{ color: "#1b3a63", display: "flex" }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>결제 관리</div>
+      </div>
 
-      {errorMsg && (
-        <div className="message error" style={{ marginBottom: 14 }}>
-          {errorMsg}
-        </div>
-      )}
-      {successMsg && (
-        <div
-          className="message"
-          style={{
-            marginBottom: 14,
-            background: "#f0f7f2",
-            color: "#0b3d2e",
-            padding: 12,
-            borderRadius: 8,
-            fontSize: 14,
-          }}
-        >
-          {successMsg}
-        </div>
-      )}
-
-      <div className="card">
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>
-          입금 확인 대기 ({pendingPayments.length}건)
-        </div>
-
-        {pendingPayments.length === 0 && (
-          <p style={{ fontSize: 14, color: "#777" }}>
-            현재 입금 확인 대기 중인 신청이 없습니다.
-          </p>
+      <div style={{ padding: "10px 18px 0" }}>
+        {errorMsg && (
+          <div style={{ background: "#fdecec", color: "#b3261e", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14 }}>
+            {errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div style={{ background: "#e9f1fb", color: "#1b3a63", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14 }}>
+            {successMsg}
+          </div>
         )}
 
-        {pendingPayments.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              padding: "14px 0",
-              borderBottom: "1px solid #eee",
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: 15 }}>
-              {p.members?.name || "(알 수 없음)"} · [{p.members?.program}]
-            </div>
-            <div style={{ fontSize: 14, marginTop: 4 }}>
-              {p.membership_plans?.name} ({p.membership_plans?.sessions_per_month}
-              회) · <strong>{p.total_amount} EUR</strong>
-            </div>
-            <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-              입금자명: <strong>{p.depositor_name}</strong> · 신청일시:{" "}
-              {new Date(p.requested_at).toLocaleString("ko-KR")}
-            </div>
-            <button
-              type="button"
+        <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
+            입금 확인 대기 ({pendingPayments.length}건)
+          </div>
+
+          {pendingPayments.length === 0 && (
+            <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+              현재 입금 확인 대기 중인 신청이 없습니다.
+            </p>
+          )}
+
+          {pendingPayments.map((p, idx) => (
+            <div
+              key={p.id}
               style={{
-                marginTop: 10,
-                padding: "8px 16px",
-                fontSize: 13,
-                border: "none",
-                borderRadius: 8,
-                background: "#0b3d2e",
-                color: "white",
-                cursor: "pointer",
+                padding: "14px 0",
+                borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
               }}
-              disabled={confirmingId === p.id}
-              onClick={() => openConfirmModal(p)}
             >
-              {confirmingId === p.id ? "처리 중..." : "입금확인 · 회원권 활성화"}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div className="card" style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>
-          최근 확인 완료 내역
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                  {p.members?.name || "(알 수 없음)"}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: BLUE,
+                    background: "#e9f1fb",
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                  }}
+                >
+                  {p.members?.program}
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: "#33455e", marginTop: 6 }}>
+                {p.membership_plans?.name} ({p.membership_plans?.sessions_per_month}회) ·{" "}
+                <strong>{p.total_amount} EUR</strong>
+              </div>
+              <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
+                입금자명: <strong>{p.depositor_name}</strong> · 신청일시:{" "}
+                {new Date(p.requested_at).toLocaleString("ko-KR")}
+              </div>
+              <button
+                type="button"
+                style={{
+                  marginTop: 10,
+                  padding: "10px 18px",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 10,
+                  background: BLUE,
+                  color: "white",
+                  cursor: "pointer",
+                }}
+                disabled={confirmingId === p.id}
+                onClick={() => openConfirmModal(p)}
+              >
+                {confirmingId === p.id ? "처리 중..." : "입금확인 · 회원권 활성화"}
+              </button>
+            </div>
+          ))}
         </div>
 
-        {confirmedPayments.length === 0 && (
-          <p style={{ fontSize: 14, color: "#777" }}>
-            아직 확인된 결제 내역이 없습니다.
-          </p>
-        )}
-
-        {confirmedPayments.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              padding: "10px 0",
-              borderBottom: "1px solid #eee",
-              fontSize: 14,
-            }}
-          >
-            <div>
-              {p.members?.name} — {p.membership_plans?.name} ·{" "}
-              {p.total_amount} EUR
-            </div>
-            <div style={{ color: "#777", fontSize: 12, marginTop: 2 }}>
-              입금자명: {p.depositor_name} · 확인일시:{" "}
-              {new Date(p.confirmed_at).toLocaleString("ko-KR")}
-            </div>
+        <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
+            최근 확인 완료 내역
           </div>
-        ))}
-      </div>
 
-      <div className="link-row">
-        <Link href="/admin">← 관리자 홈으로</Link>
+          {confirmedPayments.length === 0 && (
+            <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+              아직 확인된 결제 내역이 없습니다.
+            </p>
+          )}
+
+          {confirmedPayments.map((p, idx) => (
+            <div
+              key={p.id}
+              style={{
+                padding: "10px 0",
+                borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
+                fontSize: 13,
+              }}
+            >
+              <div style={{ color: "#1b3a63", fontWeight: 600 }}>
+                {p.members?.name} — {p.membership_plans?.name} · {p.total_amount} EUR
+              </div>
+              <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 2 }}>
+                입금자명: {p.depositor_name} · 확인일시:{" "}
+                {new Date(p.confirmed_at).toLocaleString("ko-KR")}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
+          <Link href="/admin" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 관리자 홈으로
+          </Link>
+        </div>
       </div>
 
       {modalPayment && (
@@ -306,7 +314,7 @@ export default function AdminPaymentsPage() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(20,35,60,0.5)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -318,23 +326,22 @@ export default function AdminPaymentsPage() {
           <div
             style={{
               background: "white",
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 20,
               width: "100%",
               maxWidth: 420,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#1b3a63", marginBottom: 6 }}>
               입금 확인 · 인보이스 발급
             </div>
-            <p style={{ fontSize: 13, color: "#666", marginTop: 0 }}>
-              {modalPayment.members?.name || "회원"}님 ·{" "}
-              {modalPayment.membership_plans?.name} ·{" "}
-              <strong>{modalPayment.total_amount} EUR</strong>
+            <p style={{ fontSize: 13, color: "#8ea0b8", marginTop: 0 }}>
+              {modalPayment.members?.name || "회원"}님 · {modalPayment.membership_plans?.name} ·{" "}
+              <strong style={{ color: "#1b3a63" }}>{modalPayment.total_amount} EUR</strong>
             </p>
 
-            <label style={{ fontSize: 13, fontWeight: 700 }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
               인보이스 항목 설명 (Description)
             </label>
             <textarea
@@ -346,16 +353,16 @@ export default function AdminPaymentsPage() {
                 marginTop: 6,
                 padding: 10,
                 fontSize: 14,
-                border: "1px solid #ddd",
-                borderRadius: 8,
+                border: "1px solid #e5eaf2",
+                borderRadius: 10,
                 resize: "vertical",
                 fontFamily: "inherit",
+                boxSizing: "border-box",
               }}
             />
-            <p style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
-              보통 자동으로 채워진 이번 달 문구 그대로 발급하면 됩니다. 필요할
-              때만 수정해주세요. (회차·금액은 자동 계산되어 여기서 바뀌지
-              않습니다)
+            <p style={{ fontSize: 12, color: "#aab9cc", marginTop: 4 }}>
+              보통 자동으로 채워진 이번 달 문구 그대로 발급하면 됩니다. 필요할 때만 수정해주세요.
+              (회차·금액은 자동 계산되어 여기서 바뀌지 않습니다)
             </p>
 
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -364,12 +371,12 @@ export default function AdminPaymentsPage() {
                 onClick={() => handleConfirm(modalPayment, descriptionDraft)}
                 style={{
                   flex: 1,
-                  padding: "10px 16px",
+                  padding: "12px 16px",
                   fontSize: 14,
                   fontWeight: 700,
                   border: "none",
-                  borderRadius: 8,
-                  background: "#0b3d2e",
+                  borderRadius: 10,
+                  background: BLUE,
                   color: "white",
                   cursor: "pointer",
                 }}
@@ -380,12 +387,12 @@ export default function AdminPaymentsPage() {
                 type="button"
                 onClick={closeConfirmModal}
                 style={{
-                  padding: "10px 16px",
+                  padding: "12px 16px",
                   fontSize: 14,
-                  border: "1px solid #ccc",
-                  borderRadius: 8,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 10,
                   background: "white",
-                  color: "#555",
+                  color: "#5b7699",
                   cursor: "pointer",
                 }}
               >
