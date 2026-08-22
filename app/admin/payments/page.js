@@ -64,6 +64,7 @@ export default function AdminPaymentsPage() {
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
   const [openingPdfPath, setOpeningPdfPath] = useState(null);
   const [invoiceMonthOffset, setInvoiceMonthOffset] = useState(0); // 0=이번달, -1=지난달, +1=다음달
+  const [downloadingZip, setDownloadingZip] = useState(false);
 
   // ===== 계좌설정 탭 상태 =====
   const [settingsId, setSettingsId] = useState(null);
@@ -189,6 +190,53 @@ export default function AdminPaymentsPage() {
       if (newTab) newTab.close();
     }
     setOpeningPdfPath(null);
+  }
+
+  async function handleDownloadZip(invoiceList) {
+    setDownloadingZip(true);
+    setErrorMsg("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        setErrorMsg("로그인이 필요합니다.");
+        setDownloadingZip(false);
+        return;
+      }
+
+      const invoiceIds = invoiceList.map((inv) => inv.id);
+
+      const res = await fetch("/api/invoices-zip", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ invoiceIds }),
+      });
+
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        setErrorMsg("다운로드 실패: " + (result.error || "알 수 없는 오류"));
+        setDownloadingZip(false);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "invoices.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setErrorMsg("다운로드 실패: " + e.message);
+    }
+    setDownloadingZip(false);
   }
 
   async function loadSettings() {
@@ -646,6 +694,28 @@ export default function AdminPaymentsPage() {
                       ›
                     </button>
                   </div>
+
+                  {monthInvoices.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadZip(monthInvoices)}
+                      disabled={downloadingZip}
+                      style={{
+                        width: "100%",
+                        padding: 12,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: "1px solid #e5eaf2",
+                        borderRadius: 10,
+                        background: "white",
+                        color: BLUE,
+                        cursor: downloadingZip ? "default" : "pointer",
+                        marginBottom: 14,
+                      }}
+                    >
+                      {downloadingZip ? "압축 중..." : `이 달 인보이스 모두 다운받기 (${monthInvoices.length}건)`}
+                    </button>
+                  )}
 
                   {monthInvoices.length === 0 && (
                     <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>이 달에는 발급된 인보이스가 없습니다.</p>
