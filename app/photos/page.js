@@ -957,7 +957,12 @@ export default function PhotosPage() {
   if (loading) {
     return (
       <main className="page">
-        <div style={{ fontSize: 22, fontWeight: 800, color: "#1b3a63" }}>Double J Sports</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+            더블제이 축구 아카데미
+          </div>
+        </div>
         <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28 }}>갤러리</div>
         {[1, 2].map((i) => (
           <div
@@ -1014,7 +1019,12 @@ export default function PhotosPage() {
 
   return (
     <main className="page">
-      <div style={{ fontSize: 22, fontWeight: 800, color: "#1b3a63" }}>Double J Sports</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+        <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          더블제이 축구 아카데미
+        </div>
+      </div>
       <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28 }}>갤러리</div>
 
       {canUpload && (
