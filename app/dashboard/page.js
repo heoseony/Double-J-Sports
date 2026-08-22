@@ -247,14 +247,30 @@ export default function DashboardPage() {
 
       // ── 코치 데이터 ──────────────────────────
       if (coach) {
-        const { data: myClasses } = await supabase
-          .from("classes")
-          .select("id, class_name, program")
-          .eq("coach_id", user.id);
+        let activeProfileId = null;
+        try {
+          const stored = localStorage.getItem(
+            "double-j-sports-active-coach-profile"
+          );
+          activeProfileId = stored ? JSON.parse(stored)?.id : null;
+        } catch (e) {
+          activeProfileId = null;
+        }
 
-        const classIds = (myClasses || []).map((c) => c.id);
+        let classIds = [];
         const classMap = {};
-        (myClasses || []).forEach((c) => (classMap[c.id] = c));
+
+        if (activeProfileId) {
+          const { data: myClassCoaches } = await supabase
+            .from("class_coaches")
+            .select("class_id, classes(id, class_name, program)")
+            .eq("coach_profile_id", activeProfileId);
+
+          classIds = (myClassCoaches || []).map((cc) => cc.class_id);
+          (myClassCoaches || []).forEach((cc) => {
+            if (cc.classes) classMap[cc.class_id] = cc.classes;
+          });
+        }
 
         if (classIds.length > 0) {
           const { data: sess } = await supabase
