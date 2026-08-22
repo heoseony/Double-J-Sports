@@ -12,9 +12,6 @@ const FIELDS = [
   { key: "account_holder", label: "예금주" },
   { key: "iban", label: "IBAN" },
   { key: "bic", label: "BIC" },
-  { key: "company_name", label: "회사명 (인보이스용)" },
-  { key: "company_address", label: "회사 주소 (인보이스용)" },
-  { key: "company_vat_id", label: "사업자번호 / VAT ID (인보이스용)" },
 ];
 
 export default function AdminPaymentSettingsPage() {
@@ -27,9 +24,6 @@ export default function AdminPaymentSettingsPage() {
     account_holder: "",
     iban: "",
     bic: "",
-    company_name: "",
-    company_address: "",
-    company_vat_id: "",
   });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -61,9 +55,7 @@ export default function AdminPaymentSettingsPage() {
 
       const { data: settingsData } = await supabase
         .from("payment_settings")
-        .select(
-          "id, bank_name, account_holder, iban, bic, company_name, company_address, company_vat_id"
-        )
+        .select("id, bank_name, account_holder, iban, bic")
         .limit(1)
         .maybeSingle();
 
@@ -74,9 +66,6 @@ export default function AdminPaymentSettingsPage() {
           account_holder: settingsData.account_holder || "",
           iban: settingsData.iban || "",
           bic: settingsData.bic || "",
-          company_name: settingsData.company_name || "",
-          company_address: settingsData.company_address || "",
-          company_vat_id: settingsData.company_vat_id || "",
         });
       }
 
@@ -99,6 +88,7 @@ export default function AdminPaymentSettingsPage() {
     let error;
 
     if (settingsId) {
+      // 계좌정보 필드만 업데이트. company_* 등 나머지 컬럼(인보이스용)은 손대지 않음
       const { error: updateError } = await supabase
         .from("payment_settings")
         .update(form)
@@ -183,7 +173,7 @@ export default function AdminPaymentSettingsPage() {
           </svg>
         </Link>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          결제 계좌 · 회사정보 설정
+          결제 계좌 설정
         </div>
       </div>
 
@@ -197,7 +187,7 @@ export default function AdminPaymentSettingsPage() {
           }}
         >
           <p style={{ fontSize: 13, color: "#8ea0b8", marginTop: 0, marginBottom: 16 }}>
-            회원권 신청 화면과 Invoice 발급에 사용되는 정보입니다.
+            회원권 신청 시 학부모/회원에게 안내되는 입금 계좌 정보입니다.
           </p>
 
           <form onSubmit={handleSubmit}>
