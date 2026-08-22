@@ -61,6 +61,7 @@ export default function AdminPaymentsPage() {
   // ===== 인보이스 탭 상태 =====
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoaded, setInvoicesLoaded] = useState(false);
+  const [invoicesDebugError, setInvoicesDebugError] = useState("");
 
   // ===== 계좌설정 탭 상태 =====
   const [settingsId, setSettingsId] = useState(null);
@@ -101,6 +102,7 @@ export default function AdminPaymentsPage() {
   }
 
   async function loadInvoices() {
+    setInvoicesDebugError("");
     const { data, error } = await supabase
       .from("invoices")
       .select(
@@ -111,12 +113,16 @@ export default function AdminPaymentsPage() {
 
     if (error) {
       console.error("인보이스 조회 실패:", error);
+      setInvoicesDebugError(
+        `조회 실패: ${error.message} (code: ${error.code || "-"}, details: ${error.details || "-"})`
+      );
       setInvoices([]);
       setInvoicesLoaded(true);
       return;
     }
 
     const invoiceList = data || [];
+    setInvoicesDebugError(`디버그: invoices 테이블에서 ${invoiceList.length}건 조회됨`);
     const paymentIds = invoiceList.map((inv) => inv.payment_id).filter(Boolean);
 
     let paymentsMap = {};
@@ -509,6 +515,12 @@ export default function AdminPaymentsPage() {
             <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
               발급된 인보이스 ({invoices.length}건)
             </div>
+
+            {invoicesDebugError && (
+              <div style={{ background: "#fff8e1", color: "#8a6d00", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 12, fontFamily: "monospace", wordBreak: "break-word" }}>
+                {invoicesDebugError}
+              </div>
+            )}
 
             {!invoicesLoaded && <p style={{ fontSize: 13, color: "#8ea0b8" }}>불러오는 중...</p>}
 
