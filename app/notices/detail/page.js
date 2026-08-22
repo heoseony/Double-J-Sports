@@ -1,9 +1,11 @@
-﻿"use client";
+"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+
+const BLUE = "#3B82C4";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -78,65 +80,120 @@ function NoticeDetailInner() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="subtitle">불러오는 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
       </main>
     );
   }
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">공지사항</div>
+    <main
+      style={{
+        background: "#f3f7fc",
+        minHeight: "100vh",
+        paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "18px 18px 4px",
+        }}
+      >
+        <Link href="/notices" style={{ color: "#1b3a63", display: "flex" }}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          공지사항
+        </div>
+      </div>
 
-      <div className="card">
-        {errorMsg && <div className="message error">{errorMsg}</div>}
-
-        {notice && (
-          <>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>
-              {notice.title}
-            </div>
-            <div style={{ fontSize: 13, color: "#999", marginTop: 6 }}>
-              {formatDate(notice.created_at)}
-            </div>
-
-            <p
+      <div style={{ padding: "10px 18px 0" }}>
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 20,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          {errorMsg && (
+            <div
               style={{
-                fontSize: 15,
-                color: "#333",
-                marginTop: 20,
-                lineHeight: 1.7,
-                whiteSpace: "pre-wrap",
+                background: "#fdecec",
+                color: "#b3261e",
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 13,
+                marginBottom: 14,
               }}
             >
-              {notice.content}
-            </p>
+              {errorMsg}
+            </div>
+          )}
 
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
+          {notice && (
+            <>
+              <div style={{ fontSize: 19, fontWeight: 800, color: "#1b3a63" }}>
+                {notice.title}
+              </div>
+              <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 6 }}>
+                {formatDate(notice.created_at)}
+              </div>
+
+              <p
                 style={{
-                  marginTop: 20,
-                  fontSize: 13,
-                  border: "1px solid #b3261e",
-                  color: "#b3261e",
-                  background: "white",
-                  borderRadius: 8,
-                  padding: "8px 14px",
-                  cursor: "pointer",
+                  fontSize: 15,
+                  color: "#33455e",
+                  marginTop: 18,
+                  lineHeight: 1.7,
+                  whiteSpace: "pre-wrap",
                 }}
               >
-                {deleting ? "삭제 중..." : "삭제"}
-              </button>
-            )}
-          </>
-        )}
+                {notice.content}
+              </p>
 
-        <div className="link-row">
-          <Link href="/notices">← 공지사항 목록으로</Link>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  style={{
+                    marginTop: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "1px solid #f3c6c2",
+                    color: "#b3261e",
+                    background: "white",
+                    borderRadius: 10,
+                    padding: "10px 16px",
+                    cursor: deleting ? "default" : "pointer",
+                  }}
+                >
+                  {deleting ? "삭제 중..." : "삭제"}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+
+        <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
+          <Link href="/notices" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 공지사항 목록으로
+          </Link>
         </div>
       </div>
     </main>
@@ -147,8 +204,8 @@ export default function NoticeDetailPage() {
   return (
     <Suspense
       fallback={
-        <main className="page">
-          <div className="subtitle">불러오는 중...</div>
+        <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+          <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
         </main>
       }
     >
