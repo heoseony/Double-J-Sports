@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../../lib/supabaseClient";
-import LoadingScreen from "../../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
+const COUPON_AMOUNT = 20;
 
 export default function SubscribePage() {
   const router = useRouter();
@@ -22,9 +22,12 @@ export default function SubscribePage() {
   const [planId, setPlanId] = useState("");
   const [depositorName, setDepositorName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(null); // 신청 완료 후 결과(계좌정보 표시용)
+  const [submitted, setSubmitted] = useState(null);
 
   const [pendingPayments, setPendingPayments] = useState([]);
+
+  const [availableCoupon, setAvailableCoupon] = useState(null);
+  const [useCoupon, setUseCoupon] = useState(false);
 
   async function loadPendingPayments() {
     const { data } = await supabase
@@ -34,6 +37,18 @@ export default function SubscribePage() {
       .eq("status", "pending")
       .order("requested_at", { ascending: false });
     setPendingPayments(data || []);
+  }
+
+  async function loadAvailableCoupon() {
+    const { data } = await supabase
+      .from("coupons")
+      .select("id, amount")
+      .eq("member_id", memberId)
+      .eq("used", false)
+      .order("issued_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    setAvailableCoupon(data || null);
   }
 
   useEffect(() => {
@@ -75,11 +90,17 @@ export default function SubscribePage() {
       setSettings(settingsData);
 
       await loadPendingPayments();
+      await loadAvailableCoupon();
       setLoading(false);
     }
 
     load();
   }, [router, memberId]);
+
+  const selectedPlan = plans.find((p) => p.id === planId);
+  const rawPrice = selectedPlan ? Number(selectedPlan.price) : 0;
+  const discount = useCoupon && availableCoupon ? Math.min(COUPON_AMOUNT, rawPrice) : 0;
+  const finalPrice = Math.max(rawPrice - discount, 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -98,9 +119,10 @@ export default function SubscribePage() {
 
     setSubmitting(true);
 
-    const totalAmount = Number(plan.price);
+    const totalAmount = finalPrice;
     const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
     const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
+    const appliedCouponId = useCoupon && availableCoupon ? availableCoupon.id : null;
 
     const { data: paymentData, error } = await supabase
       .from("payments")
@@ -112,26 +134,39 @@ export default function SubscribePage() {
         net_amount: netAmount,
         vat_amount: vatAmount,
         status: "pending",
+        coupon_id: appliedCouponId,
+        discount_amount: discount,
       })
       .select()
       .single();
 
-    setSubmitting(false);
-
     if (error) {
+      setSubmitting(false);
       setErrorMsg("신청 실패: " + error.message);
       return;
     }
 
+    if (appliedCouponId) {
+      await supabase
+        .from("coupons")
+        .update({ used: true, used_at: new Date().toISOString(), payment_id: paymentData.id })
+        .eq("id", appliedCouponId);
+    }
+
+    setSubmitting(false);
     setSubmitted({ ...paymentData, planName: plan.name });
     setPlanId("");
     setDepositorName("");
+    setUseCoupon(false);
     await loadPendingPayments();
+    await loadAvailableCoupon();
   }
 
   if (loading) {
     return (
-      <LoadingScreen />
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
+      </main>
     );
   }
 
@@ -251,6 +286,11 @@ export default function SubscribePage() {
               <strong style={{ color: "#1b3a63" }}>"{submitted.depositor_name}"</strong>과 동일해야 확인이
               빠릅니다.
             </p>
+            {Number(submitted.discount_amount) > 0 && (
+              <p style={{ fontSize: 13, color: BLUE, marginTop: 8, marginBottom: 0, fontWeight: 700 }}>
+                쿠폰 {submitted.discount_amount} EUR 할인이 적용되었습니다.
+              </p>
+            )}
             <div
               style={{
                 marginTop: 12,
@@ -340,6 +380,68 @@ export default function SubscribePage() {
                   </option>
                 ))}
               </select>
+
+              {availableCoupon && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    padding: 12,
+                    background: "#e9f1fb",
+                    borderRadius: 10,
+                    marginBottom: 12,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    id="useCoupon"
+                    checked={useCoupon}
+                    onChange={(e) => setUseCoupon(e.target.checked)}
+                    style={{ marginTop: 3, width: 18, height: 18 }}
+                  />
+                  <label htmlFor="useCoupon" style={{ fontSize: 13, color: "#1b3a63", cursor: "pointer" }}>
+                    <strong>친구추천 쿠폰 사용</strong> ({availableCoupon.amount} EUR 할인, 이번 결제에만 사용 가능)
+                  </label>
+                </div>
+              )}
+
+              {selectedPlan && (
+                <div
+                  style={{
+                    padding: 14,
+                    background: "#f7fafd",
+                    borderRadius: 10,
+                    marginBottom: 12,
+                    fontSize: 14,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#5b7699" }}>
+                    <span>상품 가격</span>
+                    <span>{rawPrice} {selectedPlan.currency}</span>
+                  </div>
+                  {discount > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", color: BLUE, marginTop: 4 }}>
+                      <span>쿠폰 할인</span>
+                      <span>- {discount} {selectedPlan.currency}</span>
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      color: "#1b3a63",
+                      fontWeight: 700,
+                      marginTop: 8,
+                      paddingTop: 8,
+                      borderTop: "1px solid #e5eaf2",
+                    }}
+                  >
+                    <span>최종 결제금액</span>
+                    <span>{finalPrice} {selectedPlan.currency}</span>
+                  </div>
+                </div>
+              )}
 
               <label style={labelStyle}>입금자명</label>
               <input
