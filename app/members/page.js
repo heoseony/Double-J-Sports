@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 
+const BLUE = "#3B82C4";
+
 function formatBirthDate(dateStr) {
   if (!dateStr) return "";
   return dateStr;
@@ -104,137 +106,198 @@ export default function MembersPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="subtitle">불러오는 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
       </main>
     );
   }
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">자녀 관리</div>
+    <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "18px 18px 4px" }}>
+        <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          더블제이 축구 아카데미
+        </div>
+      </div>
+      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>자녀 관리</div>
 
-      <div className="card">
-        {errorMsg && <div className="message error">{errorMsg}</div>}
+      <div style={{ padding: "0 18px" }}>
+        {errorMsg && (
+          <div style={{ background: "#fdecec", color: "#b3261e", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14 }}>
+            {errorMsg}
+          </div>
+        )}
 
         {members.length === 0 && !errorMsg && (
-          <p style={{ marginTop: 0, fontSize: 15, color: "#555" }}>
-            아직 등록된 자녀가 없습니다. 아래 버튼으로 자녀를 등록해주세요.
-          </p>
+          <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+            <p style={{ margin: 0, fontSize: 14, color: "#8ea0b8" }}>
+              아직 등록된 자녀가 없습니다. 아래 버튼으로 자녀를 등록해주세요.
+            </p>
+          </div>
         )}
 
         {members.map((m) => (
           <div
             key={m.id}
             style={{
-              padding: "14px 0",
-              borderBottom: "1px solid #eee",
+              background: "white",
+              borderRadius: 16,
+              padding: 18,
+              marginBottom: 14,
+              boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
             }}
           >
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{m.name}</div>
-            <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-              생년월일: {formatBirthDate(m.birth_date) || "미입력"}
-            </div>
-
-            {editingNameEnId === m.id ? (
-              <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-                <input
-                  type="text"
-                  value={nameEnDraft}
-                  onChange={(e) => setNameEnDraft(e.target.value)}
-                  placeholder="예: Minsu Kim"
-                  style={{
-                    flex: 1,
-                    padding: 8,
-                    fontSize: 13,
-                    border: "1px solid #ddd",
-                    borderRadius: 6,
-                  }}
-                />
-                <button
-                  type="button"
-                  disabled={savingNameEnId === m.id}
-                  onClick={() => saveNameEn(m.id)}
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    border: "none",
-                    borderRadius: 6,
-                    background: "#0b3d2e",
-                    color: "white",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {savingNameEnId === m.id ? "저장 중..." : "저장"}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEditNameEn}
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    border: "1px solid #ccc",
-                    borderRadius: 6,
-                    background: "white",
-                    color: "#555",
-                    cursor: "pointer",
-                  }}
-                >
-                  취소
-                </button>
-              </div>
-            ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div
                 style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: BLUE,
+                  color: "white",
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                  marginTop: 4,
+                  justifyContent: "center",
+                  fontSize: 16,
+                  fontWeight: 800,
+                  flexShrink: 0,
                 }}
               >
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: m.name_en ? "#777" : "#b3261e",
-                  }}
-                >
-                  영문 이름: {m.name_en || "미입력 (인보이스 발급 전 등록 필요)"}
-                </span>
+                {m.name?.[0] || "?"}
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#1b3a63" }}>{m.name}</div>
+                <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2 }}>
+                  생년월일: {formatBirthDate(m.birth_date) || "미입력"}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                paddingTop: 12,
+                borderTop: "1px solid #f0f3f8",
+              }}
+            >
+              {editingNameEnId === m.id ? (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    value={nameEnDraft}
+                    onChange={(e) => setNameEnDraft(e.target.value)}
+                    placeholder="예: Minsu Kim"
+                    style={{
+                      flex: 1,
+                      padding: 9,
+                      fontSize: 13,
+                      border: "1px solid #e5eaf2",
+                      borderRadius: 8,
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={savingNameEnId === m.id}
+                    onClick={() => saveNameEn(m.id)}
+                    style={{
+                      padding: "9px 14px",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: "none",
+                      borderRadius: 8,
+                      background: BLUE,
+                      color: "white",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {savingNameEnId === m.id ? "저장 중..." : "저장"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditNameEn}
+                    style={{
+                      padding: "9px 14px",
+                      fontSize: 13,
+                      border: "1px solid #e5eaf2",
+                      borderRadius: 8,
+                      background: "white",
+                      color: "#5b7699",
+                      cursor: "pointer",
+                    }}
+                  >
+                    취소
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: m.name_en ? 500 : 700,
+                      color: m.name_en ? "#8ea0b8" : "#b3261e",
+                    }}
+                  >
+                    영문 이름: {m.name_en || "미입력 (인보이스 발급 전 등록 필요)"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => startEditNameEn(m)}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      border: "1px solid #e5eaf2",
+                      color: "#5b7699",
+                      background: "white",
+                      borderRadius: 999,
+                      padding: "3px 10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    수정
+                  </button>
+                </div>
+              )}
+              {nameEnMsg && editingNameEnId === null && (
+                <div style={{ marginTop: 6, fontSize: 12, color: BLUE, fontWeight: 600 }}>
+                  {nameEnMsg}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+              <Link href={`/book?memberId=${m.id}`} style={{ flex: 1, textDecoration: "none" }}>
                 <button
-                  type="button"
-                  onClick={() => startEditNameEn(m)}
                   style={{
-                    fontSize: 12,
-                    border: "1px solid #ccc",
-                    color: "#555",
+                    width: "100%",
+                    padding: "11px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "1px solid #3B82C4",
+                    borderRadius: 10,
                     background: "white",
-                    borderRadius: 6,
-                    padding: "2px 8px",
+                    color: BLUE,
                     cursor: "pointer",
                   }}
                 >
-                  수정
-                </button>
-              </div>
-            )}
-            {nameEnMsg && editingNameEnId === null && (
-              <div style={{ marginTop: 4, fontSize: 12, color: "#0b3d2e" }}>
-                {nameEnMsg}
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              <Link href={`/book?memberId=${m.id}`}>
-                <button className="primary" style={{ padding: "10px 16px" }}>
                   수업 예약
                 </button>
               </Link>
-              <Link href={`/members/${m.id}/subscribe`}>
+              <Link href={`/members/${m.id}/subscribe`} style={{ flex: 1, textDecoration: "none" }}>
                 <button
-                  className="primary"
-                  style={{ padding: "10px 16px", background: "#0b3d2e" }}
+                  style={{
+                    width: "100%",
+                    padding: "11px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "none",
+                    borderRadius: 10,
+                    background: BLUE,
+                    color: "white",
+                    cursor: "pointer",
+                  }}
                 >
                   회원권 신청
                 </button>
@@ -243,12 +306,28 @@ export default function MembersPage() {
           </div>
         ))}
 
-        <Link href="/members/new">
-          <button className="primary">+ 자녀 등록</button>
+        <Link href="/members/new" style={{ textDecoration: "none" }}>
+          <button
+            style={{
+              width: "100%",
+              padding: 15,
+              fontSize: 15,
+              fontWeight: 700,
+              color: "white",
+              background: BLUE,
+              border: "none",
+              borderRadius: 12,
+              cursor: "pointer",
+            }}
+          >
+            + 자녀 등록
+          </button>
         </Link>
 
-        <div className="link-row">
-          <Link href="/dashboard">← 홈으로 돌아가기</Link>
+        <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
+          <Link href="/dashboard" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 홈으로 돌아가기
+          </Link>
         </div>
       </div>
     </main>
