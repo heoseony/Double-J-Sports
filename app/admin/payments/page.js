@@ -87,7 +87,7 @@ export default function AdminPaymentsPage() {
     const { data: pending } = await supabase
       .from("payments")
       .select(
-        "id, total_amount, net_amount, vat_amount, depositor_name, requested_at, member_id, plan_id, members(name, program), membership_plans(name, sessions_per_month)"
+        "id, total_amount, net_amount, vat_amount, discount_amount, depositor_name, requested_at, member_id, plan_id, members(name, program), membership_plans(name, sessions_per_month)"
       )
       .eq("status", "pending")
       .order("requested_at", { ascending: true });
@@ -552,6 +552,11 @@ export default function AdminPaymentsPage() {
                   <div style={{ fontSize: 13, color: "#33455e", marginTop: 6 }}>
                     {p.membership_plans?.name} ({p.membership_plans?.sessions_per_month}회) ·{" "}
                     <strong>{p.total_amount} EUR</strong>
+                {Number(p.discount_amount) > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#3B82C4", background: "#e9f1fb", padding: "2px 8px", borderRadius: 999, marginLeft: 8 }}>
+                    쿠폰 {p.discount_amount} EUR 할인 적용
+                  </span>
+                )}
                   </div>
                   <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
                     입금자명: <strong>{p.depositor_name}</strong> · 신청일시: {new Date(p.requested_at).toLocaleString("ko-KR")}
