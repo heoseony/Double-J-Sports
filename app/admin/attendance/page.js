@@ -155,7 +155,7 @@ export default function AdminAttendancePage() {
   return (
     <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 18px 4px" }}>
-        <Link href="/admin" style={{ color: "#1b3a63", display: "flex" }}>
+        <Link href="/dashboard" style={{ color: "#1b3a63", display: "flex" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>

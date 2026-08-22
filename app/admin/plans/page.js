@@ -214,7 +214,7 @@ export default function AdminPlansPage() {
           padding: "18px 18px 4px",
         }}
       >
-        <Link href="/admin" style={{ color: "#1b3a63", display: "flex" }}>
+        <Link href="/dashboard" style={{ color: "#1b3a63", display: "flex" }}>
           <svg
             width="20"
             height="20"
@@ -590,7 +590,7 @@ export default function AdminPlansPage() {
         </div>
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
-          <Link href="/admin" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+          <Link href="/dashboard" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
             ← 관리자 홈으로
           </Link>
         </div>

@@ -269,7 +269,7 @@ export default function AdminInvoicesPage() {
       </div>
 
       <div className="link-row">
-        <Link href="/admin">← 관리자 홈으로</Link>
+        <Link href="/dashboard">← 관리자 홈으로</Link>
       </div>
     </main>
   );
