@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../../lib/supabaseClient";
 
+const BLUE = "#3B82C4";
 const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
 
 function formatTime(t) {
@@ -156,18 +157,38 @@ export default function BookClassPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="subtitle">불러오는 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
       </main>
     );
   }
 
   if (errorMsg && !member) {
     return (
-      <main className="page">
-        <div className="card">
-          <div className="message error">{errorMsg}</div>
-          <Link href="/members">← 자녀 목록으로</Link>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 18,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          <div
+            style={{
+              background: "#fdecec",
+              color: "#b3261e",
+              padding: 12,
+              borderRadius: 10,
+              fontSize: 13,
+              marginBottom: 14,
+            }}
+          >
+            {errorMsg}
+          </div>
+          <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 13 }}>
+            ← 자녀 목록으로
+          </Link>
         </div>
       </main>
     );
@@ -177,68 +198,159 @@ export default function BookClassPage() {
   const canBook = !!membership && remaining > 0;
 
   return (
-    <main className="page">
-      <div className="brand">{member.name} 수업 예약</div>
-      <div className="subtitle">
-        {membership
-          ? `${membership.membership_plans?.name} · 잔여 ${remaining}회`
-          : "활성화된 회원권이 없습니다. 관리자에게 문의해주세요."}
+    <main
+      style={{
+        background: "#f3f7fc",
+        minHeight: "100vh",
+        paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "18px 18px 4px",
+        }}
+      >
+        <Link href="/members" style={{ color: "#1b3a63", display: "flex" }}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          {member.name} 수업 예약
+        </div>
       </div>
 
-      {errorMsg && <div className="message error">{errorMsg}</div>}
-      {successMsg && <div className="message success">{successMsg}</div>}
+      <div style={{ padding: "10px 18px 0" }}>
+        <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 14 }}>
+          {membership
+            ? `${membership.membership_plans?.name} · 잔여 ${remaining}회`
+            : "활성화된 회원권이 없습니다. 관리자에게 문의해주세요."}
+        </div>
 
-      <div className="card">
-        {sessions.length === 0 && (
-          <p style={{ marginTop: 0, fontSize: 15, color: "#555" }}>
-            예약 가능한 수업이 아직 없습니다.
-          </p>
+        {errorMsg && (
+          <div
+            style={{
+              background: "#fdecec",
+              color: "#b3261e",
+              padding: 12,
+              borderRadius: 10,
+              fontSize: 13,
+              marginBottom: 14,
+            }}
+          >
+            {errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div
+            style={{
+              background: "#e9f1fb",
+              color: "#1b3a63",
+              padding: 12,
+              borderRadius: 10,
+              fontSize: 13,
+              marginBottom: 14,
+            }}
+          >
+            {successMsg}
+          </div>
         )}
 
-        {sessions.map((s) => {
-          const alreadyBooked = myBookedSessionIds.has(s.id);
-          const count = applicantCounts[s.id] || 0;
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 18,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          {sessions.length === 0 && (
+            <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+              예약 가능한 수업이 아직 없습니다.
+            </p>
+          )}
 
-          return (
-            <div key={s.id} className="list-row" style={{ display: "block" }}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>
-                {formatDateLabel(s.session_date)} ·{" "}
-                {formatTime(s.classes.start_time)}~
-                {formatTime(s.classes.end_time)}
-              </div>
-              <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-                {s.classes.class_name}
-                {s.classes.age_group ? ` (${s.classes.age_group})` : ""}
-                {s.classes.coach_name ? ` · ${s.classes.coach_name} 코치` : ""}
-                {s.classes.location ? ` · ${s.classes.location}` : ""}
-              </div>
-              <div style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
-                현재 신청 {count}명
-              </div>
+          {sessions.map((s, idx) => {
+            const alreadyBooked = myBookedSessionIds.has(s.id);
+            const count = applicantCounts[s.id] || 0;
 
-              <button
-                className="small-btn"
+            return (
+              <div
+                key={s.id}
                 style={{
-                  marginTop: 10,
-                  background: alreadyBooked ? "#999" : "#0b3d2e",
+                  padding: "14px 0",
+                  borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
                 }}
-                disabled={
-                  alreadyBooked || !canBook || bookingSessionId === s.id
-                }
-                onClick={() => handleBook(s.id)}
               >
-                {alreadyBooked
-                  ? "예약됨"
-                  : bookingSessionId === s.id
-                  ? "예약 처리 중..."
-                  : "예약하기"}
-              </button>
-            </div>
-          );
-        })}
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                  {formatDateLabel(s.session_date)} ·{" "}
+                  {formatTime(s.classes.start_time)}~
+                  {formatTime(s.classes.end_time)}
+                </div>
+                <div style={{ fontSize: 13, color: "#33455e", marginTop: 6 }}>
+                  {s.classes.class_name}
+                  {s.classes.age_group ? ` (${s.classes.age_group})` : ""}
+                  {s.classes.coach_name ? ` · ${s.classes.coach_name} 코치` : ""}
+                  {s.classes.location ? ` · ${s.classes.location}` : ""}
+                </div>
+                <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
+                  현재 신청 {count}명
+                </div>
 
-        <div className="link-row">
-          <Link href="/members">← 자녀 목록으로</Link>
+                <button
+                  type="button"
+                  disabled={
+                    alreadyBooked || !canBook || bookingSessionId === s.id
+                  }
+                  onClick={() => handleBook(s.id)}
+                  style={{
+                    marginTop: 10,
+                    padding: "10px 18px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "none",
+                    borderRadius: 10,
+                    background: alreadyBooked
+                      ? "#c7d2e0"
+                      : !canBook
+                      ? "#c7d2e0"
+                      : bookingSessionId === s.id
+                      ? "#9db8d6"
+                      : BLUE,
+                    color: "white",
+                    cursor:
+                      alreadyBooked || !canBook || bookingSessionId === s.id
+                        ? "default"
+                        : "pointer",
+                  }}
+                >
+                  {alreadyBooked
+                    ? "예약됨"
+                    : bookingSessionId === s.id
+                    ? "예약 처리 중..."
+                    : "예약하기"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
+          <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 자녀 목록으로
+          </Link>
         </div>
       </div>
     </main>
