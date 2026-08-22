@@ -61,7 +61,8 @@ export default function AdminPaymentsPage() {
   // ===== 인보이스 탭 상태 =====
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoaded, setInvoicesLoaded] = useState(false);
-  const [invoicesDebugError, setInvoicesDebugError] = useState("");
+  const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
+  const [openingPdfPath, setOpeningPdfPath] = useState(null);
 
   // ===== 계좌설정 탭 상태 =====
   const [settingsId, setSettingsId] = useState(null);
@@ -102,27 +103,22 @@ export default function AdminPaymentsPage() {
   }
 
   async function loadInvoices() {
-    setInvoicesDebugError("");
     const { data, error } = await supabase
       .from("invoices")
       .select(
         "id, invoice_number, issued_at, total_amount, payment_id, pdf_url"
       )
       .order("issued_at", { ascending: false })
-      .limit(50);
+      .limit(200);
 
     if (error) {
       console.error("인보이스 조회 실패:", error);
-      setInvoicesDebugError(
-        `조회 실패: ${error.message} (code: ${error.code || "-"}, details: ${error.details || "-"})`
-      );
       setInvoices([]);
       setInvoicesLoaded(true);
       return;
     }
 
     const invoiceList = data || [];
-    setInvoicesDebugError(`디버그: invoices 테이블에서 ${invoiceList.length}건 조회됨`);
     const paymentIds = invoiceList.map((inv) => inv.payment_id).filter(Boolean);
 
     let paymentsMap = {};
@@ -144,6 +140,25 @@ export default function AdminPaymentsPage() {
 
     setInvoices(merged);
     setInvoicesLoaded(true);
+  }
+
+  async function handleOpenInvoicePdf(path) {
+    setOpeningPdfPath(path);
+    try {
+      const res = await fetch(`/api/invoice-url?path=${encodeURIComponent(path)}`);
+      const result = await res.json();
+
+      if (!res.ok || !result.url) {
+        setErrorMsg("PDF를 여는 데 실패했습니다: " + (result.error || "알 수 없는 오류"));
+        setOpeningPdfPath(null);
+        return;
+      }
+
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setErrorMsg("PDF를 여는 데 실패했습니다: " + e.message);
+    }
+    setOpeningPdfPath(null);
   }
 
   async function loadSettings() {
@@ -516,11 +531,23 @@ export default function AdminPaymentsPage() {
               발급된 인보이스 ({invoices.length}건)
             </div>
 
-            {invoicesDebugError && (
-              <div style={{ background: "#fff8e1", color: "#8a6d00", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 12, fontFamily: "monospace", wordBreak: "break-word" }}>
-                {invoicesDebugError}
-              </div>
-            )}
+            <input
+              type="text"
+              value={invoiceSearchQuery}
+              onChange={(e) => setInvoiceSearchQuery(e.target.value)}
+              placeholder="회원 이름으로 검색"
+              style={{
+                width: "100%",
+                padding: 12,
+                fontSize: 14,
+                border: "1px solid #e5eaf2",
+                borderRadius: 10,
+                background: "#f7fafd",
+                marginBottom: 14,
+                boxSizing: "border-box",
+                fontFamily: "inherit",
+              }}
+            />
 
             {!invoicesLoaded && <p style={{ fontSize: 13, color: "#8ea0b8" }}>불러오는 중...</p>}
 
@@ -528,26 +555,67 @@ export default function AdminPaymentsPage() {
               <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 발급된 인보이스가 없습니다.</p>
             )}
 
-            {invoices.map((inv, idx) => (
-              <div key={inv.id} style={{ padding: "12px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-                  <div>
-                    <span style={{ color: "#1b3a63", fontWeight: 700 }}>{inv.invoice_number}</span>
-                    <span style={{ color: "#33455e", marginLeft: 8 }}>
-                      {inv.payments?.members?.name} · {inv.payments?.membership_plans?.name}
-                    </span>
+            {invoicesLoaded && (() => {
+              const filtered = invoices.filter((inv) => {
+                if (!invoiceSearchQuery.trim()) return true;
+                const name = inv.payments?.members?.name || "";
+                return name.includes(invoiceSearchQuery.trim());
+              });
+
+              if (invoices.length > 0 && filtered.length === 0) {
+                return <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>검색 결과가 없습니다.</p>;
+              }
+
+              const groupedByMonth = {};
+              filtered.forEach((inv) => {
+                const key = inv.issued_at ? inv.issued_at.slice(0, 7) : "미상";
+                if (!groupedByMonth[key]) groupedByMonth[key] = [];
+                groupedByMonth[key].push(inv);
+              });
+
+              const monthKeys = Object.keys(groupedByMonth).sort((a, b) => (a < b ? 1 : -1));
+
+              return monthKeys.map((monthKey) => (
+                <div key={monthKey} style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 8 }}>
+                    {monthKey === "미상" ? "날짜 미상" : `${monthKey.slice(0, 4)}년 ${Number(monthKey.slice(5, 7))}월`}
                   </div>
-                  {inv.pdf_url && (
-                    <a href={inv.pdf_url} target="_blank" rel="noreferrer" style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 12 }}>
-                      PDF 보기
-                    </a>
-                  )}
+                  {groupedByMonth[monthKey].map((inv, idx) => (
+                    <div key={inv.id} style={{ padding: "12px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                        <div>
+                          <span style={{ color: "#1b3a63", fontWeight: 700 }}>{inv.invoice_number}</span>
+                          <span style={{ color: "#33455e", marginLeft: 8 }}>
+                            {inv.payments?.members?.name} · {inv.payments?.membership_plans?.name}
+                          </span>
+                        </div>
+                        {inv.pdf_url && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenInvoicePdf(inv.pdf_url)}
+                            disabled={openingPdfPath === inv.pdf_url}
+                            style={{
+                              color: BLUE,
+                              fontWeight: 700,
+                              fontSize: 12,
+                              background: "none",
+                              border: "none",
+                              cursor: openingPdfPath === inv.pdf_url ? "default" : "pointer",
+                              padding: 0,
+                            }}
+                          >
+                            {openingPdfPath === inv.pdf_url ? "여는 중..." : "PDF 보기"}
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
+                        발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR") : "-"} · 금액: {inv.total_amount} EUR
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
-                  발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR") : "-"} · 금액: {inv.total_amount} EUR
-                </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         )}
 
