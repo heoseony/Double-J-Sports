@@ -374,6 +374,7 @@ export default function DashboardPage() {
     { label: "수업 관리", href: "/admin/classes" },
     { label: "회원권 배정", href: "/admin/memberships" },
     { label: "상품 관리", href: "/admin/plans" },
+    { label: "결제 계좌 설정", href: "/admin/payment-settings" },
     { label: "인보이스 관리", href: "/admin/invoices" },
     { label: "공지사항", href: "/notices" },
     { label: "갤러리", href: "/photos" },
