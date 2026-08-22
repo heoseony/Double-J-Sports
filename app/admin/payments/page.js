@@ -63,6 +63,7 @@ export default function AdminPaymentsPage() {
   const [invoicesLoaded, setInvoicesLoaded] = useState(false);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
   const [openingPdfPath, setOpeningPdfPath] = useState(null);
+  const [invoiceMonthOffset, setInvoiceMonthOffset] = useState(0); // 0=이번달, -1=지난달, +1=다음달
 
   // ===== 계좌설정 탭 상태 =====
   const [settingsId, setSettingsId] = useState(null);
@@ -142,10 +143,27 @@ export default function AdminPaymentsPage() {
     setInvoicesLoaded(true);
   }
 
-  async function handleOpenInvoicePdf(path) {
-    setOpeningPdfPath(path);
+  async function handleOpenInvoicePdf(invoiceId) {
+    setOpeningPdfPath(invoiceId);
     try {
-      const res = await fetch(`/api/invoice-url?path=${encodeURIComponent(path)}`);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        setErrorMsg("로그인이 필요합니다.");
+        setOpeningPdfPath(null);
+        return;
+      }
+
+      const res = await fetch("/api/invoice-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ invoiceId }),
+      });
       const result = await res.json();
 
       if (!res.ok || !result.url) {
@@ -555,66 +573,77 @@ export default function AdminPaymentsPage() {
               <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 발급된 인보이스가 없습니다.</p>
             )}
 
-            {invoicesLoaded && (() => {
+            {invoicesLoaded && invoices.length > 0 && (() => {
+              const isSearching = invoiceSearchQuery.trim().length > 0;
+
               const filtered = invoices.filter((inv) => {
-                if (!invoiceSearchQuery.trim()) return true;
+                if (!isSearching) return true;
                 const name = inv.payments?.members?.name || "";
                 return name.includes(invoiceSearchQuery.trim());
               });
 
-              if (invoices.length > 0 && filtered.length === 0) {
-                return <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>검색 결과가 없습니다.</p>;
+              if (isSearching) {
+                if (filtered.length === 0) {
+                  return <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>검색 결과가 없습니다.</p>;
+                }
+
+                const groupedByMonth = {};
+                filtered.forEach((inv) => {
+                  const key = inv.issued_at ? inv.issued_at.slice(0, 7) : "미상";
+                  if (!groupedByMonth[key]) groupedByMonth[key] = [];
+                  groupedByMonth[key].push(inv);
+                });
+                const monthKeys = Object.keys(groupedByMonth).sort((a, b) => (a < b ? 1 : -1));
+
+                return monthKeys.map((monthKey) => (
+                  <div key={monthKey} style={{ marginBottom: 18 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 8 }}>
+                      {monthKey === "미상" ? "날짜 미상" : `${monthKey.slice(0, 4)}년 ${Number(monthKey.slice(5, 7))}월`}
+                    </div>
+                    {groupedByMonth[monthKey].map((inv, idx) => (
+                      <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} />
+                    ))}
+                  </div>
+                ));
               }
 
-              const groupedByMonth = {};
-              filtered.forEach((inv) => {
-                const key = inv.issued_at ? inv.issued_at.slice(0, 7) : "미상";
-                if (!groupedByMonth[key]) groupedByMonth[key] = [];
-                groupedByMonth[key].push(inv);
-              });
+              // 검색 중이 아닐 때: 월 하나씩 넘겨보기
+              const now = new Date();
+              const targetDate = new Date(now.getFullYear(), now.getMonth() + invoiceMonthOffset, 1);
+              const targetKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
+              const targetLabel = `${targetDate.getFullYear()}년 ${targetDate.getMonth() + 1}월`;
 
-              const monthKeys = Object.keys(groupedByMonth).sort((a, b) => (a < b ? 1 : -1));
+              const monthInvoices = invoices.filter((inv) => inv.issued_at && inv.issued_at.slice(0, 7) === targetKey);
 
-              return monthKeys.map((monthKey) => (
-                <div key={monthKey} style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 8 }}>
-                    {monthKey === "미상" ? "날짜 미상" : `${monthKey.slice(0, 4)}년 ${Number(monthKey.slice(5, 7))}월`}
+              return (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceMonthOffset((v) => v - 1)}
+                      style={{ padding: "6px 12px", border: "1px solid #e5eaf2", borderRadius: 8, background: "white", color: "#1b3a63", cursor: "pointer" }}
+                    >
+                      ‹
+                    </button>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>{targetLabel}</div>
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceMonthOffset((v) => v + 1)}
+                      style={{ padding: "6px 12px", border: "1px solid #e5eaf2", borderRadius: 8, background: "white", color: "#1b3a63", cursor: "pointer" }}
+                    >
+                      ›
+                    </button>
                   </div>
-                  {groupedByMonth[monthKey].map((inv, idx) => (
-                    <div key={inv.id} style={{ padding: "12px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-                        <div>
-                          <span style={{ color: "#1b3a63", fontWeight: 700 }}>{inv.invoice_number}</span>
-                          <span style={{ color: "#33455e", marginLeft: 8 }}>
-                            {inv.payments?.members?.name} · {inv.payments?.membership_plans?.name}
-                          </span>
-                        </div>
-                        {inv.pdf_url && (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenInvoicePdf(inv.pdf_url)}
-                            disabled={openingPdfPath === inv.pdf_url}
-                            style={{
-                              color: BLUE,
-                              fontWeight: 700,
-                              fontSize: 12,
-                              background: "none",
-                              border: "none",
-                              cursor: openingPdfPath === inv.pdf_url ? "default" : "pointer",
-                              padding: 0,
-                            }}
-                          >
-                            {openingPdfPath === inv.pdf_url ? "여는 중..." : "PDF 보기"}
-                          </button>
-                        )}
-                      </div>
-                      <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
-                        발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR") : "-"} · 금액: {inv.total_amount} EUR
-                      </div>
-                    </div>
+
+                  {monthInvoices.length === 0 && (
+                    <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>이 달에는 발급된 인보이스가 없습니다.</p>
+                  )}
+
+                  {monthInvoices.map((inv, idx) => (
+                    <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} />
                   ))}
-                </div>
-              ));
+                </>
+              );
             })()}
           </div>
         )}
@@ -792,5 +821,41 @@ export default function AdminPaymentsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf }) {
+  return (
+    <div style={{ padding: "12px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+        <div>
+          <span style={{ color: "#1b3a63", fontWeight: 700 }}>{inv.invoice_number}</span>
+          <span style={{ color: "#33455e", marginLeft: 8 }}>
+            {inv.payments?.members?.name} · {inv.payments?.membership_plans?.name}
+          </span>
+        </div>
+        {inv.pdf_url && (
+          <button
+            type="button"
+            onClick={() => handleOpenInvoicePdf(inv.id)}
+            disabled={openingPdfPath === inv.id}
+            style={{
+              color: BLUE,
+              fontWeight: 700,
+              fontSize: 12,
+              background: "none",
+              border: "none",
+              cursor: openingPdfPath === inv.id ? "default" : "pointer",
+              padding: 0,
+            }}
+          >
+            {openingPdfPath === inv.id ? "여는 중..." : "PDF 보기"}
+          </button>
+        )}
+      </div>
+      <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
+        발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR") : "-"} · 금액: {inv.total_amount} EUR
+      </div>
+    </div>
   );
 }
