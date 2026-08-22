@@ -391,6 +391,7 @@ export default function DashboardPage() {
         style={{
           display: "flex",
           alignItems: "center",
+          justifyContent: "center",
           gap: 10,
           padding: "18px 18px 8px",
         }}
