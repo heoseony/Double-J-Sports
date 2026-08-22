@@ -88,13 +88,37 @@ function AttendanceInner() {
     if (session?.class_id) {
       const { data: cc } = await supabase
         .from("class_coaches")
-        .select("id, coach_role, coach_profiles(name, profile_type)")
+        .select("id, coach_role, coach_profile_id, coach_profiles(name, profile_type)")
         .eq("class_id", session.class_id);
       // 메인 코치가 먼저, 보조 코치가 나중에 오도록 정렬
       sessionCoachList = (cc || []).sort((a, b) =>
         a.coach_role === b.coach_role ? 0 : a.coach_role === "main" ? -1 : 1
       );
       setSessionCoaches(sessionCoachList);
+    }
+
+    // 코치 로그인인 경우, 지금 선택된 프로필이 이 수업에 실제로 배정되어 있는지 확인
+    // (관리자는 항상 접근 가능, 배정 안 된 코치는 접근 차단)
+    if (profile.role === "coach") {
+      let activeProfileId = null;
+      try {
+        const stored = localStorage.getItem(
+          "double-j-sports-active-coach-profile"
+        );
+        activeProfileId = stored ? JSON.parse(stored)?.id : null;
+      } catch (e) {
+        activeProfileId = null;
+      }
+
+      const isAssigned = sessionCoachList.some(
+        (cc) => cc.coach_profile_id === activeProfileId
+      );
+
+      if (!isAssigned) {
+        setErrorMsg("이 수업에 배정된 코치가 아니라서 출석체크를 할 수 없습니다.");
+        setLoading(false);
+        return;
+      }
     }
 
     // 지금 출석체크를 누르는 "확인자" 이름 결정

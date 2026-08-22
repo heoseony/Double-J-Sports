@@ -72,14 +72,32 @@ export default function CoachHomePage() {
 
       setIsCoach(true);
 
-      const { data: myClasses } = await supabase
-        .from("classes")
-        .select("id, class_name, program")
-        .eq("coach_id", user.id);
+      // 로그인 시 선택한 코치 프로필 확인 (없으면 프로필 선택 화면으로)
+      let activeProfileId = null;
+      try {
+        const stored = localStorage.getItem(
+          "double-j-sports-active-coach-profile"
+        );
+        activeProfileId = stored ? JSON.parse(stored)?.id : null;
+      } catch (e) {
+        activeProfileId = null;
+      }
 
-      const classIds = (myClasses || []).map((c) => c.id);
+      if (!activeProfileId) {
+        router.push("/coach/select-profile");
+        return;
+      }
+
+      const { data: myClassCoaches } = await supabase
+        .from("class_coaches")
+        .select("class_id, classes(id, class_name, program)")
+        .eq("coach_profile_id", activeProfileId);
+
+      const classIds = (myClassCoaches || []).map((cc) => cc.class_id);
       const classMap = {};
-      (myClasses || []).forEach((c) => (classMap[c.id] = c));
+      (myClassCoaches || []).forEach((cc) => {
+        if (cc.classes) classMap[cc.class_id] = cc.classes;
+      });
 
       const weekEnd = addDays(weekStart, 6);
       const startStr = toDateStr(weekStart);
