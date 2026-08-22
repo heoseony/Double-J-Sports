@@ -98,8 +98,13 @@ export default function InvoicesPage() {
 
   return (
     <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">내 인보이스</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
+        <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          더블제이 축구 아카데미
+        </div>
+      </div>
+      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>내 인보이스</div>
 
       {errorMsg && (
         <div className="message error" style={{ marginBottom: 14 }}>
@@ -107,40 +112,66 @@ export default function InvoicesPage() {
         </div>
       )}
 
-      <div className="card">
+      <div style={{ background: "white", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
         {invoices.length === 0 && !errorMsg && (
-          <p style={{ fontSize: 14, color: "#777" }}>
+          <p style={{ fontSize: 14, color: "#8ea0b8", padding: 18, margin: 0 }}>
             아직 발급된 인보이스가 없습니다.
           </p>
         )}
 
-        {invoices.map((inv) => (
+        {invoices.map((inv, idx) => (
           <div
             key={inv.id}
             style={{
-              padding: "14px 0",
-              borderBottom: "1px solid #eee",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 16px",
+              borderBottom: idx === invoices.length - 1 ? "none" : "1px solid #f0f3f8",
             }}
           >
-            <div style={{ fontWeight: 700, fontSize: 15 }}>
-              {inv.invoice_number} · {inv.payments?.members?.name || "회원"}
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                background: "#e9f1fb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82C4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+              </svg>
             </div>
-            <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-              발급일: {formatDate(inv.issued_at)} · {inv.total_amount} EUR
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
+                {inv.invoice_number} · {inv.payments?.members?.name || "회원"}
+              </div>
+              <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2 }}>
+                {formatDate(inv.issued_at)} · {inv.total_amount} EUR
+              </div>
             </div>
+
             <button
               type="button"
               disabled={openingId === inv.id}
               onClick={() => handleOpen(inv.id)}
               style={{
-                marginTop: 8,
-                padding: "8px 16px",
-                fontSize: 13,
-                border: "none",
+                padding: "8px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "1px solid #3B82C4",
                 borderRadius: 8,
-                background: "#0b3d2e",
-                color: "white",
+                background: "white",
+                color: "#3B82C4",
                 cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
             >
               {openingId === inv.id ? "여는 중..." : "PDF 보기"}
