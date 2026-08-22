@@ -385,8 +385,8 @@ function BookPageInner() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="subtitle">불러오는 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
       </main>
     );
   }
@@ -395,17 +395,31 @@ function BookPageInner() {
   const selectedSessions = sessionsByDate[selectedDate] || [];
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">
+    <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "18px 18px 4px" }}>
+        <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          더블제이 축구 아카데미
+        </div>
+      </div>
+      <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 20, textAlign: "center" }}>
         {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
         {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
       </div>
 
-      <div className="card">
-        {errorMsg && <div className="message error">{errorMsg}</div>}
-        {successMsg && <div className="message success">{successMsg}</div>}
+      <div style={{ padding: "0 18px" }}>
+        {errorMsg && (
+          <div style={{ background: "#fdecec", color: "#b3261e", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14 }}>
+            {errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div style={{ background: "#e9f1fb", color: "#1b3a63", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14 }}>
+            {successMsg}
+          </div>
+        )}
 
+        <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
         <div
           style={{
             display: "flex",
@@ -482,10 +496,10 @@ function BookPageInner() {
                   aspectRatio: "1",
                   padding: 2,
                   border: isSelected
-                    ? "2px solid #0b3d2e"
+                    ? "2px solid #3B82C4"
                     : "1px solid #eee",
                   borderRadius: 8,
-                  background: isSelected ? "#e8f5ec" : "white",
+                  background: isSelected ? "#e9f1fb" : "white",
                   cursor: "pointer",
                   display: "flex",
                   flexDirection: "column",
@@ -493,7 +507,7 @@ function BookPageInner() {
                   justifyContent: "center",
                   fontSize: 13,
                   fontWeight: isToday ? 700 : 400,
-                  color: isToday ? "#0b3d2e" : "#1a1a1a",
+                  color: isToday ? "#3B82C4" : "#1a1a1a",
                 }}
               >
                 <span>{dayNum}</span>
@@ -503,7 +517,7 @@ function BookPageInner() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      background: "#0b3d2e",
+                      background: "#3B82C4",
                       marginTop: 2,
                     }}
                   />
@@ -512,10 +526,10 @@ function BookPageInner() {
             );
           })}
         </div>
-      </div>
+        </div>
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>
+        <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
           {selectedDate} 수업
         </div>
 
@@ -606,7 +620,7 @@ function BookPageInner() {
                     <span
                       style={{
                         fontSize: 13,
-                        color: "#0b3d2e",
+                        color: "#3B82C4",
                         fontWeight: 700,
                       }}
                     >
@@ -645,8 +659,16 @@ function BookPageInner() {
                   </div>
                 ) : (
                   <button
-                    className="primary"
-                    style={{ marginTop: 0, padding: "10px 16px" }}
+                    style={{
+                      padding: "10px 18px",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: "none",
+                      borderRadius: 10,
+                      background: "#3B82C4",
+                      color: "white",
+                      cursor: "pointer",
+                    }}
                     disabled={bookingSessionId === s.id}
                     onClick={() => handleBook(s.id)}
                   >
@@ -657,9 +679,12 @@ function BookPageInner() {
             </div>
           );
         })}
+        </div>
 
-        <div className="link-row">
-          <Link href="/members">← 자녀 관리로</Link>
+        <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
+          <Link href="/members" style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}>
+            ← 자녀 관리로
+          </Link>
         </div>
       </div>
     </main>
@@ -670,8 +695,8 @@ export default function BookPage() {
   return (
     <Suspense
       fallback={
-        <main className="page">
-          <div className="subtitle">불러오는 중...</div>
+        <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+          <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
         </main>
       }
     >
