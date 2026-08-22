@@ -14,6 +14,10 @@ const PROGRAM_TABS = [
   { value: "women", label: "Women's" },
   { value: "men", label: "Men's" },
 ];
+  const [adminUserId, setAdminUserId] = useState(null);
+  const [couponModalMember, setCouponModalMember] = useState(null);
+  const [issuingCoupon, setIssuingCoupon] = useState(false);
+  const [couponSuccessMsg, setCouponSuccessMsg] = useState("");
 
 const STATUS_STYLE = {
   active: { label: "활동", bg: "#e9f1fb", color: BLUE },
@@ -46,6 +50,8 @@ function ChevronDown({ open }) {
       <path d="M6 9l6 6 6-6" />
     </svg>
   );
+
+      setAdminUserId(user.id);
 }
 
 export default function AdminMembersPage() {
@@ -308,6 +314,38 @@ export default function AdminMembersPage() {
                   boxShadow: active ? "none" : "0 1px 4px rgba(30,60,110,0.08)",
                 }}
               >
+
+  function openCouponModal(member) {
+    setCouponModalMember(member);
+  }
+
+  function closeCouponModal() {
+    setCouponModalMember(null);
+  }
+
+  async function handleIssueCoupon() {
+    if (!couponModalMember) return;
+
+    setIssuingCoupon(true);
+    setCouponSuccessMsg("");
+
+    const { error } = await supabase.from("coupons").insert({
+      member_id: couponModalMember.id,
+      amount: 20,
+      issued_by: adminUserId,
+    });
+
+    setIssuingCoupon(false);
+
+    if (error) {
+      alert("쿠폰 발급 실패: " + error.message);
+      return;
+    }
+
+    setCouponSuccessMsg(`${couponModalMember.name}님에게 20 EUR 쿠폰이 발급되었습니다.`);
+    setCouponModalMember(null);
+    setTimeout(() => setCouponSuccessMsg(""), 4000);
+  }
                 {t.label}
               </button>
             );
@@ -499,6 +537,22 @@ export default function AdminMembersPage() {
                           배정된 회원권이 없습니다.
                         </p>
                       )}
+                <button
+                  type="button"
+                  onClick={() => openCouponModal(m)}
+                  style={{
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "1px solid #bcd7ee",
+                    color: "#3B82C4",
+                    borderRadius: 8,
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  쿠폰 발급
+                </button>
 
                       {memberships.map((ms) => (
                         <div
@@ -581,6 +635,101 @@ export default function AdminMembersPage() {
           })}
         </div>
       </div>
+
+      {couponModalMember && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,35,60,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+          onClick={closeCouponModal}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: 20,
+              width: "100%",
+              maxWidth: 380,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#1b3a63", marginBottom: 8 }}>
+              쿠폰을 발급하시겠어요?
+            </div>
+            <p style={{ fontSize: 14, color: "#33455e", marginTop: 0 }}>
+              <strong>{couponModalMember.name}</strong>님에게{" "}
+              <strong style={{ color: "#3B82C4" }}>20 EUR 할인 쿠폰</strong>을 발급합니다.
+              다음 결제 시 1회 사용할 수 있습니다.
+            </p>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={closeCouponModal}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 10,
+                  background: "white",
+                  color: "#5b7699",
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={issuingCoupon}
+                onClick={handleIssueCoupon}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 10,
+                  background: issuingCoupon ? "#9db8d6" : "#3B82C4",
+                  color: "white",
+                  cursor: issuingCoupon ? "default" : "pointer",
+                }}
+              >
+                {issuingCoupon ? "발급 중..." : "발급하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {couponSuccessMsg && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 100,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#1b3a63",
+            color: "white",
+            padding: "12px 20px",
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 600,
+            zIndex: 1100,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          }}
+        >
+          {couponSuccessMsg}
+        </div>
+      )}
     </main>
   );
 }
