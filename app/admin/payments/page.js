@@ -145,6 +145,10 @@ export default function AdminPaymentsPage() {
 
   async function handleOpenInvoicePdf(invoiceId) {
     setOpeningPdfPath(invoiceId);
+
+    // 팝업 차단 우회: 클릭 이벤트 직후(비동기 작업 전에) 빈 탭을 먼저 열어둔다
+    const newTab = window.open("", "_blank");
+
     try {
       const {
         data: { session },
@@ -153,6 +157,7 @@ export default function AdminPaymentsPage() {
       if (!session) {
         setErrorMsg("로그인이 필요합니다.");
         setOpeningPdfPath(null);
+        if (newTab) newTab.close();
         return;
       }
 
@@ -169,12 +174,19 @@ export default function AdminPaymentsPage() {
       if (!res.ok || !result.url) {
         setErrorMsg("PDF를 여는 데 실패했습니다: " + (result.error || "알 수 없는 오류"));
         setOpeningPdfPath(null);
+        if (newTab) newTab.close();
         return;
       }
 
-      window.open(result.url, "_blank", "noopener,noreferrer");
+      if (newTab) {
+        newTab.location.href = result.url;
+      } else {
+        // 팝업이 아예 차단되어 새 탭 자체가 안 열린 경우, 같은 탭에서라도 열어준다
+        window.location.href = result.url;
+      }
     } catch (e) {
       setErrorMsg("PDF를 여는 데 실패했습니다: " + e.message);
+      if (newTab) newTab.close();
     }
     setOpeningPdfPath(null);
   }
