@@ -31,6 +31,7 @@ export default function AdminPaymentsPage() {
 
   const [pendingPayments, setPendingPayments] = useState([]);
   const [confirmedPayments, setConfirmedPayments] = useState([]);
+  const [clearedBefore, setClearedBefore] = useState(null);
   const [confirmingId, setConfirmingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -83,6 +84,16 @@ export default function AdminPaymentsPage() {
 
       setIsAdmin(true);
       setAdminUserId(user.id);
+
+      try {
+        const stored = localStorage.getItem(
+          "double-j-sports-payments-cleared-before"
+        );
+        if (stored) setClearedBefore(stored);
+      } catch (e) {
+        // localStorage 접근 불가 시 그냥 무시 (숨김 기능만 안 됨)
+      }
+
       await loadPayments();
       setLoading(false);
     }
@@ -98,6 +109,16 @@ export default function AdminPaymentsPage() {
   function closeConfirmModal() {
     setModalPayment(null);
     setDescriptionDraft("");
+  }
+
+  function handleClearConfirmedList() {
+    const now = new Date().toISOString();
+    try {
+      localStorage.setItem("double-j-sports-payments-cleared-before", now);
+    } catch (e) {
+      // localStorage 접근 불가 시에도 이번 세션 동안은 화면에서 숨겨지도록 진행
+    }
+    setClearedBefore(now);
   }
 
   async function handleConfirm(payment, description) {
@@ -272,34 +293,63 @@ export default function AdminPaymentsPage() {
         </div>
 
         <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
-            최근 확인 완료 내역
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
+              최근 확인 완료 내역
+            </div>
+            {confirmedPayments.some(
+              (p) => !clearedBefore || p.confirmed_at > clearedBefore
+            ) && (
+              <button
+                type="button"
+                onClick={handleClearConfirmedList}
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#8ea0b8",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                모두 지우기
+              </button>
+            )}
           </div>
 
-          {confirmedPayments.length === 0 && (
-            <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              아직 확인된 결제 내역이 없습니다.
-            </p>
-          )}
+          {(() => {
+            const visibleConfirmed = confirmedPayments.filter(
+              (p) => !clearedBefore || p.confirmed_at > clearedBefore
+            );
 
-          {confirmedPayments.map((p, idx) => (
-            <div
-              key={p.id}
-              style={{
-                padding: "10px 0",
-                borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
-                fontSize: 13,
-              }}
-            >
-              <div style={{ color: "#1b3a63", fontWeight: 600 }}>
-                {p.members?.name} — {p.membership_plans?.name} · {p.total_amount} EUR
+            if (visibleConfirmed.length === 0) {
+              return (
+                <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+                  아직 확인된 결제 내역이 없습니다.
+                </p>
+              );
+            }
+
+            return visibleConfirmed.map((p, idx) => (
+              <div
+                key={p.id}
+                style={{
+                  padding: "10px 0",
+                  borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
+                  fontSize: 13,
+                }}
+              >
+                <div style={{ color: "#1b3a63", fontWeight: 600 }}>
+                  {p.members?.name} — {p.membership_plans?.name} · {p.total_amount} EUR
+                </div>
+                <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 2 }}>
+                  입금자명: {p.depositor_name} · 확인일시:{" "}
+                  {new Date(p.confirmed_at).toLocaleString("ko-KR")}
+                </div>
               </div>
-              <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 2 }}>
-                입금자명: {p.depositor_name} · 확인일시:{" "}
-                {new Date(p.confirmed_at).toLocaleString("ko-KR")}
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
