@@ -18,6 +18,24 @@ function roleLabel(role) {
   return "";
 }
 
+// 카테고리별로 다른 색을 배정해서, 전체 보기에서도 어느 목록 사진인지 한눈에 구분되게 한다.
+const CATEGORY_COLORS = [
+  "#3B82C4", // 파랑
+  "#e0784f", // 주황
+  "#4caf7d", // 초록
+  "#a06cd5", // 보라
+  "#e0b23b", // 노랑
+  "#e0567a", // 핑크
+  "#4a90a4", // 청록
+];
+
+function getCategoryColor(categoryId, categories) {
+  if (!categoryId) return "#8ea0b8";
+  const idx = categories.findIndex((c) => c.id === categoryId);
+  if (idx === -1) return "#8ea0b8";
+  return CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+}
+
 async function downloadMedia(url) {
   try {
     const response = await fetch(url);
@@ -1180,6 +1198,7 @@ export default function PhotosPage() {
       >
         {[{ id: "all", name: "전체" }, ...categories].map((c) => {
           const active = categoryFilter === c.id;
+          const dotColor = c.id === "all" ? null : getCategoryColor(c.id, categories);
           return (
             <button
               key={c.id}
@@ -1187,6 +1206,9 @@ export default function PhotosPage() {
               onClick={() => setCategoryFilter(c.id)}
               style={{
                 flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
                 padding: "8px 16px",
                 fontSize: 13,
                 fontWeight: 700,
@@ -1198,6 +1220,17 @@ export default function PhotosPage() {
                 boxShadow: active ? "none" : "0 1px 4px rgba(30,60,110,0.08)",
               }}
             >
+              {dotColor && (
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: active ? "white" : dotColor,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
               {c.name}
             </button>
           );
@@ -1253,6 +1286,7 @@ export default function PhotosPage() {
                 const mediaList = post.photo_post_media || [];
                 const firstMedia = mediaList[0];
                 const categoryName = post.gallery_categories?.name;
+                const categoryColor = getCategoryColor(post.category_id, categories);
 
                 return (
                   <div
@@ -1289,7 +1323,7 @@ export default function PhotosPage() {
                           fontSize: 10,
                           fontWeight: 700,
                           color: "white",
-                          background: "rgba(27,58,99,0.75)",
+                          background: categoryColor + "cc",
                           padding: "3px 9px",
                           borderRadius: 999,
                         }}
