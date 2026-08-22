@@ -38,6 +38,8 @@ function AttendanceInner() {
   const [errorMsg, setErrorMsg] = useState("");
   const [sessionInfo, setSessionInfo] = useState(null);
   const [sessionCoaches, setSessionCoaches] = useState([]);
+  const [myRole, setMyRole] = useState(null);
+  const [confirmerName, setConfirmerName] = useState("");
   const [bookings, setBookings] = useState([]);
   const [remainingByMember, setRemainingByMember] = useState({});
   const [updatingId, setUpdatingId] = useState(null);
@@ -72,6 +74,8 @@ function AttendanceInner() {
       return;
     }
 
+    setMyRole(profile.role);
+
     const { data: session } = await supabase
       .from("class_sessions")
       .select("id, session_date, start_time, end_time, class_id, classes(class_name)")
@@ -80,18 +84,41 @@ function AttendanceInner() {
 
     setSessionInfo(session);
 
+    let sessionCoachList = [];
     if (session?.class_id) {
       const { data: cc } = await supabase
         .from("class_coaches")
         .select("id, coach_role, coach_profiles(name, profile_type)")
-        .eq("class_id", session.class_id)
-        .order("coach_role", { ascending: true });
-      setSessionCoaches(cc || []);
+        .eq("class_id", session.class_id);
+      // 메인 코치가 먼저, 보조 코치가 나중에 오도록 정렬
+      sessionCoachList = (cc || []).sort((a, b) =>
+        a.coach_role === b.coach_role ? 0 : a.coach_role === "main" ? -1 : 1
+      );
+      setSessionCoaches(sessionCoachList);
+    }
+
+    // 지금 출석체크를 누르는 "확인자" 이름 결정
+    // - 코치로 로그인: 선택해둔 코치 프로필 이름
+    // - 관리자로 로그인: 이 수업에 배정된 감독님 이름 (없으면 "관리자")
+    if (profile.role === "coach") {
+      try {
+        const stored = localStorage.getItem(
+          "double-j-sports-active-coach-profile"
+        );
+        setConfirmerName(stored ? JSON.parse(stored)?.name : "코치");
+      } catch (e) {
+        setConfirmerName("코치");
+      }
+    } else {
+      const director = sessionCoachList.find(
+        (cc) => cc.coach_profiles?.profile_type === "director"
+      );
+      setConfirmerName(director?.coach_profiles?.name || "관리자");
     }
 
     const { data: bookingData, error } = await supabase
       .from("bookings")
-      .select("id, status, member_id, members(name)")
+      .select("id, status, member_id, checked_by_name, members(name)")
       .eq("class_session_id", sessionId)
       .neq("status", "cancelled_prior")
       .order("created_at", { ascending: true });
@@ -137,7 +164,10 @@ function AttendanceInner() {
 
   async function handleSetStatus(bookingId, status) {
     setUpdatingId(bookingId);
-    await supabase.from("bookings").update({ status }).eq("id", bookingId);
+    await supabase
+      .from("bookings")
+      .update({ status, checked_by_name: confirmerName })
+      .eq("id", bookingId);
     setEditingBookingId(null);
     await loadData();
     setUpdatingId(null);
@@ -203,7 +233,6 @@ function AttendanceInner() {
               {sessionCoaches
                 .map(
                   (cc) =>
-                    (cc.coach_role === "main" ? "메인 " : "보조 ") +
                     cc.coach_profiles?.name +
                     (cc.coach_profiles?.profile_type === "coach" ? " 코치" : "")
                 )
@@ -392,23 +421,29 @@ function AttendanceInner() {
                 )}
 
                 {!showButtons && isDecided && (
-                  <button
-                    type="button"
-                    onClick={() => setEditingBookingId(b.id)}
-                    style={{
-                      marginTop: 8,
-                      padding: "6px 14px",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      border: "1px solid #e5eaf2",
-                      borderRadius: 8,
-                      background: "white",
-                      color: "#5b7699",
-                      cursor: "pointer",
-                    }}
-                  >
-                    수정
-                  </button>
+                  <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                    {b.checked_by_name && (
+                      <span style={{ fontSize: 11, color: "#aab9cc" }}>
+                        확인자: {b.checked_by_name}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setEditingBookingId(b.id)}
+                      style={{
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "1px solid #e5eaf2",
+                        borderRadius: 8,
+                        background: "white",
+                        color: "#5b7699",
+                        cursor: "pointer",
+                      }}
+                    >
+                      수정
+                    </button>
+                  </div>
                 )}
               </div>
             );
