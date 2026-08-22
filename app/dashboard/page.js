@@ -338,7 +338,7 @@ export default function DashboardPage() {
     ? "아카데미 운영을 효율적으로 관리하세요."
     : isCoach
     ? "오늘도 멋진 수업 만들어가요!"
-    : "오늘도 즐거운 축구 되세요!";
+    : "오늘도 좋은 하루 보내세요!";
 
   const monday = getMonday(new Date());
   const todayStr = toDateStr(new Date());
