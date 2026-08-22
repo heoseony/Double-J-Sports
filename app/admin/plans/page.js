@@ -1,18 +1,29 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 
+const BLUE = "#3B82C4";
+
 const inputStyle = {
   width: "100%",
-  padding: 10,
+  padding: 12,
   fontSize: 14,
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  marginBottom: 8,
+  border: "1px solid #e5eaf2",
+  borderRadius: 10,
+  marginBottom: 10,
   boxSizing: "border-box",
+  fontFamily: "inherit",
+};
+
+const labelStyle = {
+  fontSize: 13,
+  fontWeight: 700,
+  color: "#1b3a63",
+  display: "block",
+  marginBottom: 6,
 };
 
 export default function AdminPlansPage() {
@@ -179,250 +190,410 @@ export default function AdminPlansPage() {
 
   if (loading || !isAdmin) {
     return (
-      <main className="page">
-        <div className="subtitle">확인 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>확인 중...</div>
       </main>
     );
   }
 
+  const programLabel = { kids: "Kids", women: "Women's", men: "Men's" };
+
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">회원권 상품 · 가격 관리</div>
-
-      <div className="card">
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>새 상품 만들기</div>
-        <form onSubmit={handleCreate}>
-          <label>상품명</label>
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="예: 유아A 월 8회"
-            style={inputStyle}
-          />
-
-          <label>프로그램</label>
-          <select
-            value={newProgram}
-            onChange={(e) => setNewProgram(e.target.value)}
-            style={inputStyle}
+    <main
+      style={{
+        background: "#f3f7fc",
+        minHeight: "100vh",
+        paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "18px 18px 4px",
+        }}
+      >
+        <Link href="/admin" style={{ color: "#1b3a63", display: "flex" }}>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <option value="kids">Kids</option>
-            <option value="women">Women's</option>
-            <option value="men">Men's</option>
-          </select>
-
-          <label>월 이용 횟수</label>
-          <input
-            type="number"
-            value={newSessions}
-            onChange={(e) => setNewSessions(e.target.value)}
-            style={inputStyle}
-          />
-
-          <label>가격 (EUR)</label>
-          <input
-            type="number"
-            value={newPrice}
-            onChange={(e) => setNewPrice(e.target.value)}
-            style={inputStyle}
-          />
-
-          <button className="primary" type="submit" disabled={creating}>
-            {creating ? "생성 중..." : "상품 생성"}
-          </button>
-        </form>
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          상품 관리
+        </div>
       </div>
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>등록된 상품</div>
+      <div style={{ padding: "10px 18px 0" }}>
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 18,
+            marginBottom: 16,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 15,
+              color: "#1b3a63",
+              marginBottom: 14,
+            }}
+          >
+            새 상품 만들기
+          </div>
+          <form onSubmit={handleCreate}>
+            <label style={labelStyle}>상품명</label>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="예: 유아A 월 8회"
+              style={inputStyle}
+            />
 
-        {plans.map((p) => {
-          const isEditing = editingId === p.id;
-          const relevantClasses = classes.filter(
-            (c) => c.program === p.program
-          );
+            <label style={labelStyle}>프로그램</label>
+            <select
+              value={newProgram}
+              onChange={(e) => setNewProgram(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="kids">Kids</option>
+              <option value="women">Women's</option>
+              <option value="men">Men's</option>
+            </select>
 
-          if (isEditing) {
+            <label style={labelStyle}>월 이용 횟수</label>
+            <input
+              type="number"
+              value={newSessions}
+              onChange={(e) => setNewSessions(e.target.value)}
+              style={inputStyle}
+            />
+
+            <label style={labelStyle}>가격 (EUR)</label>
+            <input
+              type="number"
+              value={newPrice}
+              onChange={(e) => setNewPrice(e.target.value)}
+              style={{ ...inputStyle, marginBottom: 4 }}
+            />
+
+            <button
+              type="submit"
+              disabled={creating}
+              style={{
+                width: "100%",
+                marginTop: 14,
+                padding: 14,
+                fontSize: 15,
+                fontWeight: 700,
+                color: "white",
+                background: creating ? "#9db8d6" : BLUE,
+                border: "none",
+                borderRadius: 10,
+                cursor: creating ? "default" : "pointer",
+              }}
+            >
+              {creating ? "생성 중..." : "상품 생성"}
+            </button>
+          </form>
+        </div>
+
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 18,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 15,
+              color: "#1b3a63",
+              marginBottom: 12,
+            }}
+          >
+            등록된 상품 ({plans.length}개)
+          </div>
+
+          {plans.length === 0 && (
+            <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+              아직 등록된 상품이 없습니다.
+            </p>
+          )}
+
+          {plans.map((p, idx) => {
+            const isEditing = editingId === p.id;
+            const relevantClasses = classes.filter(
+              (c) => c.program === p.program
+            );
+
+            if (isEditing) {
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    padding: "16px 0",
+                    borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "#f7fafd",
+                      borderRadius: 12,
+                      padding: 14,
+                    }}
+                  >
+                    <label style={labelStyle}>상품명</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <label style={labelStyle}>월 이용 횟수</label>
+                    <input
+                      type="number"
+                      value={editSessions}
+                      onChange={(e) => setEditSessions(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <label style={labelStyle}>가격 (EUR)</label>
+                    <input
+                      type="number"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      style={inputStyle}
+                    />
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        marginTop: 6,
+                        fontSize: 13,
+                        color: "#33455e",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={editAllClasses}
+                        onChange={(e) => setEditAllClasses(e.target.checked)}
+                        style={{ marginTop: 3, width: 18, height: 18 }}
+                      />
+                      <span>
+                        모든 {programLabel[p.program] || p.program} 수업 예약
+                        가능 (체크 해제하면 특정 수업만 선택 가능)
+                      </span>
+                    </div>
+
+                    {!editAllClasses && (
+                      <div
+                        style={{
+                          marginTop: 12,
+                          padding: 12,
+                          background: "white",
+                          borderRadius: 10,
+                          border: "1px solid #e5eaf2",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "#1b3a63",
+                            marginBottom: 8,
+                          }}
+                        >
+                          예약 허용할 수업 선택
+                        </div>
+                        {relevantClasses.length === 0 && (
+                          <p style={{ fontSize: 12, color: "#8ea0b8", margin: 0 }}>
+                            이 프로그램에 등록된 수업이 없습니다.
+                          </p>
+                        )}
+                        {relevantClasses.map((c) => (
+                          <div
+                            key={c.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 10,
+                              marginTop: 8,
+                              fontSize: 13,
+                              color: "#33455e",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={editSelectedClassIds.includes(c.id)}
+                              onChange={() => toggleClassSelection(c.id)}
+                              style={{ marginTop: 3, width: 18, height: 18 }}
+                            />
+                            <span>
+                              {c.class_name} ({c.start_time?.slice(0, 5)}~
+                              {c.end_time?.slice(0, 5)})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => saveEdit(p.id)}
+                        style={{
+                          flex: 1,
+                          padding: "12px 16px",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          border: "none",
+                          borderRadius: 10,
+                          background: saving ? "#9db8d6" : BLUE,
+                          color: "white",
+                          cursor: saving ? "default" : "pointer",
+                        }}
+                      >
+                        {saving ? "저장 중..." : "저장"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        style={{
+                          padding: "12px 16px",
+                          fontSize: 14,
+                          border: "1px solid #e5eaf2",
+                          borderRadius: 10,
+                          background: "white",
+                          color: "#5b7699",
+                          cursor: "pointer",
+                        }}
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            const allowedCount = (planClassMap[p.id] || []).length;
+
             return (
               <div
                 key={p.id}
                 style={{
-                  padding: "12px 0",
-                  borderBottom: "1px solid #eee",
-                  background: "#fafafa",
+                  padding: "14px 0",
+                  borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
+                  opacity: p.active ? 1 : 0.5,
                 }}
               >
-                <label style={{ fontSize: 12 }}>상품명</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  style={inputStyle}
-                />
-
-                <label style={{ fontSize: 12 }}>월 이용 횟수</label>
-                <input
-                  type="number"
-                  value={editSessions}
-                  onChange={(e) => setEditSessions(e.target.value)}
-                  style={inputStyle}
-                />
-
-                <label style={{ fontSize: 12 }}>가격 (EUR)</label>
-                <input
-                  type="number"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  style={inputStyle}
-                />
-
-                <div className="checkbox-row" style={{ marginTop: 4 }}>
-                  <input
-                    type="checkbox"
-                    checked={editAllClasses}
-                    onChange={(e) => setEditAllClasses(e.target.checked)}
-                  />
-                  <span>
-                    모든 {p.program} 수업 예약 가능 (체크 해제하면 특정
-                    수업만 선택 가능)
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                    {p.name}
                   </span>
-                </div>
-
-                {!editAllClasses && (
-                  <div
+                  <span
                     style={{
-                      marginTop: 10,
-                      padding: 10,
-                      background: "white",
-                      borderRadius: 8,
-                      border: "1px solid #eee",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: BLUE,
+                      background: "#e9f1fb",
+                      padding: "2px 8px",
+                      borderRadius: 999,
                     }}
                   >
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
-                      예약 허용할 수업 선택
-                    </div>
-                    {relevantClasses.length === 0 && (
-                      <p style={{ fontSize: 12, color: "#777" }}>
-                        이 프로그램에 등록된 수업이 없습니다.
-                      </p>
-                    )}
-                    {relevantClasses.map((c) => (
-                      <div key={c.id} className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={editSelectedClassIds.includes(c.id)}
-                          onChange={() => toggleClassSelection(c.id)}
-                        />
-                        <span>
-                          {c.class_name} ({c.start_time?.slice(0, 5)}~
-                          {c.end_time?.slice(0, 5)})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                    {programLabel[p.program] || p.program}
+                  </span>
+                  {!p.active && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#b3261e",
+                        background: "#fdecec",
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                      }}
+                    >
+                      비활성
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ fontSize: 13, color: "#33455e", marginTop: 6 }}>
+                  {p.sessions_per_month}회 ·{" "}
+                  <strong>{p.price} {p.currency}</strong>
+                </div>
+
+                <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
+                  {p.all_classes_allowed
+                    ? "모든 수업 예약 가능"
+                    : `특정 수업만 예약 가능 (${allowedCount}개 수업)`}
+                </div>
 
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <button
                     type="button"
+                    onClick={() => startEdit(p)}
                     style={{
-                      padding: "8px 14px",
+                      padding: "9px 16px",
                       fontSize: 13,
-                      border: "none",
-                      borderRadius: 8,
-                      background: "#0b3d2e",
-                      color: "white",
+                      fontWeight: 700,
+                      border: "1px solid #e5eaf2",
+                      borderRadius: 10,
+                      background: "white",
+                      color: "#1b3a63",
                       cursor: "pointer",
                     }}
-                    disabled={saving}
-                    onClick={() => saveEdit(p.id)}
                   >
-                    {saving ? "저장 중..." : "저장"}
+                    수정
                   </button>
                   <button
                     type="button"
+                    onClick={() => toggleActive(p.id, p.active)}
                     style={{
-                      padding: "8px 14px",
+                      padding: "9px 16px",
                       fontSize: 13,
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
+                      fontWeight: 700,
+                      border: p.active ? "1px solid #f3c6c2" : "1px solid #bcd7ee",
+                      color: p.active ? "#b3261e" : BLUE,
+                      borderRadius: 10,
                       background: "white",
                       cursor: "pointer",
                     }}
-                    onClick={cancelEdit}
                   >
-                    취소
+                    {p.active ? "비활성화" : "활성화"}
                   </button>
                 </div>
               </div>
             );
-          }
+          })}
+        </div>
 
-          const allowedCount = (planClassMap[p.id] || []).length;
-
-          return (
-            <div
-              key={p.id}
-              style={{
-                padding: "12px 0",
-                borderBottom: "1px solid #eee",
-                fontSize: 14,
-                opacity: p.active ? 1 : 0.5,
-              }}
-            >
-              <div style={{ fontWeight: 700 }}>
-                [{p.program}] {p.name} · {p.sessions_per_month}회 ·{" "}
-                {p.price} {p.currency}
-                {!p.active && " (비활성)"}
-              </div>
-              <div style={{ color: "#777", marginTop: 2, fontSize: 13 }}>
-                {p.all_classes_allowed
-                  ? "모든 수업 예약 가능"
-                  : `특정 수업만 예약 가능 (${allowedCount}개 수업)`}
-              </div>
-
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <button
-                  type="button"
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => startEdit(p)}
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    border: p.active
-                      ? "1px solid #b3261e"
-                      : "1px solid #0b3d2e",
-                    color: p.active ? "#b3261e" : "#0b3d2e",
-                    borderRadius: 8,
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => toggleActive(p.id, p.active)}
-                >
-                  {p.active ? "비활성화" : "활성화"}
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="link-row">
-        <Link href="/admin">← 관리자 홈으로</Link>
+        <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
+          <Link href="/admin" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 관리자 홈으로
+          </Link>
+        </div>
       </div>
     </main>
   );
