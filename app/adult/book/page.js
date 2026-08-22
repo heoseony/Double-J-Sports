@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
-import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
 const WEEKDAY_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -26,18 +25,12 @@ export default function AdultBookPage() {
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
 
   const [member, setMember] = useState(null);
   const [remaining, setRemaining] = useState(0);
-  const [membershipId, setMembershipId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [countsBySession, setCountsBySession] = useState({});
-  const [bookingSessionId, setBookingSessionId] = useState(null);
-  const [cancellingSessionId, setCancellingSessionId] = useState(null);
-  const [myBookingIdBySession, setMyBookingIdBySession] = useState({});
-  const [cutoffHours, setCutoffHours] = useState(24);
-  const [bookingCutoffHours, setBookingCutoffHours] = useState(2);
+  const [myBookedSessionIds, setMyBookedSessionIds] = useState(new Set());
   const [allClassesAllowed, setAllClassesAllowed] = useState(true);
 
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -86,11 +79,9 @@ export default function AdultBookPage() {
       const m = memberships[0];
       const total = m.membership_plans?.sessions_per_month || 0;
       setRemaining(total - m.sessions_used);
-      setMembershipId(m.id);
       setAllClassesAllowed(m.membership_plans?.all_classes_allowed !== false);
     } else {
       setRemaining(0);
-      setMembershipId(null);
       setAllClassesAllowed(true);
     }
 
@@ -99,23 +90,8 @@ export default function AdultBookPage() {
       .select("id, class_session_id")
       .eq("member_id", memberData.id)
       .eq("status", "booked");
-    const bookingMap = {};
-    (myBookings || []).forEach((b) => {
-      bookingMap[b.class_session_id] = b.id;
-    });
-    setMyBookingIdBySession(bookingMap);
-
-    const { data: policyData } = await supabase
-      .from("cancellation_policy")
-      .select("cutoff_hours, booking_cutoff_hours")
-      .limit(1)
-      .maybeSingle();
-    if (policyData?.cutoff_hours != null) {
-      setCutoffHours(policyData.cutoff_hours);
-    }
-    if (policyData?.booking_cutoff_hours != null) {
-      setBookingCutoffHours(policyData.booking_cutoff_hours);
-    }
+    const bookedIds = new Set((myBookings || []).map((b) => b.class_session_id));
+    setMyBookedSessionIds(bookedIds);
 
     const today = todayStr();
     const { data: sessionData, error: sessionError } = await supabase
@@ -208,129 +184,11 @@ export default function AdultBookPage() {
     setCurrentMonth(d);
   }
 
-  async function handleBook(sessionId) {
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    if (remaining <= 0 || !membershipId) {
-      setErrorMsg("잔여 이용 횟수가 없습니다. 관리자에게 문의해주세요.");
-      return;
-    }
-
-    if (myBookingIdBySession[sessionId]) {
-      setErrorMsg("이미 이 수업에 예약되어 있습니다.");
-      return;
-    }
-
-    const session = sessions.find((s) => s.id === sessionId);
-    if (session) {
-      const sessionDateTime = new Date(
-        `${session.session_date}T${session.start_time}`
-      );
-      const deadline = new Date(
-        sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
-      );
-      if (new Date() > deadline) {
-        setErrorMsg(
-          `예약이 마감되었습니다. (수업 시작 ${bookingCutoffHours}시간 전까지 예약 가능)`
-        );
-        return;
-      }
-    }
-
-    setBookingSessionId(sessionId);
-
-    const { error: bookingError } = await supabase.from("bookings").insert({
-      member_id: member.id,
-      class_session_id: sessionId,
-      status: "booked",
-    });
-
-    if (bookingError) {
-      setBookingSessionId(null);
-      setErrorMsg("예약 실패: " + bookingError.message);
-      return;
-    }
-
-    const { data: currentMembership } = await supabase
-      .from("memberships")
-      .select("sessions_used")
-      .eq("id", membershipId)
-      .single();
-
-    await supabase
-      .from("memberships")
-      .update({ sessions_used: (currentMembership?.sessions_used || 0) + 1 })
-      .eq("id", membershipId);
-
-    setBookingSessionId(null);
-    setSuccessMsg("예약이 완료되었습니다.");
-    await loadAll();
-  }
-
-  async function handleCancel(sessionId) {
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    const bookingId = myBookingIdBySession[sessionId];
-    if (!bookingId) {
-      setErrorMsg("예약 정보를 찾을 수 없습니다.");
-      return;
-    }
-
-    const session = sessions.find((s) => s.id === sessionId);
-    if (!session) return;
-
-    setCancellingSessionId(sessionId);
-
-    const sessionDateTime = new Date(
-      `${session.session_date}T${session.start_time}`
-    );
-    const cutoffTime = new Date(
-      sessionDateTime.getTime() - cutoffHours * 60 * 60 * 1000
-    );
-    const now = new Date();
-    const isPrior = now < cutoffTime;
-    const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
-
-    const { error: cancelError } = await supabase
-      .from("bookings")
-      .update({ status: newStatus, cancelled_at: new Date().toISOString() })
-      .eq("id", bookingId);
-
-    if (cancelError) {
-      setCancellingSessionId(null);
-      setErrorMsg("취소 실패: " + cancelError.message);
-      return;
-    }
-
-    if (isPrior && membershipId) {
-      const { data: currentMembership } = await supabase
-        .from("memberships")
-        .select("sessions_used")
-        .eq("id", membershipId)
-        .single();
-
-      const newUsed = Math.max((currentMembership?.sessions_used || 0) - 1, 0);
-
-      await supabase
-        .from("memberships")
-        .update({ sessions_used: newUsed })
-        .eq("id", membershipId);
-    }
-
-    setCancellingSessionId(null);
-    setSuccessMsg(
-      isPrior
-        ? "취소되었습니다. 잔여 횟수가 복구되었습니다."
-        : "취소되었습니다. 당일 취소라 잔여 횟수는 복구되지 않습니다."
-    );
-    await loadAll();
-  }
-
   if (loading) {
     return (
-      <LoadingScreen />
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
+      </main>
     );
   }
 
@@ -354,48 +212,24 @@ export default function AdultBookPage() {
           padding: "18px 18px 4px",
         }}
       >
-        <img
-          src="/logo-main.png"
-          alt="로고"
-          style={{ width: 28, height: 28, objectFit: "contain" }}
-        />
-        <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 축구 아카데미
-        </div>
+        <img src="/logo-main.png" alt="로고" style={{ width: 28, height: 28, objectFit: "contain" }} />
+        <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>더블제이 축구 아카데미</div>
       </div>
 
       <div style={{ padding: "0 18px" }}>
-        <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 14 }}>
-          {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
-          {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "#8ea0b8" }}>
+            {member?.name}님 · 잔여 {Math.max(remaining, 0)}회
+            {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
+          </div>
+          <Link href="/adult/reservations" style={{ fontSize: 12, fontWeight: 700, color: BLUE, textDecoration: "none" }}>
+            예약내역 →
+          </Link>
         </div>
 
         {errorMsg && (
-          <div
-            style={{
-              background: "#fdecec",
-              color: "#b3261e",
-              padding: 12,
-              borderRadius: 10,
-              fontSize: 13,
-              marginBottom: 14,
-            }}
-          >
+          <div style={{ background: "#fdecec", color: "#b3261e", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14 }}>
             {errorMsg}
-          </div>
-        )}
-        {successMsg && (
-          <div
-            style={{
-              background: "#e9f1fb",
-              color: "#1b3a63",
-              padding: 12,
-              borderRadius: 10,
-              fontSize: 13,
-              marginBottom: 14,
-            }}
-          >
-            {successMsg}
           </div>
         )}
 
@@ -408,70 +242,31 @@ export default function AdultBookPage() {
             boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12,
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <button
               type="button"
               onClick={goPrevMonth}
-              style={{
-                padding: "6px 12px",
-                border: "1px solid #e5eaf2",
-                borderRadius: 8,
-                background: "white",
-                color: "#1b3a63",
-                cursor: "pointer",
-              }}
+              style={{ padding: "6px 12px", border: "1px solid #e5eaf2", borderRadius: 8, background: "white", color: "#1b3a63", cursor: "pointer" }}
             >
               ‹
             </button>
-            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
-              {monthLabel}
-            </div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>{monthLabel}</div>
             <button
               type="button"
               onClick={goNextMonth}
-              style={{
-                padding: "6px 12px",
-                border: "1px solid #e5eaf2",
-                borderRadius: 8,
-                background: "white",
-                color: "#1b3a63",
-                cursor: "pointer",
-              }}
+              style={{ padding: "6px 12px", border: "1px solid #e5eaf2", borderRadius: 8, background: "white", color: "#1b3a63", cursor: "pointer" }}
             >
               ›
             </button>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, 1fr)",
-              gap: 4,
-              fontSize: 12,
-              textAlign: "center",
-              color: "#8ea0b8",
-              marginBottom: 6,
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, fontSize: 12, textAlign: "center", color: "#8ea0b8", marginBottom: 6 }}>
             {WEEKDAY_HEADERS.map((w) => (
               <div key={w}>{w}</div>
             ))}
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, 1fr)",
-              gap: 4,
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
             {calendarCells.map((dateStr, idx) => {
               if (!dateStr) return <div key={`empty-${idx}`} />;
               const daySessions = sessionsByDate[dateStr] || [];
@@ -487,9 +282,7 @@ export default function AdultBookPage() {
                   style={{
                     aspectRatio: "1",
                     padding: 2,
-                    border: isSelected
-                      ? `2px solid ${BLUE}`
-                      : "1px solid #f0f3f8",
+                    border: isSelected ? `2px solid ${BLUE}` : "1px solid #f0f3f8",
                     borderRadius: 8,
                     background: isSelected ? "#e9f1fb" : "white",
                     cursor: "pointer",
@@ -504,15 +297,7 @@ export default function AdultBookPage() {
                 >
                   <span>{dayNum}</span>
                   {daySessions.length > 0 && (
-                    <span
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: "50%",
-                        background: BLUE,
-                        marginTop: 2,
-                      }}
-                    />
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: BLUE, marginTop: 2 }} />
                   )}
                 </button>
               );
@@ -540,94 +325,48 @@ export default function AdultBookPage() {
 
           {selectedSessions.map((s, idx) => {
             const count = countsBySession[s.id] || 0;
-            const bookingId = myBookingIdBySession[s.id];
-
-            const sessionDateTime = new Date(`${s.session_date}T${s.start_time}`);
-            const bookingDeadline = new Date(
-              sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
-            );
-            const isPastDeadline = new Date() > bookingDeadline;
+            const isBooked = myBookedSessionIds.has(s.id);
 
             return (
-              <div
-                key={s.id}
-                style={{
-                  padding: "14px 0",
-                  borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
-                }}
-              >
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
-                  {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} ·{" "}
-                  {s.classes.class_name}
-                </div>
-                <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
-                  현재 신청 {count}명
-                </div>
-
-                <div style={{ marginTop: 10 }}>
-                  {bookingId ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span
-                        style={{
-                          fontSize: 13,
-                          color: BLUE,
-                          fontWeight: 700,
-                        }}
-                      >
-                        ✓ 예약됨
-                      </span>
-                      <button
-                        type="button"
-                        disabled={cancellingSessionId === s.id}
-                        onClick={() => handleCancel(s.id)}
-                        style={{
-                          padding: "6px 12px",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          border: "1px solid #f3c6c2",
-                          color: "#b3261e",
-                          borderRadius: 8,
-                          background: "white",
-                          cursor: cancellingSessionId === s.id ? "default" : "pointer",
-                        }}
-                      >
-                        {cancellingSessionId === s.id
-                          ? "취소 중..."
-                          : "예약 취소"}
-                      </button>
+              <Link key={s.id} href={`/adult/book/${s.id}`} style={{ textDecoration: "none" }}>
+                <div
+                  style={{
+                    padding: "14px 0",
+                    borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                        {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} · {s.classes.class_name}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
+                        현재 신청 {count}명
+                      </div>
                     </div>
-                  ) : isPastDeadline ? (
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#8ea0b8",
-                        fontWeight: 700,
-                      }}
-                    >
-                      예약 마감 (수업 시작 {bookingCutoffHours}시간 전까지 예약
-                      가능)
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                      {isBooked && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: BLUE,
+                            background: "#e9f1fb",
+                            padding: "3px 10px",
+                            borderRadius: 999,
+                          }}
+                        >
+                          예약됨
+                        </span>
+                      )}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c7d2e0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={bookingSessionId === s.id}
-                      onClick={() => handleBook(s.id)}
-                      style={{
-                        padding: "10px 18px",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        border: "none",
-                        borderRadius: 10,
-                        background: bookingSessionId === s.id ? "#9db8d6" : BLUE,
-                        color: "white",
-                        cursor: bookingSessionId === s.id ? "default" : "pointer",
-                      }}
-                    >
-                      {bookingSessionId === s.id ? "예약 중..." : "예약하기"}
-                    </button>
-                  )}
+                  </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
