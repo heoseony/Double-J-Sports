@@ -939,8 +939,8 @@ export default function PhotosPage() {
   if (loading) {
     return (
       <main className="page">
-        <div className="brand">Double J Sports</div>
-        <div className="subtitle">갤러리</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: "#1b3a63" }}>Double J Sports</div>
+        <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28 }}>갤러리</div>
         {[1, 2].map((i) => (
           <div
             key={i}
@@ -996,13 +996,26 @@ export default function PhotosPage() {
 
   return (
     <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">갤러리</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: "#1b3a63" }}>Double J Sports</div>
+      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28 }}>갤러리</div>
 
       {canUpload && (
         <div className="card" style={{ marginBottom: 20 }}>
           {!showForm ? (
-            <button className="primary" onClick={() => setShowForm(true)}>
+            <button
+              onClick={() => setShowForm(true)}
+              style={{
+                width: "100%",
+                padding: 16,
+                fontSize: 16,
+                fontWeight: 700,
+                color: "white",
+                background: "#3B82C4",
+                border: "none",
+                borderRadius: 12,
+                cursor: "pointer",
+              }}
+            >
               + 사진/동영상 올리기
             </button>
           ) : (
@@ -1110,14 +1123,36 @@ export default function PhotosPage() {
               {errorMsg && <div className="message error">{errorMsg}</div>}
 
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                <button className="primary" type="submit" disabled={uploading || converting}>
+                <button
+                  type="submit"
+                  disabled={uploading || converting}
+                  style={{
+                    flex: 1,
+                    padding: 14,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "white",
+                    background: "#3B82C4",
+                    border: "none",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                  }}
+                >
                   {uploading ? "업로드 중..." : "게시하기"}
                 </button>
                 <button
                   type="button"
-                  className="primary"
-                  style={{ background: "#999" }}
                   onClick={resetForm}
+                  style={{
+                    padding: "14px 20px",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "#5b7699",
+                    background: "white",
+                    border: "1px solid #e5eaf2",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                  }}
                 >
                   취소
                 </button>
@@ -1224,64 +1259,91 @@ export default function PhotosPage() {
                     key={post.id}
                     onClick={() => setLightbox({ postId: post.id, index: 0 })}
                     style={{
-                      background: "white",
+                      position: "relative",
                       borderRadius: 14,
                       overflow: "hidden",
-                      boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+                      boxShadow: "0 2px 10px rgba(30,60,110,0.1)",
                       cursor: "pointer",
+                      height: 190,
+                      background: "#eee",
                     }}
                   >
-                    <div style={{ position: "relative", width: "100%", height: 130, background: "#eee" }}>
-                      {firstMedia && <MediaThumb m={firstMedia} />}
-                      {categoryName && (
-                        <span
-                          style={{
-                            position: "absolute",
-                            top: 8,
-                            left: 8,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: "white",
-                            background: "rgba(27,58,99,0.75)",
-                            padding: "3px 9px",
-                            borderRadius: 999,
-                          }}
-                        >
-                          {categoryName}
-                        </span>
-                      )}
-                      {mediaList.length > 1 && (
-                        <span
-                          style={{
-                            position: "absolute",
-                            bottom: 8,
-                            right: 8,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: "white",
-                            background: "rgba(0,0,0,0.55)",
-                            padding: "2px 7px",
-                            borderRadius: 999,
-                          }}
-                        >
-                          +{mediaList.length - 1}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ padding: "10px 12px" }}>
+                    {firstMedia && <MediaThumb m={firstMedia} />}
+
+                    {/* 하단 가독성용 그라디언트 오버레이 */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%)",
+                      }}
+                    />
+
+                    {categoryName && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          left: 8,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "white",
+                          background: "rgba(27,58,99,0.75)",
+                          padding: "3px 9px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        {categoryName}
+                      </span>
+                    )}
+                    {mediaList.length > 1 && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "white",
+                          background: "rgba(0,0,0,0.55)",
+                          padding: "2px 7px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        +{mediaList.length - 1}
+                      </span>
+                    )}
+
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 12,
+                        right: 12,
+                        bottom: 10,
+                      }}
+                    >
                       <div
                         style={{
                           fontSize: 13,
                           fontWeight: 700,
-                          color: "#1b3a63",
+                          color: "white",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
+                          textShadow: "0 1px 3px rgba(0,0,0,0.4)",
                         }}
                       >
                         {post.title || "제목 없음"}
                       </div>
-                      <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 3 }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "rgba(255,255,255,0.85)",
+                          marginTop: 2,
+                          textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                        }}
+                      >
                         {formatDate(post.created_at)}
                       </div>
                     </div>
