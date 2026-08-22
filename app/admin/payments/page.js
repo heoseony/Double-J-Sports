@@ -104,9 +104,9 @@ export default function AdminPaymentsPage() {
     const { data } = await supabase
       .from("invoices")
       .select(
-        "id, invoice_number, issue_date, total_amount, pdf_url, payments(members(name), membership_plans(name))"
+        "id, invoice_number, issued_at, total_amount, pdf_url, payments(members(name), membership_plans(name))"
       )
-      .order("issue_date", { ascending: false })
+      .order("issued_at", { ascending: false })
       .limit(50);
     setInvoices(data || []);
     setInvoicesLoaded(true);
@@ -502,7 +502,7 @@ export default function AdminPaymentsPage() {
                   )}
                 </div>
                 <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
-                  발행일: {inv.issue_date} · 금액: {inv.total_amount} EUR
+                  발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR") : "-"} · 금액: {inv.total_amount} EUR
                 </div>
               </div>
             ))}
