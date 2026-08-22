@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 
+const BLUE = "#3B82C4";
 const WEEKDAY_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
 
 function pad2(n) {
@@ -328,8 +329,8 @@ export default function AdultBookPage() {
 
   if (loading) {
     return (
-      <main className="page">
-        <div className="subtitle">불러오는 중...</div>
+      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
       </main>
     );
   }
@@ -338,222 +339,304 @@ export default function AdultBookPage() {
   const selectedSessions = sessionsByDate[selectedDate] || [];
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">
-        {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
-        {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
-      </div>
-
-      <div className="card">
-        {errorMsg && <div className="message error">{errorMsg}</div>}
-        {successMsg && <div className="message success">{successMsg}</div>}
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 10,
-          }}
-        >
-          <button
-            type="button"
-            onClick={goPrevMonth}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            ‹
-          </button>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{monthLabel}</div>
-          <button
-            type="button"
-            onClick={goNextMonth}
-            style={{
-              padding: "6px 12px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            ›
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
-            gap: 4,
-            fontSize: 12,
-            textAlign: "center",
-            color: "#777",
-            marginBottom: 4,
-          }}
-        >
-          {WEEKDAY_HEADERS.map((w) => (
-            <div key={w}>{w}</div>
-          ))}
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
-            gap: 4,
-          }}
-        >
-          {calendarCells.map((dateStr, idx) => {
-            if (!dateStr) return <div key={`empty-${idx}`} />;
-            const daySessions = sessionsByDate[dateStr] || [];
-            const isSelected = dateStr === selectedDate;
-            const isToday = dateStr === todayStr();
-            const dayNum = Number(dateStr.split("-")[2]);
-
-            return (
-              <button
-                type="button"
-                key={dateStr}
-                onClick={() => setSelectedDate(dateStr)}
-                style={{
-                  aspectRatio: "1",
-                  padding: 2,
-                  border: isSelected
-                    ? "2px solid #0b3d2e"
-                    : "1px solid #eee",
-                  borderRadius: 8,
-                  background: isSelected ? "#e8f5ec" : "white",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  fontWeight: isToday ? 700 : 400,
-                  color: isToday ? "#0b3d2e" : "#1a1a1a",
-                }}
-              >
-                <span>{dayNum}</span>
-                {daySessions.length > 0 && (
-                  <span
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      background: "#0b3d2e",
-                      marginTop: 2,
-                    }}
-                  />
-                )}
-              </button>
-            );
-          })}
+    <main
+      style={{
+        background: "#f3f7fc",
+        minHeight: "100vh",
+        paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          padding: "18px 18px 4px",
+        }}
+      >
+        <img
+          src="/logo-main.png"
+          alt="로고"
+          style={{ width: 28, height: 28, objectFit: "contain" }}
+        />
+        <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>
+          더블제이 축구 아카데미
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>
-          {selectedDate} 수업
+      <div style={{ padding: "0 18px" }}>
+        <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 14 }}>
+          {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
+          {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
         </div>
 
-        {selectedSessions.length === 0 && (
-          <p style={{ fontSize: 14, color: "#777" }}>
-            이 날짜에는 예약 가능한 수업이 없습니다.
-          </p>
+        {errorMsg && (
+          <div
+            style={{
+              background: "#fdecec",
+              color: "#b3261e",
+              padding: 12,
+              borderRadius: 10,
+              fontSize: 13,
+              marginBottom: 14,
+            }}
+          >
+            {errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div
+            style={{
+              background: "#e9f1fb",
+              color: "#1b3a63",
+              padding: 12,
+              borderRadius: 10,
+              fontSize: 13,
+              marginBottom: 14,
+            }}
+          >
+            {successMsg}
+          </div>
         )}
 
-        {selectedSessions.map((s) => {
-          const count = countsBySession[s.id] || 0;
-          const bookingId = myBookingIdBySession[s.id];
-
-          const sessionDateTime = new Date(`${s.session_date}T${s.start_time}`);
-          const bookingDeadline = new Date(
-            sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
-          );
-          const isPastDeadline = new Date() > bookingDeadline;
-
-          return (
-            <div
-              key={s.id}
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 18,
+            marginBottom: 16,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={goPrevMonth}
               style={{
-                padding: "14px 0",
-                borderBottom: "1px solid #eee",
+                padding: "6px 12px",
+                border: "1px solid #e5eaf2",
+                borderRadius: 8,
+                background: "white",
+                color: "#1b3a63",
+                cursor: "pointer",
               }}
             >
-              <div style={{ fontSize: 15, fontWeight: 700 }}>
-                {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} ·{" "}
-                {s.classes.class_name}
-              </div>
-              <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-                현재 신청 {count}명
-              </div>
+              ‹
+            </button>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
+              {monthLabel}
+            </div>
+            <button
+              type="button"
+              onClick={goNextMonth}
+              style={{
+                padding: "6px 12px",
+                border: "1px solid #e5eaf2",
+                borderRadius: 8,
+                background: "white",
+                color: "#1b3a63",
+                cursor: "pointer",
+              }}
+            >
+              ›
+            </button>
+          </div>
 
-              <div style={{ marginTop: 10 }}>
-                {bookingId ? (
-                  <div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: 4,
+              fontSize: 12,
+              textAlign: "center",
+              color: "#8ea0b8",
+              marginBottom: 6,
+            }}
+          >
+            {WEEKDAY_HEADERS.map((w) => (
+              <div key={w}>{w}</div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 1fr)",
+              gap: 4,
+            }}
+          >
+            {calendarCells.map((dateStr, idx) => {
+              if (!dateStr) return <div key={`empty-${idx}`} />;
+              const daySessions = sessionsByDate[dateStr] || [];
+              const isSelected = dateStr === selectedDate;
+              const isToday = dateStr === todayStr();
+              const dayNum = Number(dateStr.split("-")[2]);
+
+              return (
+                <button
+                  type="button"
+                  key={dateStr}
+                  onClick={() => setSelectedDate(dateStr)}
+                  style={{
+                    aspectRatio: "1",
+                    padding: 2,
+                    border: isSelected
+                      ? `2px solid ${BLUE}`
+                      : "1px solid #f0f3f8",
+                    borderRadius: 8,
+                    background: isSelected ? "#e9f1fb" : "white",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 13,
+                    fontWeight: isToday ? 700 : 400,
+                    color: isToday ? BLUE : "#1b3a63",
+                  }}
+                >
+                  <span>{dayNum}</span>
+                  {daySessions.length > 0 && (
                     <span
                       style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: "50%",
+                        background: BLUE,
+                        marginTop: 2,
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 18,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
+            {selectedDate} 수업
+          </div>
+
+          {selectedSessions.length === 0 && (
+            <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+              이 날짜에는 예약 가능한 수업이 없습니다.
+            </p>
+          )}
+
+          {selectedSessions.map((s, idx) => {
+            const count = countsBySession[s.id] || 0;
+            const bookingId = myBookingIdBySession[s.id];
+
+            const sessionDateTime = new Date(`${s.session_date}T${s.start_time}`);
+            const bookingDeadline = new Date(
+              sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
+            );
+            const isPastDeadline = new Date() > bookingDeadline;
+
+            return (
+              <div
+                key={s.id}
+                style={{
+                  padding: "14px 0",
+                  borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                  {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} ·{" "}
+                  {s.classes.class_name}
+                </div>
+                <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
+                  현재 신청 {count}명
+                </div>
+
+                <div style={{ marginTop: 10 }}>
+                  {bookingId ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: BLUE,
+                          fontWeight: 700,
+                        }}
+                      >
+                        ✓ 예약됨
+                      </span>
+                      <button
+                        type="button"
+                        disabled={cancellingSessionId === s.id}
+                        onClick={() => handleCancel(s.id)}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          border: "1px solid #f3c6c2",
+                          color: "#b3261e",
+                          borderRadius: 8,
+                          background: "white",
+                          cursor: cancellingSessionId === s.id ? "default" : "pointer",
+                        }}
+                      >
+                        {cancellingSessionId === s.id
+                          ? "취소 중..."
+                          : "예약 취소"}
+                      </button>
+                    </div>
+                  ) : isPastDeadline ? (
+                    <div
+                      style={{
                         fontSize: 13,
-                        color: "#0b3d2e",
+                        color: "#8ea0b8",
                         fontWeight: 700,
                       }}
                     >
-                      ✓ 예약됨
-                    </span>
+                      예약 마감 (수업 시작 {bookingCutoffHours}시간 전까지 예약
+                      가능)
+                    </div>
+                  ) : (
                     <button
                       type="button"
+                      disabled={bookingSessionId === s.id}
+                      onClick={() => handleBook(s.id)}
                       style={{
-                        marginLeft: 12,
-                        padding: "6px 12px",
+                        padding: "10px 18px",
                         fontSize: 13,
-                        border: "1px solid #b3261e",
-                        color: "#b3261e",
-                        borderRadius: 8,
-                        background: "white",
-                        cursor: "pointer",
+                        fontWeight: 700,
+                        border: "none",
+                        borderRadius: 10,
+                        background: bookingSessionId === s.id ? "#9db8d6" : BLUE,
+                        color: "white",
+                        cursor: bookingSessionId === s.id ? "default" : "pointer",
                       }}
-                      disabled={cancellingSessionId === s.id}
-                      onClick={() => handleCancel(s.id)}
                     >
-                      {cancellingSessionId === s.id
-                        ? "취소 중..."
-                        : "예약 취소"}
+                      {bookingSessionId === s.id ? "예약 중..." : "예약하기"}
                     </button>
-                  </div>
-                ) : isPastDeadline ? (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#999",
-                      fontWeight: 700,
-                    }}
-                  >
-                    예약 마감 (수업 시작 {bookingCutoffHours}시간 전까지 예약
-                    가능)
-                  </div>
-                ) : (
-                  <button
-                    className="primary"
-                    style={{ marginTop: 0, padding: "10px 16px" }}
-                    disabled={bookingSessionId === s.id}
-                    onClick={() => handleBook(s.id)}
-                  >
-                    {bookingSessionId === s.id ? "예약 중..." : "예약하기"}
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
 
-        <div className="link-row">
-          <Link href="/dashboard">← 홈으로</Link>
+        <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
+          <Link href="/dashboard" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 홈으로
+          </Link>
         </div>
       </div>
     </main>
