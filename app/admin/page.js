@@ -95,6 +95,12 @@ export default function AdminHomePage() {
           </button>
         </Link>
 
+        <Link href="/admin/gallery-categories">
+          <button className="primary" style={{ marginTop: 12 }}>
+            갤러리 카테고리 관리
+          </button>
+        </Link>
+
         <div className="link-row">
           <Link href="/dashboard">← 일반 화면으로 돌아가기</Link>
         </div>

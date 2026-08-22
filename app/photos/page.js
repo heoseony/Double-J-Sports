@@ -654,6 +654,10 @@ export default function PhotosPage() {
   const [posts, setPosts] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [categories, setCategories] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [uploadCategoryId, setUploadCategoryId] = useState("");
+
   const [showForm, setShowForm] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -693,7 +697,7 @@ export default function PhotosPage() {
     const { data, error } = await supabase
       .from("photo_posts")
       .select(
-        "id, title, caption, uploaded_by, created_at, photo_post_media(id, media_url, media_type, order_index), author:users!uploaded_by(name, role)"
+        "id, title, caption, uploaded_by, created_at, category_id, gallery_categories(id, name), photo_post_media(id, media_url, media_type, order_index), author:users!uploaded_by(name, role)"
       )
       .order("created_at", { ascending: false });
 
@@ -738,6 +742,13 @@ export default function PhotosPage() {
       if (profile?.role === "admin") {
         setIsAdmin(true);
       }
+
+      const { data: categoryData } = await supabase
+        .from("gallery_categories")
+        .select("id, name, sort_order, is_active")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      setCategories(categoryData || []);
 
       await loadPosts();
       setLoading(false);
@@ -795,6 +806,7 @@ export default function PhotosPage() {
     setPreviews([]);
     setTitle("");
     setCaption("");
+    setUploadCategoryId("");
     setShowForm(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -819,6 +831,7 @@ export default function PhotosPage() {
       title: title || null,
       caption: caption || null,
       uploaded_by: userId,
+      category_id: uploadCategoryId || null,
     });
 
     if (postError) {
@@ -1073,6 +1086,27 @@ export default function PhotosPage() {
                 placeholder="예: 오늘 유아A반 훈련 모습"
               />
 
+              <label>카테고리 (선택)</label>
+              <select
+                value={uploadCategoryId}
+                onChange={(e) => setUploadCategoryId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: 14,
+                  fontSize: 16,
+                  border: "1px solid #ddd",
+                  borderRadius: 10,
+                  background: "#fafafa",
+                }}
+              >
+                <option value="">-- 선택 안 함 --</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+
               {errorMsg && <div className="message error">{errorMsg}</div>}
 
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -1099,161 +1133,165 @@ export default function PhotosPage() {
         </div>
       )}
 
-      {posts.length === 0 && !errorMsg && (
-        <div className="card">
-          <p style={{ fontSize: 14, color: "#777", margin: 0 }}>
-            아직 등록된 사진/동영상이 없습니다.
-          </p>
-        </div>
-      )}
+      {/* 카테고리 필터 탭 */}
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          marginBottom: 14,
+          overflowX: "auto",
+          paddingBottom: 2,
+        }}
+      >
+        {[{ id: "all", name: "전체" }, ...categories].map((c) => {
+          const active = categoryFilter === c.id;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategoryFilter(c.id)}
+              style={{
+                flexShrink: 0,
+                padding: "8px 16px",
+                fontSize: 13,
+                fontWeight: 700,
+                borderRadius: 999,
+                border: "none",
+                cursor: "pointer",
+                background: active ? "#3B82C4" : "white",
+                color: active ? "white" : "#5b7699",
+                boxShadow: active ? "none" : "0 1px 4px rgba(30,60,110,0.08)",
+              }}
+            >
+              {c.name}
+            </button>
+          );
+        })}
+      </div>
 
-      {posts.map((post) => {
-        const canDelete = isAdmin || post.uploaded_by === userId;
-        const mediaList = post.photo_post_media || [];
+      {(() => {
+        const filteredPosts =
+          categoryFilter === "all"
+            ? posts
+            : posts.filter((p) => p.category_id === categoryFilter);
+
+        const latestPost = posts[0];
 
         return (
-          <div
-            key={post.id}
-            className="card"
-            style={{ marginBottom: 20, padding: 0, overflow: "hidden" }}
-          >
-            <MediaGrid
-              mediaList={mediaList}
-              onOpen={(idx) => setLightbox({ postId: post.id, index: idx })}
-            />
+          <>
+            {latestPost && (
+              <div
+                style={{
+                  background: "#e9f1fb",
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                  marginBottom: 16,
+                  fontSize: 13,
+                  color: "#1b3a63",
+                  cursor: "pointer",
+                }}
+                onClick={() => setLightbox({ postId: latestPost.id, index: 0 })}
+              >
+                <span style={{ fontWeight: 700 }}>새로운 사진이 업로드 되었어요!</span>{" "}
+                {latestPost.title
+                  ? `${latestPost.title} · ${formatDate(latestPost.created_at)}`
+                  : formatDate(latestPost.created_at)}
+              </div>
+            )}
 
-            <div style={{ padding: 16 }}>
-              {editingPostId === post.id ? (
-                <div>
-                  <input
-                    type="text"
-                    value={editTitleValue}
-                    onChange={(e) => setEditTitleValue(e.target.value)}
-                    placeholder="제목"
-                    style={{
-                      width: "100%",
-                      borderRadius: 8,
-                      border: "1px solid #ccc",
-                      padding: 8,
-                      fontSize: 14,
-                      fontWeight: 700,
-                      marginBottom: 8,
-                    }}
-                  />
-                  <textarea
-                    value={editCaptionValue}
-                    onChange={(e) => setEditCaptionValue(e.target.value)}
-                    rows={2}
-                    placeholder="설명"
-                    style={{
-                      width: "100%",
-                      borderRadius: 8,
-                      border: "1px solid #ccc",
-                      padding: 8,
-                      fontSize: 14,
-                      resize: "none",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <button
-                      type="button"
-                      className="primary"
-                      onClick={() => saveEditCaption(post.id)}
-                    >
-                      저장
-                    </button>
-                    <button
-                      type="button"
-                      className="primary"
-                      style={{ background: "#999" }}
-                      onClick={cancelEditCaption}
-                    >
-                      취소
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {post.title && (
-                    <p
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: "#111",
-                        margin: 0,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {post.title}
-                    </p>
-                  )}
-                  {post.caption && (
-                    <p
-                      style={{
-                        fontSize: 14,
-                        color: "#333",
-                        margin: post.title ? "4px 0 0" : 0,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {post.caption}
-                    </p>
-                  )}
+            {filteredPosts.length === 0 && !errorMsg && (
+              <div className="card">
+                <p style={{ fontSize: 14, color: "#777", margin: 0 }}>
+                  아직 등록된 사진/동영상이 없습니다.
+                </p>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 12,
+              }}
+            >
+              {filteredPosts.map((post) => {
+                const mediaList = post.photo_post_media || [];
+                const firstMedia = mediaList[0];
+                const categoryName = post.gallery_categories?.name;
+
+                return (
                   <div
+                    key={post.id}
+                    onClick={() => setLightbox({ postId: post.id, index: 0 })}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginTop: 8,
+                      background: "white",
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+                      cursor: "pointer",
                     }}
                   >
-                    <span style={{ fontSize: 12, color: "#999" }}>
-                      {post.author?.name || "알 수 없음"}
-                      {roleLabel(post.author?.role) ? ` · ${roleLabel(post.author?.role)}` : ""} ·{" "}
-                      {formatDate(post.created_at)}
-                    </span>
-                    {canDelete && (
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button
-                          type="button"
-                          onClick={() => startEditCaption(post)}
+                    <div style={{ position: "relative", width: "100%", height: 130, background: "#eee" }}>
+                      {firstMedia && <MediaThumb m={firstMedia} />}
+                      {categoryName && (
+                        <span
                           style={{
-                            fontSize: 12,
-                            border: "1px solid #ccc",
-                            color: "#555",
-                            background: "white",
-                            borderRadius: 8,
-                            padding: "4px 10px",
-                            cursor: "pointer",
+                            position: "absolute",
+                            top: 8,
+                            left: 8,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "white",
+                            background: "rgba(27,58,99,0.75)",
+                            padding: "3px 9px",
+                            borderRadius: 999,
                           }}
                         >
-                          수정
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePost(post.id)}
-                          disabled={deletingId === post.id}
+                          {categoryName}
+                        </span>
+                      )}
+                      {mediaList.length > 1 && (
+                        <span
                           style={{
-                            fontSize: 12,
-                            border: "1px solid #b3261e",
-                            color: "#b3261e",
-                            background: "white",
-                            borderRadius: 8,
-                            padding: "4px 10px",
-                            cursor: "pointer",
+                            position: "absolute",
+                            bottom: 8,
+                            right: 8,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "white",
+                            background: "rgba(0,0,0,0.55)",
+                            padding: "2px 7px",
+                            borderRadius: 999,
                           }}
                         >
-                          {deletingId === post.id ? "삭제 중..." : "삭제"}
-                        </button>
+                          +{mediaList.length - 1}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ padding: "10px 12px" }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: "#1b3a63",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {post.title || "제목 없음"}
                       </div>
-                    )}
+                      <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 3 }}>
+                        {formatDate(post.created_at)}
+                      </div>
+                    </div>
                   </div>
-                </>
-              )}
+                );
+              })}
             </div>
-          </div>
+          </>
         );
-      })}
+      })()}
 
       {lightboxPost && (
         <Lightbox
