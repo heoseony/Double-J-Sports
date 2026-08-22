@@ -71,7 +71,7 @@ const NAV_BY_ROLE = {
   coach: [
     { label: "홈", href: "/dashboard", Icon: HomeIcon },
     { label: "수업관리", href: "/coach", Icon: CalendarIcon },
-    { label: "프로필 변경", href: null, Icon: PeopleIcon, disabled: true },
+    { label: "프로필 변경", href: "/coach/select-profile", Icon: PeopleIcon },
     { label: "갤러리", href: "/photos", Icon: ImageIcon },
     { label: "더보기", href: "/more", Icon: MenuIcon },
   ],
