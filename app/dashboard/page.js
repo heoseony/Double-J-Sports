@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
+import LoadingScreen from "../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토"];
@@ -327,9 +328,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
-        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
-      </main>
+      <LoadingScreen />
     );
   }
 

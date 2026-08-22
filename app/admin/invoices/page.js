@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+import LoadingScreen from "../../components/LoadingScreen";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -122,9 +123,7 @@ export default function AdminInvoicesPage() {
 
   if (loading || !isAdmin) {
     return (
-      <main className="page">
-        <div className="subtitle">확인 중...</div>
-      </main>
+      <LoadingScreen text="확인 중..." />
     );
   }
 
