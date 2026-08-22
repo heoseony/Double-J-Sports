@@ -107,7 +107,14 @@ export default function AdminInvoicesPage() {
     }
 
     if (newTab) {
-      newTab.location.href = result.url;
+      try {
+        const pdfRes = await fetch(result.url);
+        const blob = await pdfRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        newTab.location.href = blobUrl;
+      } catch (e) {
+        newTab.location.href = result.url;
+      }
     } else {
       window.location.href = result.url;
     }

@@ -81,7 +81,18 @@ export default function InvoicesPage() {
     }
 
     if (newTab) {
-      newTab.location.href = result.url;
+      try {
+        // 서명된 supabase URL로 바로 이동하면 주소창에 supabase.co 도메인이
+        // 그대로 노출된다. 그래서 PDF 파일 자체를 한 번 받아온 뒤,
+        // blob(우리 앱 도메인 기준 임시 주소)로 바꿔서 열어준다.
+        const pdfRes = await fetch(result.url);
+        const blob = await pdfRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        newTab.location.href = blobUrl;
+      } catch (e) {
+        // 혹시 실패하면 기존 방식으로 폴백
+        newTab.location.href = result.url;
+      }
     } else {
       // 팝업 자체가 막힌 경우의 폴백: 현재 화면에서 바로 이동
       window.location.href = result.url;
