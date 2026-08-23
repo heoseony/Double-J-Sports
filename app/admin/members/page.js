@@ -14,10 +14,6 @@ const PROGRAM_TABS = [
   { value: "women", label: "Women's" },
   { value: "men", label: "Men's" },
 ];
-  const [adminUserId, setAdminUserId] = useState(null);
-  const [couponModalMember, setCouponModalMember] = useState(null);
-  const [issuingCoupon, setIssuingCoupon] = useState(false);
-  const [couponSuccessMsg, setCouponSuccessMsg] = useState("");
 
 const STATUS_STYLE = {
   active: { label: "활동", bg: "#e9f1fb", color: BLUE },
@@ -50,8 +46,6 @@ function ChevronDown({ open }) {
       <path d="M6 9l6 6 6-6" />
     </svg>
   );
-
-      setAdminUserId(user.id);
 }
 
 export default function AdminMembersPage() {
@@ -314,44 +308,11 @@ export default function AdminMembersPage() {
                   boxShadow: active ? "none" : "0 1px 4px rgba(30,60,110,0.08)",
                 }}
               >
-
-  function openCouponModal(member) {
-    setCouponModalMember(member);
-  }
-
-  function closeCouponModal() {
-    setCouponModalMember(null);
-  }
-
-  async function handleIssueCoupon() {
-    if (!couponModalMember) return;
-
-    setIssuingCoupon(true);
-    setCouponSuccessMsg("");
-
-    const { error } = await supabase.from("coupons").insert({
-      member_id: couponModalMember.id,
-      amount: 20,
-      issued_by: adminUserId,
-    });
-
-    setIssuingCoupon(false);
-
-    if (error) {
-      alert("쿠폰 발급 실패: " + error.message);
-      return;
-    }
-
-    setCouponSuccessMsg(`${couponModalMember.name}님에게 20 EUR 쿠폰이 발급되었습니다.`);
-    setCouponModalMember(null);
-    setTimeout(() => setCouponSuccessMsg(""), 4000);
-  }
                 {t.label}
               </button>
             );
           })}
         </div>
-
         {/* 상태 필터 */}
         <div style={{ marginBottom: 14 }}>
           <select

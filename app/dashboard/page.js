@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -280,38 +279,6 @@ export default function DashboardPage() {
         if (classIds.length > 0) {
           const { data: sess } = await supabase
 
-      if (profile.role === "coach" || profile.role === "admin") {
-        const weekMonday = getMonday(new Date());
-        const weekSaturday = addDays(weekMonday, 5);
-        const weekMondayStr = toDateStr(weekMonday);
-        const weekSaturdayStr = toDateStr(weekSaturday);
-
-        const { data: sessionsData } = await supabase
-          .from("class_sessions")
-          .select(
-            "id, session_date, classes(id, class_name, program, start_time, end_time, location, capacity)"
-          )
-          .gte("session_date", weekMondayStr)
-          .lte("session_date", weekSaturdayStr)
-          .order("session_date", { ascending: true });
-
-        setWeekSessions(sessionsData || []);
-
-        const sessionIds = (sessionsData || []).map((s) => s.id);
-        if (sessionIds.length > 0) {
-          const { data: allBookingsData } = await supabase
-            .from("bookings")
-            .select("class_session_id, status")
-            .in("class_session_id", sessionIds)
-            .in("status", ["booked", "attended"]);
-
-          const counts = {};
-          (allBookingsData || []).forEach((b) => {
-            counts[b.class_session_id] = (counts[b.class_session_id] || 0) + 1;
-          });
-          setWeekSessionCounts(counts);
-        }
-      }
             .from("class_sessions")
             .select("id, session_date, start_time, end_time, class_id")
             .in("class_id", classIds)
@@ -516,127 +483,6 @@ export default function DashboardPage() {
                       background: "#e9f1fb",
                       padding: "4px 10px",
 
-      {(isCoach || isAdmin) && (
-        <div style={{ padding: "0 18px 18px" }}>
-          <div
-            style={{
-              background: "white",
-              borderRadius: 16,
-              padding: 18,
-              boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 14 }}>
-              이번주 수업
-            </div>
-
-            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 14 }}>
-              {[0, 1, 2, 3, 4, 5].map((offset) => {
-                const monday = getMonday(new Date());
-                const date = addDays(monday, offset);
-                const dateStr = toDateStr(date);
-                const isSelected = dateStr === selectedWeekDate;
-                const isToday = dateStr === toDateStr(new Date());
-                const weekdayLabel = ["월", "화", "수", "목", "금", "토"][offset];
-
-                return (
-                  <button
-                    key={dateStr}
-                    type="button"
-                    onClick={() => setSelectedWeekDate(dateStr)}
-                    style={{
-                      flexShrink: 0,
-                      minWidth: 52,
-                      padding: "8px 4px",
-                      border: isSelected ? "2px solid #3B82C4" : "1px solid #f0f3f8",
-                      borderRadius: 12,
-                      background: isSelected ? "#e9f1fb" : "white",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 2,
-                    }}
-                  >
-                    <span style={{ fontSize: 11, color: isToday ? "#3B82C4" : "#8ea0b8", fontWeight: isToday ? 700 : 400 }}>
-                      {weekdayLabel}
-                    </span>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: isToday ? "#3B82C4" : "#1b3a63" }}>
-                      {date.getDate()}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {(() => {
-              const daySessions = weekSessions
-                .filter((s) => s.session_date === selectedWeekDate)
-                .sort((a, b) => {
-                  const at = a.classes?.start_time || "";
-                  const bt = b.classes?.start_time || "";
-                  return at < bt ? -1 : 1;
-                });
-
-              if (daySessions.length === 0) {
-                return (
-                  <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-                    이 날짜에 예정된 수업이 없습니다.
-                  </p>
-                );
-              }
-
-              return daySessions.map((s, idx) => {
-                const cls = s.classes;
-                const count = weekSessionCounts[s.id] || 0;
-
-                return (
-                  <Link
-                    key={s.id}
-                    href={`/coach/attendance?sessionId=${s.id}`}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <div
-                      style={{
-                        padding: "12px 0",
-                        borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
-                        cursor: "pointer",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
-                          {cls?.class_name}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
-                          {cls?.start_time?.slice(0, 5)}~{cls?.end_time?.slice(0, 5)}
-                          {cls?.location ? ` · ${cls.location}` : ""}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#3B82C4",
-                          background: "#e9f1fb",
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {cls?.capacity ? `${count}/${cls.capacity}명` : `${count}명`}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              });
-            })()}
-          </div>
-        </div>
-      )}
                       borderRadius: 999,
                     }}
                   >
@@ -830,6 +676,127 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+      {(isCoach || isAdmin) && (
+        <div style={{ padding: "0 18px 18px" }}>
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: 18,
+              boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+            }}
+          >
+            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 14 }}>
+              이번주 수업
+            </div>
+
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 14 }}>
+              {[0, 1, 2, 3, 4, 5].map((offset) => {
+                const monday = getMonday(new Date());
+                const date = addDays(monday, offset);
+                const dateStr = toDateStr(date);
+                const isSelected = dateStr === selectedWeekDate;
+                const isToday = dateStr === toDateStr(new Date());
+                const weekdayLabel = ["월", "화", "수", "목", "금", "토"][offset];
+
+                return (
+                  <button
+                    key={dateStr}
+                    type="button"
+                    onClick={() => setSelectedWeekDate(dateStr)}
+                    style={{
+                      flexShrink: 0,
+                      minWidth: 52,
+                      padding: "8px 4px",
+                      border: isSelected ? "2px solid #3B82C4" : "1px solid #f0f3f8",
+                      borderRadius: 12,
+                      background: isSelected ? "#e9f1fb" : "white",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                  >
+                    <span style={{ fontSize: 11, color: isToday ? "#3B82C4" : "#8ea0b8", fontWeight: isToday ? 700 : 400 }}>
+                      {weekdayLabel}
+                    </span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: isToday ? "#3B82C4" : "#1b3a63" }}>
+                      {date.getDate()}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {(() => {
+              const daySessions = weekSessions
+                .filter((s) => s.session_date === selectedWeekDate)
+                .sort((a, b) => {
+                  const at = a.classes?.start_time || "";
+                  const bt = b.classes?.start_time || "";
+                  return at < bt ? -1 : 1;
+                });
+
+              if (daySessions.length === 0) {
+                return (
+                  <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+                    이 날짜에 예정된 수업이 없습니다.
+                  </p>
+                );
+              }
+
+              return daySessions.map((s, idx) => {
+                const cls = s.classes;
+                const count = weekSessionCounts[s.id] || 0;
+
+                return (
+                  <Link
+                    key={s.id}
+                    href={`/coach/attendance?sessionId=${s.id}`}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <div
+                      style={{
+                        padding: "12px 0",
+                        borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
+                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
+                          {cls?.class_name}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
+                          {cls?.start_time?.slice(0, 5)}~{cls?.end_time?.slice(0, 5)}
+                          {cls?.location ? ` · ${cls.location}` : ""}
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#3B82C4",
+                          background: "#e9f1fb",
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {cls?.capacity ? `${count}/${cls.capacity}명` : `${count}명`}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
 
         {/* ───────── 관리자 화면 ───────── */}
         {isAdmin && (
