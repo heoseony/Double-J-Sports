@@ -79,7 +79,7 @@ function AttendanceInner() {
 
     const { data: session } = await supabase
       .from("class_sessions")
-      .select("id, session_date, start_time, end_time, class_id, classes(class_name)")
+      .select("id, session_date, start_time, end_time, class_id, classes(class_name, program, region)")
       .eq("id", sessionId)
       .single();
 
