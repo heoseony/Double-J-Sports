@@ -59,6 +59,7 @@ export default function AdminClassesPage() {
   const [startTime, setStartTime] = useState("16:00");
   const [endTime, setEndTime] = useState("17:00");
   const [location, setLocation] = useState("");
+  const [region, setRegion] = useState("frankfurt");
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -110,7 +111,7 @@ export default function AdminClassesPage() {
     const { data, error } = await supabase
       .from("classes")
       .select(
-        "id, program, class_name, weekday, start_time, end_time, location, active, coach_id"
+        "id, program, class_name, weekday, start_time, end_time, location, active, coach_id, region"
       )
       .order("weekday", { ascending: true })
       .order("start_time", { ascending: true });
@@ -492,6 +493,7 @@ export default function AdminClassesPage() {
 
     setClassName("Kids");
     setLocation("");
+    setRegion("frankfurt");
     await loadClasses();
   }
 
@@ -911,6 +913,44 @@ export default function AdminClassesPage() {
 
               <label>장소 (선택)</label>
               <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="예: Frankfurt Training Center" />
+
+              <label>지역</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setRegion("frankfurt")}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    borderRadius: 8,
+                    border: region === "frankfurt" ? "2px solid #3B82C4" : "1px solid #ddd",
+                    background: region === "frankfurt" ? "#eaf4fc" : "white",
+                    color: "#1b3a63",
+                    cursor: "pointer",
+                  }}
+                >
+                  프랑크푸르트
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegion("dusseldorf")}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    borderRadius: 8,
+                    border: region === "dusseldorf" ? "2px solid #8b5fd6" : "1px solid #ddd",
+                    background: region === "dusseldorf" ? "#f2eefc" : "white",
+                    color: "#1b3a63",
+                    cursor: "pointer",
+                  }}
+                >
+                  뒤셀도르프
+                </button>
+              </div>
 
               {errorMsg && <div className="message error">{errorMsg}</div>}
 
