@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getRegionBg, getProgramTextColor } from "../../../lib/classColors";
 import { supabase } from "../../../lib/supabaseClient";
 
 const BLUE = "#3B82C4";
@@ -97,7 +98,7 @@ export default function AdultBookPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, class_id, session_date, start_time, end_time, classes(id, class_name, program, weekday, active)"
+        "id, class_id, session_date, start_time, end_time, classes(id, class_name, program, weekday, active, region)"
       )
       .gte("session_date", today)
       .order("session_date", { ascending: true })
@@ -338,7 +339,7 @@ export default function AdultBookPage() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: getProgramTextColor(s.classes?.program) }}>
                         {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} · {s.classes.class_name}
                       </div>
                       <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
