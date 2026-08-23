@@ -620,7 +620,7 @@ export default function DashboardPage() {
     );
   }
 
-  const roleLabel = isAdmin ? "감독" : isCoach ? "코치" : "학부모";
+  const roleLabel = isAdmin ? "감독" : isCoach ? "코치" : isAdultMember ? "" : "학부모";
   const greetingSub = isAdmin
     ? "아카데미 운영을 효율적으로 관리하세요."
     : isCoach
@@ -717,7 +717,7 @@ export default function DashboardPage() {
             ) : (
               displayName || email
             )}
-            {roleLabel === "학부모" ? " 학부모님" : ` ${roleLabel}님`}
+            {roleLabel === "학부모" ? " 학부모님" : roleLabel === "" ? "님" : ` ${roleLabel}님`}
           </div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>{greetingSub}</div>
         </div>
