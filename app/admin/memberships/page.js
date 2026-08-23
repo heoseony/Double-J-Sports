@@ -103,6 +103,13 @@ export default function AdminMembershipsPage() {
 
     setSaving(true);
 
+    // 기존 활성 회원권이 있으면 자동 비활성화 (한 사람당 1개만 유지)
+    await supabase
+      .from("memberships")
+      .update({ status: "inactive" })
+      .eq("member_id", req.member_id)
+      .eq("status", "active");
+
     const { error } = await supabase.from("memberships").insert({
       member_id: memberId,
       plan_id: planId,

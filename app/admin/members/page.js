@@ -400,7 +400,8 @@ export default function AdminMembersPage() {
 
             const referredBy = m.guardians?.referred_by || m.referred_by;
             const isExpanded = expandedId === m.id;
-            const memberships = membershipsByMember[m.id] || [];
+            const allMemberships = membershipsByMember[m.id] || [];
+            const memberships = allMemberships.filter((ms) => ms.status === "active").slice(0, 1);
             const statusInfo = STATUS_STYLE[m.status] || STATUS_STYLE.inactive;
 
             return (
