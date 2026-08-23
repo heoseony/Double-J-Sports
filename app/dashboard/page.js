@@ -880,7 +880,7 @@ export default function DashboardPage() {
           </div>
         )}
       {isCoach && (
-        <div style={{ padding: "0 18px 18px" }}>
+        <div style={{}}>
           <div style={cardStyle}>
             <div style={cardTitleRow}>
               <span style={cardTitle}>
