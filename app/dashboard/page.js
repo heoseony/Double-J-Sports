@@ -868,117 +868,65 @@ export default function DashboardPage() {
                 >
                   코치 화면 (주간 수업)
                 </button>
-      {(isCoach || isAdmin) && (
+      {isCoach && (
         <div style={{ padding: "0 18px 18px" }}>
+          <div style={cardStyle}>
+            <div style={cardTitleRow}>
+              <span style={cardTitle}>
+                이번주 수업 요약 ({formatShortDate(toDateStr(getMonday(new Date())))} - {formatShortDate(toDateStr(addDays(getMonday(new Date()), 6)))})
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22, marginBottom: 4 }}>📅</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
+                  {thisWeekSessions.filter((s) => !s.is_cancelled).length}
+                </div>
+                <div style={{ fontSize: 11, color: "#8ea0b8" }}>총 수업</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22, marginBottom: 4 }}>👥</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
+                  {totalActiveMembers}
+                </div>
+                <div style={{ fontSize: 11, color: "#8ea0b8" }}>총 회원</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22, marginBottom: 4 }}>⏰</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
+                  {thisWeekCancelledCount}
+                </div>
+                <div style={{ fontSize: 11, color: "#8ea0b8" }}>휴강</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22, marginBottom: 4 }}>🔑</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
+                  {todayNeedAttendanceCount}
+                </div>
+                <div style={{ fontSize: 11, color: "#8ea0b8" }}>출석체크 필요</div>
+              </div>
+            </div>
+          </div>
+
           <div style={cardStyle}>
             <div style={cardTitleRow}>
               <span style={cardTitle}>이번주 수업</span>
             </div>
+            <WeekCalendarGrid
+              weekSessions={thisWeekSessions}
+              selectedDate={toDateStr(new Date())}
+            />
+          </div>
 
-            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 14 }}>
-              {[0, 1, 2, 3, 4, 5].map((offset) => {
-                const monday = getMonday(new Date());
-                const date = addDays(monday, offset);
-                const dateStr = toDateStr(date);
-                const isSelected = dateStr === selectedWeekDate;
-                const isToday = dateStr === toDateStr(new Date());
-                const weekdayLabel = ["월", "화", "수", "목", "금", "토"][offset];
-
-                return (
-                  <button
-                    key={dateStr}
-                    type="button"
-                    onClick={() => setSelectedWeekDate(dateStr)}
-                    style={{
-                      flexShrink: 0,
-                      minWidth: 52,
-                      padding: "8px 4px",
-                      border: isSelected ? "2px solid #3B82C4" : "1px solid #f0f3f8",
-                      borderRadius: 12,
-                      background: isSelected ? "#e9f1fb" : "white",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 2,
-                    }}
-                  >
-                    <span style={{ fontSize: 11, color: isToday ? "#3B82C4" : "#8ea0b8", fontWeight: isToday ? 700 : 400 }}>
-                      {weekdayLabel}
-                    </span>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: isToday ? "#3B82C4" : "#1b3a63" }}>
-                      {date.getDate()}
-                    </span>
-                  </button>
-                );
-              })}
+          <div style={cardStyle}>
+            <div style={cardTitleRow}>
+              <span style={cardTitle}>오늘의 수업</span>
             </div>
-
-            {(() => {
-              const daySessions = weekSessions
-                .filter((s) => s.session_date === selectedWeekDate)
-                .sort((a, b) => {
-                  const at = a.classes?.start_time || "";
-                  const bt = b.classes?.start_time || "";
-                  return at < bt ? -1 : 1;
-                });
-
-              if (daySessions.length === 0) {
-                return (
-                  <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-                    이 날짜에 예정된 수업이 없습니다.
-                  </p>
-                );
-              }
-
-              return daySessions.map((s, idx) => {
-                const cls = s.classes;
-                const count = weekSessionCounts[s.id] || 0;
-
-                return (
-                  <Link
-                    key={s.id}
-                    href={`/coach/attendance?sessionId=${s.id}`}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <div
-                      style={{
-                        padding: "12px 0",
-                        borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
-                        cursor: "pointer",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
-                          {cls?.class_name}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
-                          {cls?.start_time?.slice(0, 5)}~{cls?.end_time?.slice(0, 5)}
-                          {cls?.location ? ` · ${cls.location}` : ""}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#3B82C4",
-                          background: "#e9f1fb",
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {cls?.capacity ? `${count}/${cls.capacity}명` : `${count}명`}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              });
-            })()}
+            <TodayClassList
+              sessions={thisWeekSessions}
+              sessionCounts={thisWeekSessionCounts}
+            />
           </div>
         </div>
       )}
