@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getRegionBg, getProgramTextColor } from "../../lib/classColors";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -91,7 +92,7 @@ export default function CoachHomePage() {
 
       const { data: myClassCoaches } = await supabase
         .from("class_coaches")
-        .select("class_id, classes(id, class_name, program)")
+        .select("class_id, classes(id, class_name, program, region)")
         .eq("coach_profile_id", activeProfileId);
 
       const classIds = (myClassCoaches || []).map((cc) => cc.class_id);
@@ -278,7 +279,7 @@ export default function CoachHomePage() {
             </div>
             <div
               style={{
-                background: "white",
+                background: getRegionBg(s.classInfo?.region),
                 borderRadius: 16,
                 overflow: "hidden",
                 boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
@@ -300,7 +301,7 @@ export default function CoachHomePage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: getProgramTextColor(s.classInfo?.program) }}>
                       {s.classInfo?.class_name}
                       <span style={{ fontWeight: 500, color: "#8ea0b8" }}>
                         {" "}
