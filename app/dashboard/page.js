@@ -672,22 +672,11 @@ export default function DashboardPage() {
                 >
                   코치 화면 (주간 수업)
                 </button>
-              </Link>
-            </div>
-          </>
-        )}
       {(isCoach || isAdmin) && (
         <div style={{ padding: "0 18px 18px" }}>
-          <div
-            style={{
-              background: "white",
-              borderRadius: 16,
-              padding: 18,
-              boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 14 }}>
-              이번주 수업
+          <div style={cardStyle}>
+            <div style={cardTitleRow}>
+              <span style={cardTitle}>이번주 수업</span>
             </div>
 
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 14 }}>
@@ -797,6 +786,10 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+              </Link>
+            </div>
+          </>
+        )}
 
         {/* ───────── 관리자 화면 ───────── */}
         {isAdmin && (
