@@ -350,7 +350,7 @@ export default function DashboardPage() {
 
       const { data: selfMember } = await supabase
         .from("members")
-        .select("name")
+        .select("id, name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -530,6 +530,50 @@ export default function DashboardPage() {
 
           setWeekBookings(thisWeek);
         }
+      }
+
+      // ── 성인회원(본인) 데이터 ──────────────────────────
+      if (selfMember && !admin && !coach) {
+        const memberIds = [selfMember.id];
+        const { data: bk } = await supabase
+          .from("bookings")
+          .select("id, member_id, status, class_session_id")
+          .in("member_id", memberIds)
+          .neq("status", "cancelled_prior");
+
+        const sessionIds = [...new Set((bk || []).map((b) => b.class_session_id))];
+        let sessionMap = {};
+
+        if (sessionIds.length > 0) {
+          const { data: sess } = await supabase
+            .from("class_sessions")
+            .select("id, session_date, start_time, class_id")
+            .in("id", sessionIds);
+
+          const classIds = [...new Set((sess || []).map((s) => s.class_id))];
+          const { data: classesData } = await supabase
+            .from("classes")
+            .select("id, class_name, program")
+            .in("id", classIds);
+
+          const classMap = {};
+          (classesData || []).forEach((c) => (classMap[c.id] = c));
+          (sess || []).forEach((s) => {
+            sessionMap[s.id] = { ...s, classInfo: classMap[s.class_id] };
+          });
+        }
+
+        const enriched = (bk || [])
+          .map((b) => ({ ...b, session: sessionMap[b.class_session_id] }))
+          .filter((b) => b.session);
+
+        const thisWeek = enriched.filter(
+          (b) =>
+            b.session.session_date >= mondayStr &&
+            b.session.session_date <= saturdayStr
+        );
+
+        setWeekBookings(thisWeek);
       }
 
       // ── 코치 데이터 ──────────────────────────
