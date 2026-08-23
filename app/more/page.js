@@ -56,6 +56,7 @@ export default function MorePage() {
   const [role, setRole] = useState("guardian");
   const [profileName, setProfileName] = useState("");
   const [email, setEmail] = useState("");
+  const [firstChildId, setFirstChildId] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -98,14 +99,15 @@ export default function MorePage() {
         if (guardian) {
           const { data: firstChild } = await supabase
             .from("members")
-            .select("name")
+            .select("id, name")
             .eq("guardian_id", guardian.id)
             .order("created_at", { ascending: true })
             .limit(1)
             .maybeSingle();
           setProfileName(
-            firstChild ? `${firstChild.name} 학부모님` : "학부모님"
+            firstChild ? ` 학부모님` : "학부모님"
           );
+          if (firstChild) setFirstChildId(firstChild.id);
         } else {
           setProfileName(user.email);
         }
@@ -129,6 +131,11 @@ export default function MorePage() {
   }
 
   const menu = MENU_BY_ROLE[role] || MENU_BY_ROLE.guardian;
+  const resolvedMenu = menu.map((item) =>
+    item.label === "예약 내역" && firstChildId
+      ? { ...item, href: `/members/${firstChildId}/reservations` }
+      : item
+  );
 
   return (
     <main style={{ background: "#f3f7fc", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
@@ -195,8 +202,8 @@ export default function MorePage() {
             boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
           }}
         >
-          {menu.map((m, i) => {
-            const isLast = i === menu.length - 1;
+          {resolvedMenu.map((m, i) => {
+            const isLast = i === resolvedMenu.length - 1;
             const rowStyle = {
               display: "flex",
               alignItems: "center",
