@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { getRegionBg, getProgramTextColor } from "../../../../lib/classColors";
 import { supabase } from "../../../../lib/supabaseClient";
 
 const BLUE = "#3B82C4";
@@ -80,7 +81,7 @@ export default function BookClassPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, session_date, classes!inner(id, program, class_name, age_group, start_time, end_time, coach_name, location, is_active)"
+        "id, session_date, classes!inner(id, program, class_name, age_group, start_time, end_time, coach_name, location, is_active, region)"
       )
       .eq("status", "scheduled")
       .eq("classes.program", memberData.program)
@@ -240,7 +241,7 @@ export default function BookClassPage() {
 
         <div
           style={{
-            background: "white",
+            background: getRegionBg(s.classes?.region),
             borderRadius: 16,
             padding: 18,
             boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
