@@ -10,6 +10,90 @@ import LoadingScreen from "../components/LoadingScreen";
 const BLUE = "#3B82C4";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토"];
 
+function MenuIcon({ type, color }) {
+  const props = {
+    width: 20,
+    height: 20,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: color,
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+  if (type === "card") {
+    return (
+      <svg {...props}>
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <line x1="2" y1="10" x2="22" y2="10" />
+      </svg>
+    );
+  }
+  if (type === "check") {
+    return (
+      <svg {...props}>
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="8 12 11 15 16 9" />
+      </svg>
+    );
+  }
+  if (type === "users") {
+    return (
+      <svg {...props}>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+  }
+  if (type === "calendar") {
+    return (
+      <svg {...props}>
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+    );
+  }
+  if (type === "ticket") {
+    return (
+      <svg {...props}>
+        <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+        <line x1="13" y1="5" x2="13" y2="19" strokeDasharray="2 2" />
+      </svg>
+    );
+  }
+  if (type === "tag") {
+    return (
+      <svg {...props}>
+        <path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L3 3v6.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.82 0l4.6-4.6a2 2 0 0 0 0-2.82z" />
+        <circle cx="7.5" cy="7.5" r="1.5" fill={color} stroke="none" />
+      </svg>
+    );
+  }
+  if (type === "megaphone") {
+    return (
+      <svg {...props}>
+        <path d="M3 11v3a1 1 0 0 0 1 1h2l3.5 5.5V4.5L6 10H4a1 1 0 0 0-1 1z" />
+        <path d="M14 5a9 9 0 0 1 0 14" />
+        <path d="M11.5 8a5 5 0 0 1 0 8" />
+      </svg>
+    );
+  }
+  if (type === "image") {
+    return (
+      <svg {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <path d="M21 15l-5-5L5 21" />
+      </svg>
+    );
+  }
+  return null;
+}
+
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -568,14 +652,14 @@ export default function DashboardPage() {
   }
 
   const adminMenu = [
-    { label: "결제 관리", href: "/admin/payments" },
-    { label: "출석 현황", href: "/admin/attendance" },
-    { label: "회원 관리", href: "/admin/members" },
-    { label: "수업 관리", href: "/admin/classes" },
-    { label: "회원권 배정", href: "/admin/memberships" },
-    { label: "상품 관리", href: "/admin/plans" },
-    { label: "공지사항", href: "/notices" },
-    { label: "갤러리", href: "/photos" },
+    { label: "결제 관리", href: "/admin/payments", icon: "card", bg: "#eaf2fb", color: "#3B82C4" },
+    { label: "출석 현황", href: "/admin/attendance", icon: "check", bg: "#e9f8f0", color: "#2ea86e" },
+    { label: "회원 관리", href: "/admin/members", icon: "users", bg: "#fdf1e6", color: "#e2892e" },
+    { label: "수업 관리", href: "/admin/classes", icon: "calendar", bg: "#eaf2fb", color: "#3B82C4" },
+    { label: "회원권 배정", href: "/admin/memberships", icon: "ticket", bg: "#f2eefc", color: "#8b5fd6" },
+    { label: "상품 관리", href: "/admin/plans", icon: "tag", bg: "#fde9f0", color: "#d6336c" },
+    { label: "공지사항", href: "/notices", icon: "megaphone", bg: "#fef6e0", color: "#d6a02e" },
+    { label: "갤러리", href: "/photos", icon: "image", bg: "#e6f7f7", color: "#2ea8a0" },
   ];
 
   return (
@@ -941,16 +1025,36 @@ export default function DashboardPage() {
                   <Link key={m.href} href={m.href} style={{ textDecoration: "none" }}>
                     <div
                       style={{
-                        background: "#f3f7fc",
-                        borderRadius: 12,
-                        padding: "16px 6px",
-                        textAlign: "center",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "#1b3a63",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "12px 4px",
                       }}
                     >
-                      {m.label}
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: "50%",
+                          background: m.bg,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <MenuIcon type={m.icon} color={m.color} />
+                      </div>
+                      <div
+                        style={{
+                          textAlign: "center",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#1b3a63",
+                        }}
+                      >
+                        {m.label}
+                      </div>
                     </div>
                   </Link>
                 ))}
