@@ -53,6 +53,9 @@ export default function AdminMembersPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminUserId, setAdminUserId] = useState(null);
+  const [couponModalMember, setCouponModalMember] = useState(null);
+  const [issuingCoupon, setIssuingCoupon] = useState(false);
+  const [couponSuccessMsg, setCouponSuccessMsg] = useState("");
 
   const [members, setMembers] = useState([]);
   const [query, setQuery] = useState("");
@@ -210,6 +213,38 @@ export default function AdminMembersPage() {
     setAdjustReason("");
     setAdjustMsg("조정이 완료되었습니다.");
     await loadMemberships(memberId);
+  }
+
+  function openCouponModal(member) {
+    setCouponModalMember(member);
+  }
+
+  function closeCouponModal() {
+    setCouponModalMember(null);
+  }
+
+  async function handleIssueCoupon() {
+    if (!couponModalMember) return;
+
+    setIssuingCoupon(true);
+    setCouponSuccessMsg("");
+
+    const { error } = await supabase.from("coupons").insert({
+      member_id: couponModalMember.id,
+      amount: 20,
+      issued_by: adminUserId,
+    });
+
+    setIssuingCoupon(false);
+
+    if (error) {
+      alert("쿠폰 발급 실패: " + error.message);
+      return;
+    }
+
+    setCouponSuccessMsg(`${couponModalMember.name}님에게 20 EUR 쿠폰이 발급되었습니다.`);
+    setCouponModalMember(null);
+    setTimeout(() => setCouponSuccessMsg(""), 4000);
   }
 
   const filtered = members.filter((m) => {
