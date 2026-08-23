@@ -151,16 +151,17 @@ export default function AdminPaymentsPage() {
     const newTab = window.open("", "_blank");
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        setErrorMsg("로그인이 필요합니다.");
-        setOpeningPdfPath(null);
-        if (newTab) newTab.close();
-        return;
-      }
+  async function loadRevenue() {
+    // 2026년 8월까지는 테스트 운영 기간이라 매출 집계에서 제외, 9월부터 정식 집계
+    const { data } = await supabase
+      .from("payments")
+      .select("total_amount, confirmed_at, membership_plans(program)")
+      .eq("status", "confirmed")
+      .gte("confirmed_at", "2026-09-01")
+      .order("confirmed_at", { ascending: true });
+    setAllConfirmedPayments(data || []);
+    setRevenueLoaded(true);
+  }
 
       const res = await fetch("/api/invoice-url", {
         method: "POST",
@@ -489,15 +490,43 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* 탭 바 */}
-      <div style={{ display: "flex", gap: 6, padding: "14px 18px 0", overflowX: "auto" }}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: "10px 16px",
-              fontSize: 13,
+  // ===== 매출현황 집계 계산 =====
+  const revenueByMonth = {};
+  allConfirmedPayments.forEach((p) => {
+    if (!p.confirmed_at) return;
+    const key = monthKey(p.confirmed_at);
+    revenueByMonth[key] = (revenueByMonth[key] || 0) + Number(p.total_amount || 0);
+  });
+  const sortedMonthKeys = Object.keys(revenueByMonth).sort();
+  const last6Months = sortedMonthKeys.slice(-6);
+  const maxRevenue = Math.max(1, ...last6Months.map((k) => revenueByMonth[k]));
+  const thisMonthKey = monthKey(todayStr());
+  const thisMonthRevenue = revenueByMonth[thisMonthKey] || 0;
+
+  const currentYear = new Date().getFullYear();
+  const lastYear = currentYear - 1;
+  const thisYearRevenue = sortedMonthKeys
+    .filter((k) => k.startsWith(String(currentYear)))
+    .reduce((sum, k) => sum + revenueByMonth[k], 0);
+  const lastYearRevenue = sortedMonthKeys
+    .filter((k) => k.startsWith(String(lastYear)))
+    .reduce((sum, k) => sum + revenueByMonth[k], 0);
+  const yoyChangePct =
+    lastYearRevenue > 0
+      ? Math.round(((thisYearRevenue - lastYearRevenue) / lastYearRevenue) * 1000) / 10
+      : null;
+
+  const revenueByProgram = { kids: 0, women: 0, men: 0 };
+  allConfirmedPayments.forEach((p) => {
+    const program = p.membership_plans?.program;
+    if (program && revenueByProgram[program] !== undefined) {
+      revenueByProgram[program] += Number(p.total_amount || 0);
+    }
+  });
+  const totalProgramRevenue =
+    revenueByProgram.kids + revenueByProgram.women + revenueByProgram.men;
+  const programLabels = { kids: "Kids", women: "Women's", men: "Men's" };
+  const programColors = { kids: "#3B82C4", women: "#8b5cf6", men: "#2fa370" };
               fontWeight: 700,
               border: "none",
               borderRadius: 999,
@@ -711,6 +740,148 @@ export default function AdminPaymentsPage() {
                         fontSize: 13,
                         fontWeight: 700,
                         border: "1px solid #e5eaf2",
+
+            <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 4 }}>
+                {currentYear}년 누적 매출
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b3a63" }}>
+                  {thisYearRevenue.toLocaleString()} EUR
+                </div>
+                {yoyChangePct !== null && (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: yoyChangePct >= 0 ? "#2fa370" : "#b3261e",
+                    }}
+                  >
+                    전년 대비 {yoyChangePct >= 0 ? "+" : ""}{yoyChangePct}%
+                  </div>
+                )}
+              </div>
+              {yoyChangePct === null && (
+                <div style={{ fontSize: 12, color: "#aab9cc", marginTop: 4 }}>
+                  {lastYear}년 데이터가 없어 전년 대비 비교는 제공되지 않습니다.
+                </div>
+              )}
+            </div>
+
+            <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 14 }}>
+                프로그램별 매출 비중
+              </div>
+
+              {totalProgramRevenue === 0 ? (
+                <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 집계된 매출이 없습니다.</p>
+              ) : (
+                <>
+                  <div style={{ display: "flex", width: "100%", height: 14, borderRadius: 999, overflow: "hidden", marginBottom: 14 }}>
+                    {["kids", "women", "men"].map((key) => {
+                      const pct = (revenueByProgram[key] / totalProgramRevenue) * 100;
+                      if (pct <= 0) return null;
+                      return (
+                        <div
+                          key={key}
+                          style={{ width: `${pct}%`, background: programColors[key] }}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {["kids", "women", "men"].map((key) => {
+                      const amount = revenueByProgram[key];
+                      const pct = totalProgramRevenue > 0 ? Math.round((amount / totalProgramRevenue) * 1000) / 10 : 0;
+                      return (
+                        <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: "50%", background: programColors[key], display: "inline-block" }} />
+                            <span style={{ color: "#33455e" }}>{programLabels[key]}</span>
+                          </div>
+                          <div>
+                            <strong style={{ color: "#1b3a63" }}>{amount.toLocaleString()} EUR</strong>
+                            <span style={{ color: "#8ea0b8", marginLeft: 6 }}>({pct}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 4 }}>
+                {currentYear}년 누적 매출
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b3a63" }}>
+                  {thisYearRevenue.toLocaleString()} EUR
+                </div>
+                {yoyChangePct !== null && (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: yoyChangePct >= 0 ? "#2fa370" : "#b3261e",
+                    }}
+                  >
+                    전년 대비 {yoyChangePct >= 0 ? "+" : ""}{yoyChangePct}%
+                  </div>
+                )}
+              </div>
+              {yoyChangePct === null && (
+                <div style={{ fontSize: 12, color: "#aab9cc", marginTop: 4 }}>
+                  {lastYear}년 데이터가 없어 전년 대비 비교는 제공되지 않습니다.
+                </div>
+              )}
+            </div>
+
+            <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 14 }}>
+                프로그램별 매출 비중
+              </div>
+
+              {totalProgramRevenue === 0 ? (
+                <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 집계된 매출이 없습니다.</p>
+              ) : (
+                <>
+                  <div style={{ display: "flex", width: "100%", height: 14, borderRadius: 999, overflow: "hidden", marginBottom: 14 }}>
+                    {["kids", "women", "men"].map((key) => {
+                      const pct = (revenueByProgram[key] / totalProgramRevenue) * 100;
+                      if (pct <= 0) return null;
+                      return (
+                        <div
+                          key={key}
+                          style={{ width: `${pct}%`, background: programColors[key] }}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {["kids", "women", "men"].map((key) => {
+                      const amount = revenueByProgram[key];
+                      const pct = totalProgramRevenue > 0 ? Math.round((amount / totalProgramRevenue) * 1000) / 10 : 0;
+                      return (
+                        <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: "50%", background: programColors[key], display: "inline-block" }} />
+                            <span style={{ color: "#33455e" }}>{programLabels[key]}</span>
+                          </div>
+                          <div>
+                            <strong style={{ color: "#1b3a63" }}>{amount.toLocaleString()} EUR</strong>
+                            <span style={{ color: "#8ea0b8", marginLeft: 6 }}>({pct}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
                         borderRadius: 10,
                         background: "white",
                         color: BLUE,
