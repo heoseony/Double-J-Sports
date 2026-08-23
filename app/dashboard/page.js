@@ -975,6 +975,26 @@ export default function DashboardPage() {
               </div>
             </div>
 
+          <div style={cardStyle}>
+            <div style={cardTitleRow}>
+              <span style={cardTitle}>이번주 수업</span>
+            </div>
+            <WeekCalendarGrid
+              weekSessions={thisWeekSessions}
+              selectedDate={toDateStr(new Date())}
+            />
+          </div>
+
+          <div style={cardStyle}>
+            <div style={cardTitleRow}>
+              <span style={cardTitle}>오늘의 수업</span>
+            </div>
+            <TodayClassList
+              sessions={thisWeekSessions}
+              sessionCounts={thisWeekSessionCounts}
+            />
+          </div>
+
             <div style={cardStyle}>
               <div style={cardTitleRow}>
                 <span style={cardTitle}>주요 메뉴</span>
