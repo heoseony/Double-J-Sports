@@ -161,13 +161,31 @@ export default function AdminClassesPage() {
 
     const { data } = await supabase
       .from("class_sessions")
-      .select("id, session_date, start_time, end_time, class_id, status")
+      .select("id, session_date, start_time, end_time, class_id, status, is_cancelled")
       .gte("session_date", firstDay)
       .lte("session_date", lastDay)
       .order("start_time", { ascending: true });
 
     setMonthSessions(data || []);
     setLoadingCalendar(false);
+  }
+
+  async function handleToggleCancelSession(sessionId, currentValue) {
+    const { error } = await supabase
+      .from("class_sessions")
+      .update({ is_cancelled: !currentValue })
+      .eq("id", sessionId);
+
+    if (error) {
+      alert("휴강 처리 실패: " + error.message);
+      return;
+    }
+
+    setMonthSessions((prev) =>
+      prev.map((s) =>
+        s.id === sessionId ? { ...s, is_cancelled: !currentValue } : s
+      )
+    );
   }
 
   useEffect(() => {
@@ -586,12 +604,32 @@ export default function AdminClassesPage() {
               const info = classMap[s.class_id];
               const assignedCoaches = classCoachesByClass[s.class_id] || [];
               return (
-                <div key={s.id} style={{ padding: "10px 0", borderBottom: "1px solid #f5f5f5", fontSize: 13 }}>
+                <div key={s.id} style={{ padding: "10px 0", borderBottom: "1px solid #f5f5f5", fontSize: 13, opacity: s.is_cancelled ? 0.5 : 1 }}>
                   <strong>
                     {"[" + (info ? info.program : "") + "] " + (info ? info.class_name : "(알 수 없는 수업)")}
                   </strong>
                   {" · "}
                   {s.start_time ? s.start_time.slice(0, 5) : ""}~{s.end_time ? s.end_time.slice(0, 5) : ""}
+                  {s.is_cancelled && (
+                    <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: "#b3261e", background: "#fdecea", padding: "2px 6px", borderRadius: 4 }}>휴강</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleCancelSession(s.id, s.is_cancelled)}
+                    style={{
+                      marginLeft: 8,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "3px 8px",
+                      borderRadius: 6,
+                      border: s.is_cancelled ? "1px solid #3B82C4" : "1px solid #e08a8a",
+                      background: "white",
+                      color: s.is_cancelled ? "#3B82C4" : "#c0392b",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {s.is_cancelled ? "휴강 취소" : "휴강 처리"}
+                  </button>
 
                   <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                     {assignedCoaches.length === 0 && (
