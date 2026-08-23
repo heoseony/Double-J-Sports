@@ -190,6 +190,19 @@ export default function AdminPlansPage() {
   }
 
   if (loading || !isAdmin) {
+
+  async function handleDelete(planId, planName) {
+    if (!confirm(`"${planName}" 상품을 정말 삭제할까요?\n\n이미 신청/배정된 회원권이 있으면 삭제가 안 될 수 있어요.`)) return;
+
+    const { error } = await supabase.from("membership_plans").delete().eq("id", planId);
+
+    if (error) {
+      alert("삭제 실패: 이미 신청/배정된 회원권이 연결되어 있어서 삭제할 수 없습니다.");
+      return;
+    }
+
+    await loadAll();
+  }
     return (
       <LoadingScreen text="확인 중..." />
     );
@@ -583,6 +596,22 @@ export default function AdminPlansPage() {
                     {p.active ? "비활성화" : "활성화"}
                   </button>
                 </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(p.id, p.name)}
+                    style={{
+                      padding: "9px 16px",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: "1px solid #f5c6c2",
+                      borderRadius: 10,
+                      background: "white",
+                      color: "#c0392b",
+                      cursor: "pointer",
+                    }}
+                  >
+                    삭제
+                  </button>
               </div>
             );
           })}
