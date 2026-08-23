@@ -183,14 +183,14 @@ export default function AdultSignupPage() {
                 type="text"
                 value={firstNameEn}
                 onChange={(e) => setFirstNameEn(e.target.value)}
-                placeholder="First Name (예: Dongwoo)"
+                placeholder="이름 (예: Dongwoo)"
                 style={{ ...inputStyle, flex: 1 }}
               />
               <input
                 type="text"
                 value={lastNameEn}
                 onChange={(e) => setLastNameEn(e.target.value)}
-                placeholder="Last Name (예: Kim)"
+                placeholder="성 (예: Kim)"
                 style={{ ...inputStyle, flex: 1 }}
               />
             </div>
