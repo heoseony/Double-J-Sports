@@ -398,7 +398,7 @@ export default function LoginPage() {
           >
             아직 계정이 없으신가요?{" "}
             <Link
-              href="/signup"
+              href="/"
               style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}
             >
               회원가입
