@@ -78,6 +78,13 @@ export default function DashboardPage() {
   // 코치용
   const [coachTodaySessions, setCoachTodaySessions] = useState([]);
 
+  // 이번주 수업 요약(코치/관리자 공통)
+  const [thisWeekSessions, setThisWeekSessions] = useState([]);
+  const [thisWeekSessionCounts, setThisWeekSessionCounts] = useState({});
+  const [totalActiveMembers, setTotalActiveMembers] = useState(0);
+  const [thisWeekCancelledCount, setThisWeekCancelledCount] = useState(0);
+  const [todayNeedAttendanceCount, setTodayNeedAttendanceCount] = useState(0);
+
   // 관리자용
   const [adminStats, setAdminStats] = useState({
     bookingsToday: 0,
@@ -165,6 +172,57 @@ export default function DashboardPage() {
       const mondayStr = toDateStr(monday);
       const saturdayStr = toDateStr(saturday);
       const todayStr = toDateStr(new Date());
+
+      // ── 코치/관리자 공통: 이번주 수업 요약 데이터 ──────────────────────────
+      if (coach || admin) {
+        const sunday = addDays(monday, 6);
+        const sundayStr = toDateStr(sunday);
+
+        const { data: wSessions } = await supabase
+          .from("class_sessions")
+          .select(
+            "id, session_date, start_time, end_time, class_id, is_cancelled, classes(id, class_name, program, location)"
+          )
+          .gte("session_date", mondayStr)
+          .lte("session_date", sundayStr)
+          .order("session_date", { ascending: true })
+          .order("start_time", { ascending: true });
+
+        setThisWeekSessions(wSessions || []);
+
+        const cancelledCount = (wSessions || []).filter((s) => s.is_cancelled).length;
+        setThisWeekCancelledCount(cancelledCount);
+
+        const wSessionIds = (wSessions || []).map((s) => s.id);
+        if (wSessionIds.length > 0) {
+          const { data: wBookings } = await supabase
+            .from("bookings")
+            .select("class_session_id, status")
+            .in("class_session_id", wSessionIds)
+            .in("status", ["booked", "attended"]);
+
+          const counts = {};
+          (wBookings || []).forEach((b) => {
+            counts[b.class_session_id] = (counts[b.class_session_id] || 0) + 1;
+          });
+          setThisWeekSessionCounts(counts);
+
+          const todaySessionIds = (wSessions || [])
+            .filter((s) => s.session_date === todayStr)
+            .map((s) => s.id);
+
+          const needAttendance = (wBookings || []).filter(
+            (b) => todaySessionIds.includes(b.class_session_id) && b.status === "booked"
+          ).length;
+          setTodayNeedAttendanceCount(needAttendance);
+        }
+
+        const { count: activeCount } = await supabase
+          .from("members")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active");
+        setTotalActiveMembers(activeCount || 0);
+      }
 
       // ── 학부모 데이터 ──────────────────────────
       if (guardian && !admin && !coach) {
