@@ -197,7 +197,7 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
   );
 }
 
-function TodayClassList({ sessions, sessionCounts, targetDate }) {
+function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds }) {
   const todayStr = targetDate || toDateStr(new Date());
   const todaySessions = sessions
     .filter((s) => s.session_date === todayStr)
@@ -225,7 +225,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate }) {
               justifyContent: "space-between",
               padding: 12,
               borderRadius: 12,
-              border: "1px solid #eef2f8",
+              border: myClassIds && myClassIds.includes(s.class_id) ? "2px solid #e05252" : "1px solid #eef2f8",
               opacity: s.is_cancelled ? 0.5 : 1,
               background: getRegionBg(s.classes?.region),
             }}
@@ -554,6 +554,7 @@ export default function DashboardPage() {
             .eq("coach_profile_id", activeProfileId);
 
           classIds = (myClassCoaches || []).map((cc) => cc.class_id);
+          setMyCoachClassIds(classIds);
           (myClassCoaches || []).forEach((cc) => {
             if (cc.classes) classMap[cc.class_id] = cc.classes;
           });
@@ -949,6 +950,7 @@ export default function DashboardPage() {
               sessions={thisWeekSessions}
               sessionCounts={thisWeekSessionCounts}
               targetDate={selectedDashDate}
+              myClassIds={myCoachClassIds}
             />
           </div>
         </div>
