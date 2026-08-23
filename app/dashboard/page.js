@@ -197,8 +197,8 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
   );
 }
 
-function TodayClassList({ sessions, sessionCounts }) {
-  const todayStr = toDateStr(new Date());
+function TodayClassList({ sessions, sessionCounts, targetDate }) {
+  const todayStr = targetDate || toDateStr(new Date());
   const todaySessions = sessions
     .filter((s) => s.session_date === todayStr)
     .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
@@ -300,9 +300,11 @@ export default function DashboardPage() {
 
   // 코치용
   const [coachTodaySessions, setCoachTodaySessions] = useState([]);
+  const [myCoachClassIds, setMyCoachClassIds] = useState([]);
 
   // 이번주 수업 요약(코치/관리자 공통)
   const [thisWeekSessions, setThisWeekSessions] = useState([]);
+  const [selectedDashDate, setSelectedDashDate] = useState(toDateStr(new Date()));
   const [thisWeekSessionCounts, setThisWeekSessionCounts] = useState({});
   const [totalActiveMembers, setTotalActiveMembers] = useState(0);
   const [thisWeekCancelledCount, setThisWeekCancelledCount] = useState(0);
@@ -934,17 +936,19 @@ export default function DashboardPage() {
             </div>
             <WeekCalendarGrid
               weekSessions={thisWeekSessions}
-              selectedDate={toDateStr(new Date())}
+              selectedDate={selectedDashDate}
+              onSelectDate={(d) => setSelectedDashDate(d)}
             />
           </div>
 
           <div style={cardStyle}>
             <div style={cardTitleRow}>
-              <span style={cardTitle}>오늘의 수업</span>
+              <span style={cardTitle}>{selectedDashDate === toDateStr(new Date()) ? "오늘의 수업" : `${selectedDashDate} 수업`}</span>
             </div>
             <TodayClassList
               sessions={thisWeekSessions}
               sessionCounts={thisWeekSessionCounts}
+              targetDate={selectedDashDate}
             />
           </div>
         </div>
@@ -997,6 +1001,7 @@ export default function DashboardPage() {
             <WeekCalendarGrid
               weekSessions={thisWeekSessions}
               selectedDate={toDateStr(new Date())}
+              onSelectDate={(d) => router.push(`/admin/classes?date=${d}`)}
             />
           </div>
 
