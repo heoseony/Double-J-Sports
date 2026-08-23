@@ -43,6 +43,7 @@ export default function ReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [coachNameByClassId, setCoachNameByClassId] = useState({});
   const [errorMsg, setErrorMsg] = useState("");
   const [activeTab, setActiveTab] = useState("upcoming");
   const [cancellingId, setCancellingId] = useState(null);
@@ -82,7 +83,7 @@ export default function ReservationsPage() {
     const { data: bookingData, error: bookingError } = await supabase
       .from("bookings")
       .select(
-        "id, status, class_session_id, class_sessions(id, session_date, classes(class_name, start_time, end_time, location, coach_name))"
+        "id, status, class_session_id, class_sessions(id, session_date, class_id, classes(class_name, start_time, end_time, location))"
       )
       .eq("member_id", memberId)
       .order("class_sessions(session_date)", { ascending: false });
@@ -93,6 +94,21 @@ export default function ReservationsPage() {
       return;
     }
 
+
+    const classIds = [...new Set((bookingData || []).map((b) => b.class_sessions?.class_id).filter(Boolean))];
+    let coachNameByClassId = {};
+    if (classIds.length > 0) {
+      const { data: ccData } = await supabase
+        .from("class_coaches")
+        .select("class_id, coach_profiles(name)")
+        .in("class_id", classIds);
+      (ccData || []).forEach((cc) => {
+        if (!coachNameByClassId[cc.class_id] && cc.coach_profiles?.name) {
+          coachNameByClassId[cc.class_id] = cc.coach_profiles.name;
+        }
+      });
+    }
+    setCoachNameByClassId(coachNameByClassId);
     setBookings(bookingData || []);
     setLoading(false);
   }
@@ -254,6 +270,8 @@ export default function ReservationsPage() {
           )}
 
           {currentList.map((b, idx) => {
+            const classId = b.class_sessions.class_id;
+            const coachName = coachNameByClassId[classId];
             const cls = b.class_sessions.classes;
             const sessionDate = b.class_sessions.session_date;
 
@@ -276,7 +294,7 @@ export default function ReservationsPage() {
                     {cls?.location && (
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
                         {cls.location}
-                        {cls.coach_name ? ` · ${cls.coach_name} 코치` : ""}
+                        {coachName ? ` · ${coachName} 코치` : ""}
                       </div>
                     )}
                   </div>
