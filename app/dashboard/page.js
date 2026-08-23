@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getRegionBg, getProgramTextColor } from "../../lib/classColors";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -142,7 +143,7 @@ function TodayClassList({ sessions, sessionCounts }) {
               borderRadius: 12,
               border: "1px solid #eef2f8",
               opacity: s.is_cancelled ? 0.5 : 1,
-              background: "#fafcff",
+              background: getRegionBg(s.classes?.region),
             }}
           >
             <div>
@@ -166,7 +167,7 @@ function TodayClassList({ sessions, sessionCounts }) {
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: getProgramTextColor(info?.program), marginTop: 2 }}>
                 {info ? `${info.program ? "[" + info.program + "] " : ""}${info.class_name}` : "수업 정보 없음"}
               </div>
               {info?.location && (
@@ -319,7 +320,7 @@ export default function DashboardPage() {
         const { data: wSessions } = await supabase
           .from("class_sessions")
           .select(
-            "id, session_date, start_time, end_time, class_id, is_cancelled, classes(id, class_name, program, location)"
+            "id, session_date, start_time, end_time, class_id, is_cancelled, classes(id, class_name, program, location, region)"
           )
           .gte("session_date", mondayStr)
           .lte("session_date", sundayStr)
