@@ -794,80 +794,6 @@ export default function DashboardPage() {
             </Link>
           </div>
         )}
-
-        {/* ───────── 코치 화면 ───────── */}
-        {isCoach && (
-          <>
-            <div style={cardStyle}>
-              <div style={cardTitleRow}>
-                <span style={cardTitle}>오늘의 수업</span>
-                <Link href="/coach" style={seeAllLink}>
-                  전체 보기 ›
-                </Link>
-              </div>
-
-              {coachTodaySessions.length === 0 && (
-                <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-                  오늘 담당하는 수업이 없습니다.
-                </p>
-              )}
-
-              {coachTodaySessions.map((s) => (
-                <div
-                  key={s.id}
-                  style={{
-                    padding: "10px 0",
-                    borderBottom: "1px solid #f0f3f8",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
-                      {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2 }}>
-                      {s.classInfo?.class_name}
-                    </div>
-                  </div>
-                  <Link href={`/coach/attendance?sessionId=${s.id}`}>
-                    <button
-                      style={{
-                        padding: "8px 14px",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "white",
-                        background: BLUE,
-                        border: "none",
-                        borderRadius: 8,
-                        cursor: "pointer",
-                      }}
-                    >
-                      출석 체크
-                    </button>
-                  </Link>
-                </div>
-              ))}
-            </div>
-
-            <div style={cardStyle}>
-              <Link href="/coach" style={{ textDecoration: "none" }}>
-                <button
-                  style={{
-                    width: "100%",
-                    padding: 14,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: "white",
-                    background: "#1b3a63",
-                    border: "none",
-                    borderRadius: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  코치 화면 (주간 수업)
-                </button>
       {isCoach && (
         <div style={{ padding: "0 18px 18px" }}>
           <div style={cardStyle}>
@@ -879,21 +805,27 @@ export default function DashboardPage() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>📅</div>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#eaf2fb", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 4px" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82C4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                </div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
                   {thisWeekSessions.filter((s) => !s.is_cancelled).length}
                 </div>
                 <div style={{ fontSize: 11, color: "#8ea0b8" }}>총 수업</div>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>👥</div>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e9f8f0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 4px" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ea86e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                </div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
                   {totalActiveMembers}
                 </div>
                 <div style={{ fontSize: 11, color: "#8ea0b8" }}>총 회원</div>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>⏰</div>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#fdf1e6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 4px" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e2892e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                </div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
                   {thisWeekCancelledCount}
                 </div>
@@ -930,10 +862,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-              </Link>
-            </div>
-          </>
-        )}
 
         {/* ───────── 관리자 화면 ───────── */}
         {isAdmin && (
