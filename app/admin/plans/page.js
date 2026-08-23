@@ -562,7 +562,7 @@ export default function AdminPlansPage() {
                     : `특정 수업만 예약 가능 (${allowedCount}개 수업)`}
                 </div>
 
-                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
                   <button
                     type="button"
                     onClick={() => startEdit(p)}
