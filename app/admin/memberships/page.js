@@ -30,6 +30,7 @@ export default function AdminMembershipsPage() {
   const [members, setMembers] = useState([]);
   const [plans, setPlans] = useState([]);
   const [assignments, setAssignments] = useState([]);
+  const [expandedRecent, setExpandedRecent] = useState(false);
 
   const [memberId, setMemberId] = useState("");
   const [planId, setPlanId] = useState("");
@@ -304,66 +305,76 @@ export default function AdminMembershipsPage() {
           }}
         >
           <div
+            onClick={() => setExpandedRecent((v) => !v)}
             style={{
-              fontWeight: 700,
-              fontSize: 15,
-              color: "#1b3a63",
-              marginBottom: 12,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              cursor: "pointer",
+              marginBottom: expandedRecent ? 12 : 0,
             }}
           >
-            최근 배정 내역
-          </div>
-
-          {assignments.length === 0 && (
-            <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              아직 배정된 회원권이 없습니다.
-            </p>
-          )}
-
-          {assignments.map((a, idx) => (
-            <div
-              key={a.id}
-              style={{
-                padding: "14px 0",
-                borderTop: idx === 0 ? "none" : "1px solid #f0f3f8",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
-                  {a.members?.name || "(알 수 없음)"}
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color:
-                      a.status === "active"
-                        ? BLUE
-                        : a.status === "cancelled"
-                        ? "#b3261e"
-                        : "#8ea0b8",
-                    background:
-                      a.status === "active"
-                        ? "#e9f1fb"
-                        : a.status === "cancelled"
-                        ? "#fdecec"
-                        : "#f0f3f8",
-                    padding: "2px 8px",
-                    borderRadius: 999,
-                  }}
-                >
-                  {statusLabel[a.status] || a.status}
-                </span>
-              </div>
-              <div style={{ fontSize: 13, color: "#33455e", marginTop: 6 }}>
-                {a.membership_plans?.name || "(알 수 없음)"}
-              </div>
-              <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
-                시작일: {a.start_date} · 사용: {a.sessions_used}/
-                {a.membership_plans?.sessions_per_month}
-              </div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
+              최근 배정 내역
             </div>
-          ))}
+            <span style={{ fontSize: 13, color: "#8ea0b8", fontWeight: 700 }}>
+              {expandedRecent ? "접기 ▲" : "펼치기 ▼"}
+            </span>
+          </div>
+          {expandedRecent && (
+            <>
+              {assignments.length === 0 && (
+                <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+                  아직 배정된 회원권이 없습니다.
+                </p>
+              )}
+
+              {(() => {
+                const groups = {};
+                assignments.forEach((a) => {
+                  const key = (a.start_date || "").slice(0, 7) || "날짜 미상";
+                  if (!groups[key]) groups[key] = [];
+                  groups[key].push(a);
+                });
+                const sortedKeys = Object.keys(groups).sort((a, b) => (a < b ? 1 : -1));
+
+                return sortedKeys.map((monthKey) => (
+                  <div key={monthKey} style={{ marginBottom: 16 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#8ea0b8",
+                        marginBottom: 8,
+                        paddingBottom: 4,
+                        borderBottom: "1px solid #f0f3f8",
+                      }}
+                    >
+                      {monthKey === "날짜 미상" ? monthKey : `${monthKey.slice(0, 4)}년 ${Number(monthKey.slice(5, 7))}월`}
+                    </div>
+
+                    {groups[monthKey].map((a, idx) => (
+                      <div
+                        key={a.id || idx}
+                        style={{
+                          padding: "10px 0",
+                          borderBottom: idx === groups[monthKey].length - 1 ? "none" : "1px solid #f5f5f5",
+                        }}
+                      >
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
+                          {a.members?.name || "이름 없음"} · {a.membership_plans?.name}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
+                          시작일: {a.start_date} · 사용: {a.sessions_used}/
+                          {a.membership_plans?.sessions_per_month}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ));
+              })()}
+            </>
+          )}
         </div>
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
