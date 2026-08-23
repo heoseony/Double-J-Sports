@@ -567,7 +567,9 @@ export default function AdminPlansPage() {
                     type="button"
                     onClick={() => startEdit(p)}
                     style={{
-                      padding: "9px 16px",
+                      padding: "9px 4px",
+                      flex: 1,
+                      textAlign: "center",
                       fontSize: 13,
                       fontWeight: 700,
                       border: "1px solid #e5eaf2",
@@ -583,7 +585,9 @@ export default function AdminPlansPage() {
                     type="button"
                     onClick={() => toggleActive(p.id, p.active)}
                     style={{
-                      padding: "9px 16px",
+                      padding: "9px 4px",
+                      flex: 1,
+                      textAlign: "center",
                       fontSize: 13,
                       fontWeight: 700,
                       border: p.active ? "1px solid #f3c6c2" : "1px solid #bcd7ee",
@@ -600,7 +604,9 @@ export default function AdminPlansPage() {
                     type="button"
                     onClick={() => handleDelete(p.id, p.name)}
                     style={{
-                      padding: "9px 16px",
+                      padding: "9px 4px",
+                      flex: 1,
+                      textAlign: "center",
                       fontSize: 13,
                       fontWeight: 700,
                       border: "1px solid #f5c6c2",
