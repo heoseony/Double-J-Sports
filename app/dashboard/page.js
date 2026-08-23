@@ -820,6 +820,8 @@ export default function DashboardPage() {
               ))}
             </div>
 
+            {!isAdultMember && (
+              <>
             <div style={cardStyle}>
               <div style={cardTitleRow}>
                 <span style={cardTitle}>출석 체크 (이번 주)</span>
@@ -901,6 +903,8 @@ export default function DashboardPage() {
                 </button>
               </Link>
             </div>
+              </>
+            )}
           </>
         )}
 
