@@ -562,15 +562,16 @@ export default function AdminPlansPage() {
                     : `특정 수업만 예약 가능 (${allowedCount}개 수업)`}
                 </div>
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                   <button
                     type="button"
                     onClick={() => startEdit(p)}
                     style={{
-                      padding: "9px 4px",
+                      padding: "8px 2px",
                       flex: 1,
                       textAlign: "center",
-                      fontSize: 13,
+                      fontSize: 12,
+                      whiteSpace: "nowrap",
                       fontWeight: 700,
                       border: "1px solid #e5eaf2",
                       borderRadius: 10,
@@ -585,10 +586,11 @@ export default function AdminPlansPage() {
                     type="button"
                     onClick={() => toggleActive(p.id, p.active)}
                     style={{
-                      padding: "9px 4px",
+                      padding: "8px 2px",
                       flex: 1,
                       textAlign: "center",
-                      fontSize: 13,
+                      fontSize: 12,
+                      whiteSpace: "nowrap",
                       fontWeight: 700,
                       border: p.active ? "1px solid #f3c6c2" : "1px solid #bcd7ee",
                       color: p.active ? "#b3261e" : BLUE,
@@ -604,10 +606,11 @@ export default function AdminPlansPage() {
                     type="button"
                     onClick={() => handleDelete(p.id, p.name)}
                     style={{
-                      padding: "9px 4px",
+                      padding: "8px 2px",
                       flex: 1,
                       textAlign: "center",
-                      fontSize: 13,
+                      fontSize: 12,
+                      whiteSpace: "nowrap",
                       fontWeight: 700,
                       border: "1px solid #f5c6c2",
                       borderRadius: 10,
