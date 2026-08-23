@@ -54,6 +54,144 @@ const cardTitleRow = {
 const cardTitle = { fontSize: 15, fontWeight: 800, color: "#1b3a63" };
 const seeAllLink = { fontSize: 12, color: BLUE, fontWeight: 700, textDecoration: "none" };
 
+function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
+  const monday = getMonday(new Date());
+  const todayStr = toDateStr(new Date());
+
+  const countByDate = {};
+  weekSessions.forEach((s) => {
+    if (s.is_cancelled) return;
+    countByDate[s.session_date] = (countByDate[s.session_date] || 0) + 1;
+  });
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+      {[0, 1, 2, 3, 4, 5, 6].map((offset) => {
+        const date = addDays(monday, offset);
+        const dateStr = toDateStr(date);
+        const isToday = dateStr === todayStr;
+        const isSelected = dateStr === selectedDate;
+        const count = countByDate[dateStr] || 0;
+
+        return (
+          <button
+            key={dateStr}
+            type="button"
+            onClick={() => onSelectDate && onSelectDate(dateStr)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              padding: "8px 2px",
+              borderRadius: 10,
+              border: isSelected ? "1.5px solid #3B82C4" : "1px solid #eef2f8",
+              background: isToday ? "#eaf2fb" : "white",
+              cursor: "pointer",
+            }}
+          >
+            <span style={{ fontSize: 11, color: "#8ea0b8", fontWeight: 700 }}>
+              {WEEKDAY_LABELS[offset]}
+            </span>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 800,
+                color: isToday ? "#3B82C4" : "#1b3a63",
+              }}
+            >
+              {date.getDate()}
+            </span>
+            <span style={{ fontSize: 10, color: count > 0 ? "#3B82C4" : "#c2ccd9" }}>
+              {count > 0 ? `${count}수업` : "-"}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TodayClassList({ sessions, sessionCounts }) {
+  const todayStr = toDateStr(new Date());
+  const todaySessions = sessions
+    .filter((s) => s.session_date === todayStr)
+    .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
+
+  if (todaySessions.length === 0) {
+    return (
+      <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
+        오늘 예정된 수업이 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {todaySessions.map((s) => {
+        const info = s.classes;
+        const count = sessionCounts[s.id] || 0;
+        return (
+          <div
+            key={s.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: 12,
+              borderRadius: 12,
+              border: "1px solid #eef2f8",
+              opacity: s.is_cancelled ? 0.5 : 1,
+              background: "#fafcff",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
+                {s.start_time ? s.start_time.slice(0, 5) : ""}
+                {" ~ "}
+                {s.end_time ? s.end_time.slice(0, 5) : ""}
+                {s.is_cancelled && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#b3261e",
+                      background: "#fdecea",
+                      padding: "1px 6px",
+                      borderRadius: 4,
+                    }}
+                  >
+                    휴강
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 2 }}>
+                {info ? `${info.program ? "[" + info.program + "] " : ""}${info.class_name}` : "수업 정보 없음"}
+              </div>
+              {info?.location && (
+                <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 2 }}>
+                  {info.location} · {count}명
+                </div>
+              )}
+            </div>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: BLUE,
+                whiteSpace: "nowrap",
+              }}
+            >
+              출석체크 →
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
