@@ -833,7 +833,9 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 11, color: "#8ea0b8" }}>휴강</div>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>🔑</div>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#f2eefc", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 4px" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5fd6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                </div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
                   {todayNeedAttendanceCount}
                 </div>
