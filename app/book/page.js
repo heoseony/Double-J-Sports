@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { getProgramTextColor } from "../../lib/classColors";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -157,7 +158,7 @@ function BookPageInner() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, class_id, session_date, start_time, end_time, status, classes(id, class_name, program, weekday, active)"
+        "id, class_id, session_date, start_time, end_time, status, classes(id, class_name, program, weekday, active, region)"
       )
       .gte("session_date", today)
       .order("session_date", { ascending: true })
