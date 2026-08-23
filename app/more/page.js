@@ -19,6 +19,15 @@ const MENU_BY_ROLE = {
     { label: "자주 묻는 질문", href: null },
     { label: "문의하기", href: null },
   ],
+  adult: [
+    { label: "내 정보 관리", href: null },
+    { label: "수업권 및 결제 정보", href: "/invoices" },
+    { label: "예약 내역", href: null },
+    { label: "공지사항", href: "/notices" },
+    { label: "갤러리", href: "/photos" },
+    { label: "자주 묻는 질문", href: null },
+    { label: "문의하기", href: null },
+  ],
   coach: [
     { label: "내 정보 관리", href: null },
     { label: "담당 클래스 관리", href: "/coach" },
@@ -57,6 +66,8 @@ export default function MorePage() {
   const [profileName, setProfileName] = useState("");
   const [email, setEmail] = useState("");
   const [firstChildId, setFirstChildId] = useState(null);
+  const [isAdultMember, setIsAdultMember] = useState(false);
+  const [adultMemberId, setAdultMemberId] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -109,7 +120,19 @@ export default function MorePage() {
           );
           if (firstChild) setFirstChildId(firstChild.id);
         } else {
-          setProfileName(user.email);
+          const { data: selfMember } = await supabase
+            .from("members")
+            .select("id, name")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (selfMember) {
+            setIsAdultMember(true);
+            setAdultMemberId(selfMember.id);
+            setProfileName(`${selfMember.name}님`);
+          } else {
+            setProfileName(user.email);
+          }
         }
       }
 
@@ -130,12 +153,16 @@ export default function MorePage() {
     );
   }
 
-  const menu = MENU_BY_ROLE[role] || MENU_BY_ROLE.guardian;
-  const resolvedMenu = menu.map((item) =>
-    item.label === "예약 내역" && firstChildId
-      ? { ...item, href: `/members/${firstChildId}/reservations` }
-      : item
-  );
+  const menu = (role === "guardian" && isAdultMember) ? MENU_BY_ROLE.adult : (MENU_BY_ROLE[role] || MENU_BY_ROLE.guardian);
+  const resolvedMenu = menu.map((item) => {
+    if (item.label === "예약 내역" && isAdultMember) {
+      return { ...item, href: "/adult/reservations" };
+    }
+    if (item.label === "예약 내역" && firstChildId) {
+      return { ...item, href: `/members/${firstChildId}/reservations` };
+    }
+    return item;
+  });
 
   return (
     <main style={{ background: "#f3f7fc", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
