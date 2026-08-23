@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getRegionBg, getProgramTextColor } from "../../../lib/classColors";
 import { supabase } from "../../../lib/supabaseClient";
@@ -47,8 +47,9 @@ function ChevronDown({ open }) {
   );
 }
 
-export default function AdminClassesPage() {
+function AdminClassesPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -98,7 +99,7 @@ export default function AdminClassesPage() {
     d.setDate(1);
     return d;
   });
-  const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [selectedDate, setSelectedDate] = useState(searchParams.get("date") || todayStr());
   const [monthSessions, setMonthSessions] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [showAddSession, setShowAddSession] = useState(false);
@@ -1270,5 +1271,13 @@ export default function AdminClassesPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function AdminClassesPage() {
+  return (
+    <Suspense fallback={<LoadingScreen text="불러오는 중..." />}>
+      <AdminClassesPageInner />
+    </Suspense>
   );
 }
