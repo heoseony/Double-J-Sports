@@ -26,7 +26,7 @@ function toDateStr(d) {
 }
 
 function todayStr() {
-  return toDateStr(new Date());
+  return toDateStr(nowInGermany());
 }
 
 function BookPageInner() {
@@ -54,7 +54,7 @@ function BookPageInner() {
   const [allowedClassIds, setAllowedClassIds] = useState([]);
 
   const [currentMonth, setCurrentMonth] = useState(() => {
-    const d = new Date();
+    const d = nowInGermany();
     d.setDate(1);
     return d;
   });
@@ -275,7 +275,7 @@ function BookPageInner() {
       const deadline = new Date(
         sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
       );
-      if (new Date() > deadline) {
+      if (nowInGermany() > deadline) {
         setErrorMsg(
           `예약이 마감되었습니다. (수업 시작 ${bookingCutoffHours}시간 전까지 예약 가능)`
         );
@@ -546,7 +546,7 @@ function BookPageInner() {
           const bookingDeadline = new Date(
             sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
           );
-          const isPastDeadline = new Date() > bookingDeadline;
+          const isPastDeadline = nowInGermany() > bookingDeadline;
 
           return (
             <div

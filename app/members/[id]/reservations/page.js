@@ -26,7 +26,7 @@ function formatDateLabel(dateStr) {
 }
 
 function dDayLabel(dateStr) {
-  const today = new Date();
+  const today = nowInGermany();
   today.setHours(0, 0, 0, 0);
   const target = new Date(dateStr + "T00:00:00");
   const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
@@ -184,7 +184,7 @@ export default function ReservationsPage() {
     );
   }
 
-  const today = new Date();
+  const today = nowInGermany();
   today.setHours(0, 0, 0, 0);
 
   const withDate = bookings.filter((b) => b.class_sessions?.session_date);
