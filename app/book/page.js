@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getProgramTextColor } from "../../lib/classColors";
+import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -339,14 +340,11 @@ function BookPageInner() {
     }
 
     setCancellingSessionId(sessionId);
+    const sessionDay = new Date(`${session.session_date}T00:00:00`);
+    const cutoffTime = new Date(sessionDay.getTime() - 24 * 60 * 60 * 1000);
+    cutoffTime.setHours(23, 59, 59, 999);
+    const now = nowInGermany();
 
-    const sessionDateTime = new Date(
-      `${session.session_date}T${session.start_time}`
-    );
-    const cutoffTime = new Date(
-      sessionDateTime.getTime() - cutoffHours * 60 * 60 * 1000
-    );
-    const now = new Date();
     const isPrior = now < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
 
