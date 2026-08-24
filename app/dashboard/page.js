@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getRegionBg, getProgramTextColor } from "../../lib/classColors";
+import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -140,8 +141,8 @@ const cardTitle = { fontSize: 15, fontWeight: 800, color: "#1b3a63" };
 const seeAllLink = { fontSize: 12, color: BLUE, fontWeight: 700, textDecoration: "none" };
 
 function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
-  const monday = getMonday(new Date());
-  const todayStr = toDateStr(new Date());
+  const monday = getMonday(nowInGermany());
+  const todayStr = toDateStr(nowInGermany());
 
   const countByDate = {};
   weekSessions.forEach((s) => {
@@ -198,7 +199,7 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
 }
 
 function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds }) {
-  const todayStr = targetDate || toDateStr(new Date());
+  const todayStr = targetDate || toDateStr(nowInGermany());
   const todaySessions = sessions
     .filter((s) => s.session_date === todayStr)
     .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
@@ -294,7 +295,7 @@ export default function DashboardPage() {
   const [children, setChildren] = useState([]);
   const [weekBookings, setWeekBookings] = useState([]);
   const [weekSessions, setWeekSessions] = useState([]);
-  const [selectedWeekDate, setSelectedWeekDate] = useState(toDateStr(new Date()));
+  const [selectedWeekDate, setSelectedWeekDate] = useState(toDateStr(nowInGermany()));
   const [weekSessionCounts, setWeekSessionCounts] = useState({});
   const [membershipByChild, setMembershipByChild] = useState({});
 
@@ -304,7 +305,7 @@ export default function DashboardPage() {
 
   // 이번주 수업 요약(코치/관리자 공통)
   const [thisWeekSessions, setThisWeekSessions] = useState([]);
-  const [selectedDashDate, setSelectedDashDate] = useState(toDateStr(new Date()));
+  const [selectedDashDate, setSelectedDashDate] = useState(toDateStr(nowInGermany()));
   const [thisWeekSessionCounts, setThisWeekSessionCounts] = useState({});
   const [totalActiveMembers, setTotalActiveMembers] = useState(0);
   const [thisWeekCancelledCount, setThisWeekCancelledCount] = useState(0);
@@ -392,11 +393,11 @@ export default function DashboardPage() {
         .limit(2);
       setNotices(noticeData || []);
 
-      const monday = getMonday(new Date());
+      const monday = getMonday(nowInGermany());
       const saturday = addDays(monday, 5);
       const mondayStr = toDateStr(monday);
       const saturdayStr = toDateStr(saturday);
-      const todayStr = toDateStr(new Date());
+      const todayStr = toDateStr(nowInGermany());
 
       // ── 코치/관리자 공통: 이번주 수업 요약 데이터 ──────────────────────────
       if (coach || admin) {
@@ -671,8 +672,8 @@ export default function DashboardPage() {
     ? "오늘도 멋진 수업 만들어가요!"
     : "오늘도 좋은 하루 보내세요!";
 
-  const monday = getMonday(new Date());
-  const todayStr = toDateStr(new Date());
+  const monday = getMonday(nowInGermany());
+  const todayStr = toDateStr(nowInGermany());
 
   const upcomingThisWeek = weekBookings
     .filter((b) => b.status === "booked" && b.session.session_date >= todayStr)
@@ -935,7 +936,7 @@ export default function DashboardPage() {
           <div style={cardStyle}>
             <div style={cardTitleRow}>
               <span style={cardTitle}>
-                이번주 수업 요약 ({formatShortDate(toDateStr(getMonday(new Date())))} - {formatShortDate(toDateStr(addDays(getMonday(new Date()), 6)))})
+                이번주 수업 요약 ({formatShortDate(toDateStr(getMonday(nowInGermany())))} - {formatShortDate(toDateStr(addDays(getMonday(nowInGermany()), 6)))})
               </span>
             </div>
 
@@ -992,7 +993,7 @@ export default function DashboardPage() {
 
           <div style={cardStyle}>
             <div style={cardTitleRow}>
-              <span style={cardTitle}>{selectedDashDate === toDateStr(new Date()) ? "오늘의 수업" : `${selectedDashDate} 수업`}</span>
+              <span style={cardTitle}>{selectedDashDate === toDateStr(nowInGermany()) ? "오늘의 수업" : `${selectedDashDate} 수업`}</span>
             </div>
             <TodayClassList
               sessions={thisWeekSessions}
@@ -1050,7 +1051,7 @@ export default function DashboardPage() {
             </div>
             <WeekCalendarGrid
               weekSessions={thisWeekSessions}
-              selectedDate={toDateStr(new Date())}
+              selectedDate={toDateStr(nowInGermany())}
               onSelectDate={(d) => router.push(`/admin/classes?date=${d}`)}
             />
           </div>
