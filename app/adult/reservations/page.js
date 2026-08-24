@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 
 const BLUE = "#3B82C4";
@@ -121,9 +122,10 @@ export default function AdultReservationsPage() {
     setErrorMsg("");
 
     const s = booking.class_sessions;
-    const sessionDateTime = new Date(`${s.session_date}T${s.start_time}`);
-    const cutoffTime = new Date(sessionDateTime.getTime() - cutoffHours * 60 * 60 * 1000);
-    const isPrior = new Date() < cutoffTime;
+    const sessionDay = new Date(`${s.session_date}T00:00:00`);
+    const cutoffTime = new Date(sessionDay.getTime() - 24 * 60 * 60 * 1000);
+    cutoffTime.setHours(23, 59, 59, 999);
+    const isPrior = nowInGermany() < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
 
     const { error } = await supabase

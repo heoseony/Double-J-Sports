@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { nowInGermany } from "../../../../lib/germanyTime";
 import { supabase } from "../../../../lib/supabaseClient";
 
 const BLUE = "#3B82C4";
@@ -118,14 +119,21 @@ export default function ReservationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId]);
 
-  async function handleCancel(bookingId) {
-    setCancellingId(bookingId);
+  async function handleCancel(booking) {
+    setCancellingId(booking.id);
     setErrorMsg("");
+
+    const s = booking.class_sessions;
+    const sessionDay = new Date(`${s.session_date}T00:00:00`);
+    const cutoffTime = new Date(sessionDay.getTime() - 24 * 60 * 60 * 1000);
+    cutoffTime.setHours(23, 59, 59, 999);
+    const isPrior = nowInGermany() < cutoffTime;
+    const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
 
     const { error } = await supabase
       .from("bookings")
-      .update({ status: "cancelled_prior", cancelled_at: new Date().toISOString() })
-      .eq("id", bookingId);
+      .update({ status: newStatus, cancelled_at: new Date().toISOString() })
+      .eq("id", booking.id);
 
     setCancellingId(null);
 
@@ -371,7 +379,7 @@ export default function ReservationsPage() {
                     <button
                       type="button"
                       disabled={cancellingId === b.id}
-                      onClick={() => handleCancel(b.id)}
+                      onClick={() => handleCancel(b)}
                       style={{
                         padding: "8px 14px",
                         fontSize: 12,
