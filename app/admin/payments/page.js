@@ -151,17 +151,7 @@ export default function AdminPaymentsPage() {
     const newTab = window.open("", "_blank");
 
     try {
-  async function loadRevenue() {
-    // 2026년 8월까지는 테스트 운영 기간이라 매출 집계에서 제외, 9월부터 정식 집계
-    const { data } = await supabase
-      .from("payments")
-      .select("total_amount, confirmed_at, membership_plans(program)")
-      .eq("status", "confirmed")
-      .gte("confirmed_at", "2026-09-01")
-      .order("confirmed_at", { ascending: true });
-    setAllConfirmedPayments(data || []);
-    setRevenueLoaded(true);
-  }
+      const { data: { session } } = await supabase.auth.getSession();
 
       const res = await fetch("/api/invoice-url", {
         method: "POST",
