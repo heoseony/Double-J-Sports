@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
 
 function todayStr() {
-  const d = new Date();
+  const d = nowInGermany();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");

@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
 
 function todayStr() {
-  const d = new Date();
+  const d = nowInGermany();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -17,7 +18,7 @@ function todayStr() {
 }
 
 function defaultDescription() {
-  const monthLabel = new Date().toLocaleDateString("en-US", {
+  const monthLabel = nowInGermany().toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
   });
@@ -321,7 +322,7 @@ export default function AdminPaymentsPage() {
   }
 
   function handleClearConfirmedList() {
-    const now = new Date().toISOString();
+    const now = nowInGermany().toISOString();
     try {
       localStorage.setItem("double-j-sports-payments-cleared-before", now);
     } catch (e) {
@@ -340,7 +341,7 @@ export default function AdminPaymentsPage() {
       .from("payments")
       .update({
         status: "confirmed",
-        confirmed_at: new Date().toISOString(),
+        confirmed_at: nowInGermany().toISOString(),
         confirmed_by: adminUserId,
       })
       .eq("id", payment.id);
@@ -664,7 +665,7 @@ export default function AdminPaymentsPage() {
               }
 
               // 검색 중이 아닐 때: 월 하나씩 넘겨보기
-              const now = new Date();
+              const now = nowInGermany();
               const targetDate = new Date(now.getFullYear(), now.getMonth() + invoiceMonthOffset, 1);
               const targetKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
               const targetLabel = `${targetDate.getFullYear()}년 ${targetDate.getMonth() + 1}월`;

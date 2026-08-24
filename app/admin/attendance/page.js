@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
 
@@ -47,7 +48,7 @@ export default function AdminAttendancePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
-  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [weekStart, setWeekStart] = useState(() => getMonday(nowInGermany()));
 
   useEffect(() => {
     async function load() {
@@ -132,7 +133,7 @@ export default function AdminAttendancePage() {
     setWeekStart((prev) => addDays(prev, 7));
   }
   function goThisWeek() {
-    setWeekStart(getMonday(new Date()));
+    setWeekStart(getMonday(nowInGermany()));
   }
 
   if (loading || !isAdmin) {

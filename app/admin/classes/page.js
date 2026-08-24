@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getRegionBg, getProgramTextColor } from "../../../lib/classColors";
+import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
 
@@ -26,7 +27,7 @@ function toDateStr(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 function todayStr() {
-  return toDateStr(new Date());
+  return toDateStr(nowInGermany());
 }
 
 function ChevronDown({ open }) {
@@ -95,7 +96,7 @@ function AdminClassesPageInner() {
   const [showClassList, setShowClassList] = useState(true);
 
   const [currentMonth, setCurrentMonth] = useState(() => {
-    const d = new Date();
+    const d = nowInGermany();
     d.setDate(1);
     return d;
   });
@@ -304,7 +305,7 @@ function AdminClassesPageInner() {
       if (!c.active) continue;
 
       const targetDates = [];
-      const today = new Date();
+      const today = nowInGermany();
       for (let i = 0; i < 28; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
