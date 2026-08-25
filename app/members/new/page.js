@@ -146,7 +146,8 @@ export default function NewMemberPage() {
             onChange={(e) => setBirthdate(e.target.value)}
             style={{
               width: "100%",
-              padding: "10px 12px",
+              padding: "0 12px",
+              height: 42,
               marginTop: 6,
               marginBottom: 16,
               fontSize: 14,
