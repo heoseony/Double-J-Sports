@@ -2,30 +2,27 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+
+const BLUE = "#3B82C4";
 
 export default function NewMemberPage() {
   const router = useRouter();
-
   const [name, setName] = useState("");
   const [nameEn, setNameEn] = useState("");
-  const [birthDate, setBirthDate] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [gender, setGender] = useState("");
-  const [experienceLevel, setExperienceLevel] = useState("");
+  const [experience, setExperience] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  const canSubmit = name && birthDate;
 
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!canSubmit) {
-      setErrorMsg("이름과 생년월일은 필수입니다.");
+    if (!name.trim()) {
+      setErrorMsg("선수 이름을 입력해주세요.");
       return;
     }
 
@@ -36,38 +33,37 @@ export default function NewMemberPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    const { data: guardian, error: guardianError } = await supabase
-      .from("guardians")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (guardianError || !guardian) {
-      setErrorMsg("보호자 정보를 찾을 수 없습니다.");
+      setErrorMsg("로그인이 필요합니다.");
       setLoading(false);
       return;
     }
 
-    const { error: insertError } = await supabase.from("members").insert({
+    const { data: guardian } = await supabase
+      .from("guardians")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!guardian) {
+      setErrorMsg("학부모 정보를 찾을 수 없습니다.");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.from("members").insert({
       guardian_id: guardian.id,
-      program: "kids",
-      name,
-      name_en: nameEn || null,
-      birth_date: birthDate,
+      name: name.trim(),
+      name_en: nameEn.trim() || null,
+      birthdate: birthdate || null,
       gender: gender || null,
-      experience_level: experienceLevel || null,
+      experience: experience || null,
       emergency_contact: emergencyContact || null,
-      status: "active",
     });
 
     setLoading(false);
 
-    if (insertError) {
-      setErrorMsg("등록 실패: " + insertError.message);
+    if (error) {
+      setErrorMsg("등록 실패: " + error.message);
       return;
     }
 
@@ -75,68 +71,183 @@ export default function NewMemberPage() {
   }
 
   return (
-    <main className="page">
-      <div className="brand">Double J Sports</div>
-      <div className="subtitle">자녀 등록</div>
+    <main style={{ background: "#f3f7fc", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          padding: "18px 18px 8px",
+        }}
+      >
+        <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
+          더블제이 축구 아카데미
+        </div>
+      </div>
 
-      <div className="card">
-        <form onSubmit={handleSubmit}>
-          <label>선수 이름</label>
+      <div style={{ padding: "8px 18px 0" }}>
+        <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 16, textAlign: "center" }}>
+          자녀 등록
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            background: "white",
+            borderRadius: 16,
+            padding: 20,
+            boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+          }}
+        >
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>선수 이름</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="예: 김민수"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 16,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+            }}
           />
 
-          <label>영문 이름 (선택, 인보이스 발급 시 사용)</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
+            영문 이름 (선택, 인보이스 발급 시 사용)
+          </label>
           <input
             type="text"
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
             placeholder="예: Minsu Kim"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 16,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+            }}
           />
 
-          <label>생년월일</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>생년월일</label>
           <input
             type="date"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
+            value={birthdate}
+            onChange={(e) => setBirthdate(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 16,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+            }}
           />
 
-          <label>성별 (선택)</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>성별 (선택)</label>
           <input
             type="text"
             value={gender}
             onChange={(e) => setGender(e.target.value)}
             placeholder="남 / 여"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 16,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+            }}
           />
 
-          <label>축구 경험 (선택)</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>축구 경험 (선택)</label>
           <input
             type="text"
-            value={experienceLevel}
-            onChange={(e) => setExperienceLevel(e.target.value)}
+            value={experience}
+            onChange={(e) => setExperience(e.target.value)}
             placeholder="예: 처음, 1년, 3년 이상"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 16,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+            }}
           />
 
-          <label>비상연락처 (선택)</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>비상연락처 (선택)</label>
           <input
-            type="tel"
+            type="text"
             value={emergencyContact}
             onChange={(e) => setEmergencyContact(e.target.value)}
             placeholder="+49 1XX XXXXXXX"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 20,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+            }}
           />
 
-          {errorMsg && <div className="message error">{errorMsg}</div>}
+          {errorMsg && (
+            <div
+              style={{
+                background: "#fdecec",
+                color: "#b3261e",
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 13,
+                marginBottom: 16,
+              }}
+            >
+              {errorMsg}
+            </div>
+          )}
 
-          <button className="primary" type="submit" disabled={loading}>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: 14,
+              fontSize: 15,
+              fontWeight: 700,
+              color: "white",
+              background: BLUE,
+              border: "none",
+              borderRadius: 10,
+              cursor: "pointer",
+            }}
+          >
             {loading ? "등록 중..." : "등록하기"}
           </button>
         </form>
 
-        <div className="link-row">
-          <Link href="/members">← 자녀 목록으로</Link>
+        <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
+          <a href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
+            ← 자녀 목록으로
+          </a>
         </div>
       </div>
     </main>
