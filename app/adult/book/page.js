@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getRegionBg, getProgramTextColor } from "../../../lib/classColors";
+import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 
 const BLUE = "#3B82C4";
@@ -18,7 +19,7 @@ function toDateStr(d) {
 }
 
 function todayStr() {
-  return toDateStr(new Date());
+  return toDateStr(nowInGermany());
 }
 
 export default function AdultBookPage() {
@@ -35,7 +36,7 @@ export default function AdultBookPage() {
   const [allClassesAllowed, setAllClassesAllowed] = useState(true);
 
   const [currentMonth, setCurrentMonth] = useState(() => {
-    const d = new Date();
+    const d = nowInGermany();
     d.setDate(1);
     return d;
   });

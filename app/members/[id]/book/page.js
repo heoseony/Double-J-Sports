@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getRegionBg, getProgramTextColor } from "../../../../lib/classColors";
+import { nowInGermany } from "../../../../lib/germanyTime";
 import { supabase } from "../../../../lib/supabaseClient";
 
 const BLUE = "#3B82C4";
@@ -76,7 +77,7 @@ export default function BookClassPage() {
 
     setMembership(membershipData || null);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = nowInGermany().toISOString().slice(0, 10);
 
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")

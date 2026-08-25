@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { nowInGermany } from "../../../../lib/germanyTime";
 import { supabase } from "../../../../lib/supabaseClient";
 
 const BLUE = "#3B82C4";
@@ -203,7 +204,7 @@ export default function AdultClassDetailPage() {
   const cls = session.classes;
   const sessionDateTime = new Date(`${session.session_date}T${session.start_time}`);
   const bookingDeadline = new Date(sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000);
-  const isPastDeadline = new Date() > bookingDeadline;
+  const isPastDeadline = nowInGermany() > bookingDeadline;
   const canBook = remaining > 0 && !alreadyBooked && !isPastDeadline;
 
   return (

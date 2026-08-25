@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { getSupabaseAdmin } from "../../../lib/supabaseAdmin";
 import { generateInvoicePdfBuffer } from "../../../lib/invoicePdf";
+import { nowInGermany } from "../../../lib/germanyTime";
 
 export const runtime = "nodejs";
 
@@ -102,7 +103,7 @@ export async function POST(request) {
     }
 
     const invoiceYear = Number(String(invoiceNumber).split("-")[0]);
-    const issueDate = new Date();
+    const issueDate = nowInGermany();
     const sessionsPerMonth = payment.membership_plans?.sessions_per_month || 0;
     const unitPrice =
       sessionsPerMonth > 0
