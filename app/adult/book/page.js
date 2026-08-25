@@ -154,12 +154,14 @@ export default function AdultBookPage() {
 
   const sessionsByDate = useMemo(() => {
     const map = {};
-    sessions.forEach((s) => {
-      if (!map[s.session_date]) map[s.session_date] = [];
-      map[s.session_date].push(s);
-    });
+    sessions
+      .filter((s) => (s.classes?.region || "frankfurt") === selectedRegion)
+      .forEach((s) => {
+        if (!map[s.session_date]) map[s.session_date] = [];
+        map[s.session_date].push(s);
+      });
     return map;
-  }, [sessions]);
+  }, [sessions, selectedRegion]);
 
   const calendarCells = useMemo(() => {
     const year = currentMonth.getFullYear();
@@ -196,7 +198,7 @@ export default function AdultBookPage() {
   }
 
   const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
-  const selectedSessions = (sessionsByDate[selectedDate] || []).filter((s) => (s.classes?.region || "frankfurt") === selectedRegion);
+  const selectedSessions = sessionsByDate[selectedDate] || [];
 
   return (
     <main
