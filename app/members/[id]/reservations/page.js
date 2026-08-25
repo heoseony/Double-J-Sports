@@ -43,6 +43,7 @@ export default function ReservationsPage() {
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
+  const [siblings, setSiblings] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [coachNameByClassId, setCoachNameByClassId] = useState({});
   const [errorMsg, setErrorMsg] = useState("");
@@ -80,6 +81,13 @@ export default function ReservationsPage() {
       return;
     }
     setMember(memberData);
+
+    const { data: siblingsData } = await supabase
+      .from("members")
+      .select("id, name")
+      .eq("guardian_id", memberData.guardian_id)
+      .order("created_at", { ascending: true });
+    setSiblings(siblingsData || []);
 
     const { data: bookingData, error: bookingError } = await supabase
       .from("bookings")
@@ -230,6 +238,32 @@ export default function ReservationsPage() {
         </div>
       </div>
 
+
+      {siblings.length > 1 && (
+        <div style={{ display: "flex", gap: 8, padding: "14px 18px 0", overflowX: "auto" }}>
+          {siblings.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => router.push(`/members/${s.id}/reservations`)}
+              style={{
+                padding: "8px 16px",
+                fontSize: 13,
+                fontWeight: 700,
+                borderRadius: 999,
+                border: "none",
+                whiteSpace: "nowrap",
+                background: s.id === memberId ? BLUE : "white",
+                color: s.id === memberId ? "white" : "#5b7699",
+                boxShadow: s.id === memberId ? "none" : "0 1px 4px rgba(30,60,110,0.08)",
+                cursor: "pointer",
+              }}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
       {/* 탭 바 */}
       <div style={{ display: "flex", gap: 6, padding: "14px 18px 0" }}>
         {TABS.map((tab) => (
