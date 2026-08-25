@@ -29,6 +29,7 @@ export default function BookClassPage() {
   const [member, setMember] = useState(null);
   const [membership, setMembership] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [selectedRegion, setSelectedRegion] = useState("frankfurt");
   const [applicantCounts, setApplicantCounts] = useState({});
   const [myBookedSessionIds, setMyBookedSessionIds] = useState(new Set());
   const [errorMsg, setErrorMsg] = useState("");
@@ -174,6 +175,7 @@ export default function BookClassPage() {
   }
 
   const remaining = membership?.sessions_remaining ?? 0;
+  const visibleSessions = sessions.filter((s) => (s.classes?.region || "frankfurt") === selectedRegion);
 
   return (
     <main
@@ -225,6 +227,43 @@ export default function BookClassPage() {
           </Link>
         </div>
 
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <button
+            type="button"
+            onClick={() => setSelectedRegion("frankfurt")}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: selectedRegion === "frankfurt" ? "2px solid #3B82C4" : "1px solid #ddd",
+              background: selectedRegion === "frankfurt" ? "#eaf4fc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            프랑크푸르트
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedRegion("dusseldorf")}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: selectedRegion === "dusseldorf" ? "2px solid #8b5fd6" : "1px solid #ddd",
+              background: selectedRegion === "dusseldorf" ? "#f2eefc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            뒤셀도르프
+          </button>
+        </div>
+
         {errorMsg && (
           <div
             style={{
@@ -242,19 +281,19 @@ export default function BookClassPage() {
 
         <div
           style={{
-            background: getRegionBg(s.classes?.region),
+            background: "white",
             borderRadius: 16,
             padding: 18,
             boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
           }}
         >
-          {sessions.length === 0 && (
+          {visibleSessions.length === 0 && (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
               예약 가능한 수업이 아직 없습니다.
             </p>
           )}
 
-          {sessions.map((s, idx) => {
+          {visibleSessions.map((s, idx) => {
             const alreadyBooked = myBookedSessionIds.has(s.id);
             const count = applicantCounts[s.id] || 0;
 
