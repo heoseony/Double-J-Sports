@@ -31,6 +31,18 @@ function CheckCircleIcon(props) {
     </svg>
   );
 }
+function ListIcon(props) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  );
+}
 function ImageIcon(props) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -65,7 +77,7 @@ const NAV_BY_ROLE = {
     { label: "홈", href: "/dashboard", Icon: HomeIcon },
     { label: "수업예약", href: "/members", Icon: CalendarIcon },
     { label: "갤러리", href: "/photos", Icon: ImageIcon },
-    { label: "출석체크", href: "/dashboard", Icon: CheckCircleIcon },
+    { label: "예약내역", href: "/dashboard", Icon: ListIcon },
     { label: "더보기", href: "/more", Icon: MenuIcon },
   ],
   coach: [
@@ -88,6 +100,7 @@ export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [role, setRole] = useState("guardian");
+  const [firstChildId, setFirstChildId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,6 +126,26 @@ export default function BottomNav() {
             : "guardian"
         );
       }
+
+      if (profile?.role !== "admin" && profile?.role !== "coach") {
+        const { data: guardian } = await supabase
+          .from("guardians")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (guardian) {
+          const { data: child } = await supabase
+            .from("members")
+            .select("id")
+            .eq("guardian_id", guardian.id)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          if (!cancelled && child) setFirstChildId(child.id);
+        }
+      }
     }
 
     loadRole();
@@ -126,10 +159,15 @@ export default function BottomNav() {
   }
 
   const items = NAV_BY_ROLE[role] || NAV_BY_ROLE.guardian;
+  const resolvedItems = items.map((item) =>
+    item.label === "예약내역" && firstChildId
+      ? { ...item, href: `/members/${firstChildId}/reservations` }
+      : item
+  );
 
   // 여러 탭이 같은 경로를 가리키는 경우(예: 코치의 "출석체크"/"수업관리"가 둘 다 /coach)
   // 동시에 활성화되지 않도록, 정확히 하나의 탭만 활성 상태로 고른다.
-  const activeIndex = items.findIndex((item) =>
+  const activeIndex = resolvedItems.findIndex((item) =>
     item.href === "/dashboard" ? pathname === "/dashboard" : pathname?.startsWith(item.href)
   );
 
@@ -149,7 +187,7 @@ export default function BottomNav() {
         zIndex: 50,
       }}
     >
-      {items.map((item, i) => {
+      {resolvedItems.map((item, i) => {
         const active = i === activeIndex;
         const color = item.disabled ? "#c2cbd9" : active ? BLUE : "#9aa8bc";
 
