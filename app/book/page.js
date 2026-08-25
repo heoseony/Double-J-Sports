@@ -59,6 +59,7 @@ function BookPageInner() {
     return d;
   });
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [selectedRegion, setSelectedRegion] = useState("frankfurt");
 
   // state(setBookingSessionId)는 비동기라 더블클릭/연타 시 두 번째 클릭이
   // 아직 갱신 전인 state를 보고 통과할 수 있음 → ref로 동기적으로 즉시 막는다.
@@ -390,7 +391,7 @@ function BookPageInner() {
   }
 
   const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
-  const selectedSessions = sessionsByDate[selectedDate] || [];
+  const selectedSessions = (sessionsByDate[selectedDate] || []).filter((s) => (s.classes?.region || "frankfurt") === selectedRegion);
 
   return (
     <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
@@ -403,6 +404,43 @@ function BookPageInner() {
       <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 20, textAlign: "center" }}>
         {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
         {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, padding: "0 18px 14px" }}>
+        <button
+          type="button"
+          onClick={() => setSelectedRegion("frankfurt")}
+          style={{
+            flex: 1,
+            padding: "10px 0",
+            fontSize: 13,
+            fontWeight: 700,
+            borderRadius: 8,
+            border: selectedRegion === "frankfurt" ? "2px solid #3B82C4" : "1px solid #ddd",
+            background: selectedRegion === "frankfurt" ? "#eaf4fc" : "white",
+            color: "#1b3a63",
+            cursor: "pointer",
+          }}
+        >
+          프랑크푸르트
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedRegion("dusseldorf")}
+          style={{
+            flex: 1,
+            padding: "10px 0",
+            fontSize: 13,
+            fontWeight: 700,
+            borderRadius: 8,
+            border: selectedRegion === "dusseldorf" ? "2px solid #8b5fd6" : "1px solid #ddd",
+            background: selectedRegion === "dusseldorf" ? "#f2eefc" : "white",
+            color: "#1b3a63",
+            cursor: "pointer",
+          }}
+        >
+          뒤셀도르프
+        </button>
       </div>
 
       <div style={{ padding: "0 18px" }}>
