@@ -215,12 +215,14 @@ function BookPageInner() {
 
   const sessionsByDate = useMemo(() => {
     const map = {};
-    sessions.forEach((s) => {
-      if (!map[s.session_date]) map[s.session_date] = [];
-      map[s.session_date].push(s);
-    });
+    sessions
+      .filter((s) => (s.classes?.region || "frankfurt") === selectedRegion)
+      .forEach((s) => {
+        if (!map[s.session_date]) map[s.session_date] = [];
+        map[s.session_date].push(s);
+      });
     return map;
-  }, [sessions]);
+  }, [sessions, selectedRegion]);
 
   const calendarCells = useMemo(() => {
     const year = currentMonth.getFullYear();
@@ -391,7 +393,7 @@ function BookPageInner() {
   }
 
   const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
-  const selectedSessions = (sessionsByDate[selectedDate] || []).filter((s) => (s.classes?.region || "frankfurt") === selectedRegion);
+  const selectedSessions = sessionsByDate[selectedDate] || [];
 
   return (
     <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
