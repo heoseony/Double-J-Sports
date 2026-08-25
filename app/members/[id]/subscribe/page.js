@@ -381,7 +381,7 @@ export default function SubscribePage() {
                 ))}
               </select>
 
-              {availableCoupon && (
+              {availableCoupon && pendingPayments.length === 0 && (
                 <div
                   style={{
                     display: "flex",
