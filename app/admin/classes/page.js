@@ -485,6 +485,7 @@ function AdminClassesPageInner() {
       end_time: endTime,
       location: location || null,
       active: true,
+      region,
     });
 
     setSaving(false);
