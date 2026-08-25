@@ -41,6 +41,7 @@ export default function AdultBookPage() {
     return d;
   });
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [selectedRegion, setSelectedRegion] = useState("frankfurt");
 
   async function loadAll() {
     setErrorMsg("");
@@ -195,7 +196,7 @@ export default function AdultBookPage() {
   }
 
   const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
-  const selectedSessions = sessionsByDate[selectedDate] || [];
+  const selectedSessions = (sessionsByDate[selectedDate] || []).filter((s) => (s.classes?.region || "frankfurt") === selectedRegion);
 
   return (
     <main
@@ -227,6 +228,43 @@ export default function AdultBookPage() {
           <Link href="/adult/reservations" style={{ fontSize: 12, fontWeight: 700, color: BLUE, textDecoration: "none" }}>
             예약내역 →
           </Link>
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <button
+            type="button"
+            onClick={() => setSelectedRegion("frankfurt")}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: selectedRegion === "frankfurt" ? "2px solid #3B82C4" : "1px solid #ddd",
+              background: selectedRegion === "frankfurt" ? "#eaf4fc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            프랑크푸르트
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedRegion("dusseldorf")}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: selectedRegion === "dusseldorf" ? "2px solid #8b5fd6" : "1px solid #ddd",
+              background: selectedRegion === "dusseldorf" ? "#f2eefc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            뒤셀도르프
+          </button>
+        </div>
         </div>
 
         {errorMsg && (
