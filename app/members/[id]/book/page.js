@@ -28,6 +28,7 @@ export default function BookClassPage() {
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
   const [membership, setMembership] = useState(null);
+  const [allowedClassIds, setAllowedClassIds] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [selectedRegion, setSelectedRegion] = useState("frankfurt");
   const [applicantCounts, setApplicantCounts] = useState({});
@@ -69,7 +70,7 @@ export default function BookClassPage() {
 
     const { data: membershipData } = await supabase
       .from("memberships")
-      .select("*, membership_plans(name, sessions_per_month)")
+      .select("*, membership_plans(name, sessions_per_month, all_classes_allowed)")
       .eq("member_id", memberId)
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -77,6 +78,16 @@ export default function BookClassPage() {
       .maybeSingle();
 
     setMembership(membershipData || null);
+
+    let allowedIds = null;
+    if (membershipData && membershipData.membership_plans?.all_classes_allowed === false) {
+      const { data: allowedRows } = await supabase
+        .from("membership_plan_classes")
+        .select("class_id")
+        .eq("plan_id", membershipData.plan_id);
+      allowedIds = (allowedRows || []).map((r) => r.class_id);
+    }
+    setAllowedClassIds(allowedIds);
 
     const today = nowInGermany().toISOString().slice(0, 10);
 
@@ -175,7 +186,9 @@ export default function BookClassPage() {
   }
 
   const remaining = membership?.sessions_remaining ?? 0;
-  const visibleSessions = sessions.filter((s) => (s.classes?.region || "frankfurt") === selectedRegion);
+  const visibleSessions = sessions
+    .filter((s) => (s.classes?.region || "frankfurt") === selectedRegion)
+    .filter((s) => allowedClassIds === null || allowedClassIds.includes(s.class_id));
 
   return (
     <main
@@ -216,7 +229,7 @@ export default function BookClassPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ fontSize: 13, color: "#8ea0b8" }}>
             {membership
-              ? `${membership.membership_plans?.name} · 잔여 ${remaining}회`
+              ? `${membership.membership_plans?.name} · 잔여 ${remaining}회` + (allowedClassIds !== null ? " · 특정 수업만 예약 가능한 회원권" : "")
               : "활성화된 회원권이 없습니다. 관리자에게 문의해주세요."}
           </div>
           <Link
