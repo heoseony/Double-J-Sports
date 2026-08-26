@@ -218,7 +218,7 @@ export default function AdultBookPage() {
         }}
       >
         <img src="/logo-main.png" alt="로고" style={{ width: 28, height: 28, objectFit: "contain" }} />
-        <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>더블제이 축구 아카데미</div>
+        <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>더블제이 스포츠 아카데미</div>
       </div>
 
       <div style={{ padding: "0 18px" }}>

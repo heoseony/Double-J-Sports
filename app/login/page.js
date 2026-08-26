@@ -117,7 +117,7 @@ export default function LoginPage() {
             marginBottom: 4,
           }}
         >
-          더블제이 축구 아카데미
+          더블제이 스포츠 아카데미
         </div>
         <div
           style={{

@@ -400,7 +400,7 @@ function BookPageInner() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "18px 18px 4px" }}>
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 축구 아카데미
+          더블제이 스포츠 아카데미
         </div>
       </div>
       <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 20, textAlign: "center" }}>

@@ -31,7 +31,7 @@ export default function HomePage() {
             style={{ width: 56, height: 56, objectFit: "contain", marginBottom: 10 }}
           />
           <div style={{ fontSize: 20, fontWeight: 800, color: "#1b3a63" }}>
-            더블제이 축구 아카데미
+            더블제이 스포츠 아카데미
           </div>
           <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
             회원관리 및 수업예약 시스템

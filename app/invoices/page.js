@@ -111,7 +111,7 @@ export default function InvoicesPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 축구 아카데미
+          더블제이 스포츠 아카데미
         </div>
       </div>
       <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>내 인보이스</div>

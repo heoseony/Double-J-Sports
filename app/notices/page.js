@@ -144,7 +144,7 @@ export default function NoticesPage() {
           style={{ width: 28, height: 28, objectFit: "contain" }}
         />
         <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 축구 아카데미
+          더블제이 스포츠 아카데미
         </div>
       </div>
 
