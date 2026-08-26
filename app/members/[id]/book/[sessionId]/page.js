@@ -29,6 +29,7 @@ export default function ClassDetailPage() {
   const [session, setSession] = useState(null);
   const [coachName, setCoachName] = useState(null);
   const [membership, setMembership] = useState(null);
+  const [isClassAllowed, setIsClassAllowed] = useState(true);
   const [applicantCount, setApplicantCount] = useState(0);
   const [alreadyBooked, setAlreadyBooked] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -95,13 +96,24 @@ export default function ClassDetailPage() {
 
     const { data: membershipData } = await supabase
       .from("memberships")
-      .select("*, membership_plans(name, sessions_per_month)")
+      .select("*, membership_plans(name, sessions_per_month, all_classes_allowed)")
       .eq("member_id", memberId)
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     setMembership(membershipData || null);
+
+    if (membershipData && membershipData.membership_plans?.all_classes_allowed === false && sessionData?.class_id) {
+      const { data: allowedRows } = await supabase
+        .from("membership_plan_classes")
+        .select("class_id")
+        .eq("plan_id", membershipData.plan_id)
+        .eq("class_id", sessionData.class_id);
+      setIsClassAllowed((allowedRows || []).length > 0);
+    } else {
+      setIsClassAllowed(true);
+    }
 
     const { data: allBookings } = await supabase
       .from("bookings")
@@ -184,7 +196,7 @@ export default function ClassDetailPage() {
   }
 
   const remaining = membership?.sessions_remaining ?? 0;
-  const canBook = !!membership && remaining > 0 && !alreadyBooked;
+  const canBook = !!membership && remaining > 0 && !alreadyBooked && isClassAllowed;
   const cls = session.classes;
 
   return (
@@ -279,7 +291,7 @@ export default function ClassDetailPage() {
                 cursor: canBook ? "pointer" : "default",
               }}
             >
-              {alreadyBooked ? "이미 예약된 수업입니다" : !membership ? "회원권이 없습니다" : remaining <= 0 ? "잔여 횟수가 없습니다" : "수업 예약하기"}
+              {alreadyBooked ? "이미 예약된 수업입니다" : !membership ? "회원권이 없습니다" : !isClassAllowed ? "이 회원권으로 예약할 수 없는 수업입니다" : remaining <= 0 ? "잔여 횟수가 없습니다" : "수업 예약하기"}
             </button>
           </>
         )}
