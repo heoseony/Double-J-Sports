@@ -83,7 +83,7 @@ export default function BookClassPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, session_date, class_id, classes!inner(id, program, class_name, age_group, start_time, end_time, location, is_active, region)"
+        "id, session_date, class_id, classes!inner(id, program, class_name, start_time, end_time, location, is_active, region)"
       )
       .eq("status", "scheduled")
       .eq("classes.program", memberData.program)
@@ -319,7 +319,6 @@ export default function BookClassPage() {
                       </div>
                       <div style={{ fontSize: 13, color: "#33455e", marginTop: 6 }}>
                         {s.classes.class_name}
-                        {s.classes.age_group ? ` (${s.classes.age_group})` : ""}
                         {s.classes.location ? ` · ${s.classes.location}` : ""}
                       </div>
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
