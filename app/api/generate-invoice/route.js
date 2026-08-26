@@ -20,7 +20,7 @@ function monthLabelEn(d) {
 export async function POST(request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { paymentId, descriptionOverride } = await request.json();
+    const { paymentId, descriptionOverride, customInvoiceNumber } = await request.json();
 
     if (!paymentId) {
       return NextResponse.json(
@@ -90,18 +90,20 @@ export async function POST(request) {
       );
     }
 
-    // 4. 인보이스 번호 채번 (연도별 1부터, 동시성 안전)
-    const { data: invoiceNumber, error: numError } = await supabaseAdmin.rpc(
-      "next_invoice_number"
-    );
 
-    if (numError || !invoiceNumber) {
-      return NextResponse.json(
-        { error: "인보이스 번호 채번 실패: " + (numError?.message || "") },
-        { status: 500 }
+    let invoiceNumber = customInvoiceNumber;
+    if (!invoiceNumber) {
+      const { data: generatedNumber, error: numError } = await supabaseAdmin.rpc(
+        "next_invoice_number"
       );
+      if (numError || !generatedNumber) {
+        return NextResponse.json(
+          { error: "인보이스 번호 채번 실패: " + (numError?.message || "") },
+          { status: 500 }
+        );
+      }
+      invoiceNumber = generatedNumber;
     }
-
     const invoiceYear = Number(String(invoiceNumber).split("-")[0]);
     const issueDate = nowInGermany();
     const sessionsPerMonth = payment.membership_plans?.sessions_per_month || 0;

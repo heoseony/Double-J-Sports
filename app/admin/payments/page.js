@@ -58,6 +58,7 @@ export default function AdminPaymentsPage() {
   const [confirmingId, setConfirmingId] = useState(null);
   const [modalPayment, setModalPayment] = useState(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [invoiceNumberDraft, setInvoiceNumberDraft] = useState("");
 
   // ===== 인보이스 탭 상태 =====
   const [invoices, setInvoices] = useState([]);
@@ -313,11 +314,13 @@ export default function AdminPaymentsPage() {
 
   function openConfirmModal(payment) {
     setModalPayment(payment);
+    setInvoiceNumberDraft("");
     setDescriptionDraft(defaultDescription());
   }
 
   function closeConfirmModal() {
     setModalPayment(null);
+    setInvoiceNumberDraft("");
     setDescriptionDraft("");
   }
 
@@ -381,6 +384,7 @@ export default function AdminPaymentsPage() {
         body: JSON.stringify({
           paymentId: payment.id,
           descriptionOverride: description,
+          customInvoiceNumber: customInvoiceNumber || null,
         }),
       });
       const result = await res.json();
@@ -864,6 +868,25 @@ export default function AdminPaymentsPage() {
             <div style={{ fontWeight: 700, fontSize: 16, color: "#1b3a63", marginBottom: 6 }}>
               입금 확인 · 인보이스 발급
             </div>
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                인보이스 번호 (선택, 비워두면 자동 생성)
+              </label>
+              <input
+                type="text"
+                value={invoiceNumberDraft}
+                onChange={(e) => setInvoiceNumberDraft(e.target.value)}
+                placeholder="예: 2026-014"
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  fontSize: 13,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 8,
+                  boxSizing: "border-box",
+                  marginBottom: 14,
+                }}
+              />
             <p style={{ fontSize: 13, color: "#8ea0b8", marginTop: 0 }}>
               {modalPayment.members?.name || "회원"}님 · {modalPayment.membership_plans?.name} ·{" "}
               <strong style={{ color: "#1b3a63" }}>{modalPayment.total_amount} EUR</strong>
@@ -884,7 +907,7 @@ export default function AdminPaymentsPage() {
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
               <button
                 type="button"
-                onClick={() => handleConfirm(modalPayment, descriptionDraft)}
+                onClick={() => handleConfirm(modalPayment, descriptionDraft, invoiceNumberDraft)}
                 style={{ flex: 1, padding: "12px 16px", fontSize: 14, fontWeight: 700, border: "none", borderRadius: 10, background: BLUE, color: "white", cursor: "pointer" }}
               >
                 이대로 발급
