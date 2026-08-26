@@ -27,6 +27,7 @@ export default function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
   const [session, setSession] = useState(null);
+  const [coachName, setCoachName] = useState(null);
   const [membership, setMembership] = useState(null);
   const [applicantCount, setApplicantCount] = useState(0);
   const [alreadyBooked, setAlreadyBooked] = useState(false);
@@ -70,7 +71,7 @@ export default function ClassDetailPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, session_date, status, classes(id, class_name, program, weekday, start_time, end_time, location, capacity, coach_name)"
+        "id, session_date, status, class_id, classes(id, class_name, program, weekday, start_time, end_time, location, capacity)"
       )
       .eq("id", sessionId)
       .single();
@@ -81,6 +82,16 @@ export default function ClassDetailPage() {
       return;
     }
     setSession(sessionData);
+
+    if (sessionData.class_id) {
+      const { data: coachData } = await supabase
+        .from("class_coaches")
+        .select("coach_profiles(name)")
+        .eq("class_id", sessionData.class_id)
+        .limit(1)
+        .maybeSingle();
+      if (coachData?.coach_profiles?.name) setCoachName(coachData.coach_profiles.name);
+    }
 
     const { data: membershipData } = await supabase
       .from("memberships")
@@ -223,7 +234,7 @@ export default function ClassDetailPage() {
 
               <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
                 <InfoRow label="장소" value={cls.location || "-"} />
-                <InfoRow label="담당 코치" value={cls.coach_name || "-"} />
+                <InfoRow label="담당 코치" value={coachName || "-"} />
                 <InfoRow label="대상" value={member.name + " · " + (cls.program === "kids" ? "Kids" : cls.program)} />
                 <InfoRow
                   label="정원"
