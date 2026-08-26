@@ -46,7 +46,7 @@ export default function MemberEditPage() {
       const { data: memberData, error } = await supabase
         .from("members")
         .select(
-          "id, name, name_en, birth_date, gender, region, program, experience, emergency_contact, notes, profile_image_url, guardian_id"
+          "id, name, name_en, birth_date, gender, region, program, experience_level, emergency_contact, notes, profile_image_url, guardian_id"
         )
         .eq("id", memberId)
         .single();
@@ -63,7 +63,7 @@ export default function MemberEditPage() {
       setGender(memberData.gender || "");
       setRegion(memberData.region || "frankfurt");
       setProgram(memberData.program || "kids");
-      setExperience(memberData.experience || "");
+      setExperience(memberData.experience_level || "");
       setEmergencyContact(memberData.emergency_contact || "");
       setNotes(memberData.notes || "");
       setProfileImageUrl(memberData.profile_image_url || null);
@@ -132,7 +132,7 @@ export default function MemberEditPage() {
         gender: gender || null,
         region,
         program,
-        experience: experience || null,
+        experience_level: experience || null,
         emergency_contact: emergencyContact || null,
         notes: notes || null,
       })
