@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
+import { getRegionBg, getRegionLabel, getProgramTextColor } from "../../lib/classColors";
 import LoadingScreen from "../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
@@ -11,6 +12,16 @@ const BLUE = "#3B82C4";
 function formatBirthDate(dateStr) {
   if (!dateStr) return "";
   return dateStr;
+}
+
+function calcAge(birthDateStr) {
+  if (!birthDateStr) return null;
+  const birth = new Date(birthDateStr);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
 }
 
 export default function MembersPage() {
@@ -27,7 +38,7 @@ export default function MembersPage() {
   async function loadMembers(guardianId) {
     const { data: memberList, error: memberError } = await supabase
       .from("members")
-      .select("id, name, name_en, birth_date, gender, status")
+      .select("id, name, name_en, birth_date, gender, status, program, region, profile_image_url")
       .eq("guardian_id", guardianId)
       .order("created_at", { ascending: true });
 
@@ -147,31 +158,54 @@ export default function MembersPage() {
               boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  background: BLUE,
-                  color: "white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  fontWeight: 800,
-                  flexShrink: 0,
-                }}
-              >
-                {m.name?.[0] || "?"}
-              </div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#1b3a63" }}>{m.name}</div>
-                <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2 }}>
-                  생년월일: {formatBirthDate(m.birth_date) || "미입력"}
+            <Link href={`/members/${m.id}/edit`} style={{ textDecoration: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+              {m.profile_image_url ? (
+                <img
+                  src={m.profile_image_url}
+                  alt={m.name}
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: "50%",
+                    background: BLUE,
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: 800,
+                    flexShrink: 0,
+                  }}
+                >
+                  {m.name?.[0] || "?"}
+                </div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: getProgramTextColor(m.program) }}>{m.name}</span>
+                  {calcAge(m.birth_date) !== null && (
+                    <span style={{ fontSize: 12, color: "#8ea0b8" }}>(만 {calcAge(m.birth_date)}세)</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
+                  {m.program === "kids" ? "Kids" : m.program || "프로그램 미정"}
+                  {m.region ? ` · ${getRegionLabel(m.region)}` : ""}
                 </div>
               </div>
+              <span style={{ fontSize: 18, color: "#c2ccd9" }}>›</span>
             </div>
+            </Link>
 
             <div
               style={{
