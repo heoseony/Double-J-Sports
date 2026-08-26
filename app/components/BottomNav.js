@@ -167,9 +167,11 @@ export default function BottomNav() {
 
   // 여러 탭이 같은 경로를 가리키는 경우(예: 코치의 "출석체크"/"수업관리"가 둘 다 /coach)
   // 동시에 활성화되지 않도록, 정확히 하나의 탭만 활성 상태로 고른다.
-  const activeIndex = resolvedItems.findIndex((item) =>
-    item.href === "/dashboard" ? pathname === "/dashboard" : pathname?.startsWith(item.href)
-  );
+  const matchingIndexes = resolvedItems
+    .map((item, i) => ({ i, href: item.href }))
+    .filter(({ href }) => (href === "/dashboard" ? pathname === "/dashboard" : pathname?.startsWith(href)));
+  matchingIndexes.sort((a, b) => b.href.length - a.href.length);
+  const activeIndex = matchingIndexes.length > 0 ? matchingIndexes[0].i : -1;
 
   return (
     <div
