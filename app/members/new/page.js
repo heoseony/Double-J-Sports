@@ -98,7 +98,7 @@ export default function NewMemberPage() {
 
       <div style={{ padding: "8px 18px 0" }}>
         <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 16, textAlign: "center" }}>
-          자녀 등록
+          선수 등록
         </div>
 
         <form
@@ -300,7 +300,7 @@ export default function NewMemberPage() {
 
         <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
           <a href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 자녀 목록으로
+            ← 선수 목록으로
           </a>
         </div>
       </div>

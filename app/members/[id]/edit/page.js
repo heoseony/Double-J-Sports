@@ -52,7 +52,7 @@ export default function MemberEditPage() {
         .single();
 
       if (error || !memberData) {
-        setErrorMsg("자녀 정보를 찾을 수 없습니다.");
+        setErrorMsg("선수 정보를 찾을 수 없습니다.");
         setLoading(false);
         return;
       }
@@ -150,7 +150,7 @@ export default function MemberEditPage() {
   }
 
   async function handleDelete() {
-    if (!confirm(`"${name}" 자녀 정보를 정말 삭제할까요?\n\n예약/결제 기록이 있으면 삭제가 안 될 수 있습니다.`)) {
+    if (!confirm(`"${name}" 선수 정보를 정말 삭제할까요?\n\n예약/결제 기록이 있으면 삭제가 안 될 수 있습니다.`)) {
       return;
     }
 
@@ -201,7 +201,7 @@ export default function MemberEditPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>자녀 프로필 설정</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>선수 프로필 설정</div>
       </div>
 
       <div style={{ padding: "8px 18px 0" }}>
@@ -434,13 +434,13 @@ export default function MemberEditPage() {
               cursor: "pointer",
             }}
           >
-            {deleting ? "삭제 중..." : "자녀 삭제"}
+            {deleting ? "삭제 중..." : "선수 삭제"}
           </button>
         </div>
 
         <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 자녀 목록으로
+            ← 선수 목록으로
           </Link>
         </div>
       </div>

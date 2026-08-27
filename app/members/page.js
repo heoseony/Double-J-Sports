@@ -43,7 +43,7 @@ export default function MembersPage() {
       .order("created_at", { ascending: true });
 
     if (memberError) {
-      setErrorMsg("자녀 목록을 불러오지 못했습니다: " + memberError.message);
+      setErrorMsg("선수 목록을 불러오지 못했습니다: " + memberError.message);
       setLoading(false);
       return;
     }
@@ -130,7 +130,7 @@ export default function MembersPage() {
           더블제이 스포츠 아카데미
         </div>
       </div>
-      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>자녀 관리</div>
+      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>선수 관리</div>
 
       <div style={{ padding: "0 18px" }}>
         {errorMsg && (
@@ -142,7 +142,7 @@ export default function MembersPage() {
         {members.length === 0 && !errorMsg && (
           <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
             <p style={{ margin: 0, fontSize: 14, color: "#8ea0b8" }}>
-              아직 등록된 자녀가 없습니다. 아래 버튼으로 자녀를 등록해주세요.
+              아직 등록된 선수가 없습니다. 아래 버튼으로 선수를 등록해주세요.
             </p>
           </div>
         )}
@@ -353,7 +353,7 @@ export default function MembersPage() {
               cursor: "pointer",
             }}
           >
-            + 자녀 등록
+            + 선수 등록
           </button>
         </Link>
 

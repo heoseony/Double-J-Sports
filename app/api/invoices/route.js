@@ -42,7 +42,7 @@ export async function GET(request) {
       return NextResponse.json({ invoices: allInvoices || [], isAdmin: true });
     }
 
-    // 학부모: 본인 자녀 인보이스만
+    // 학부모: 본인 선수 인보이스만
     const { data: guardian } = await supabaseAdmin
       .from("guardians")
       .select("id")

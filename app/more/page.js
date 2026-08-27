@@ -11,7 +11,7 @@ const BLUE = "#3B82C4";
 const MENU_BY_ROLE = {
   guardian: [
     { label: "내 정보 관리", href: null },
-    { label: "자녀 관리", href: "/members" },
+    { label: "선수 관리", href: "/members" },
     { label: "수업권 및 결제 정보", href: "/invoices" },
     { label: "예약 내역", href: null },
     { label: "공지사항", href: "/notices" },

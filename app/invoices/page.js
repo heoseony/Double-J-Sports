@@ -191,7 +191,7 @@ export default function InvoicesPage() {
       </div>
 
       <div className="link-row">
-        <Link href="/members">← 자녀 관리로</Link>
+        <Link href="/members">← 선수 관리로</Link>
       </div>
     </main>
   );

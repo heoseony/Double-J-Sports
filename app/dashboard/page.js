@@ -378,8 +378,8 @@ export default function DashboardPage() {
       } else if (selfMember) {
         setDisplayName(selfMember.name);
       } else if (guardian) {
-        // 학부모 이름 대신, 첫 번째로 등록한 자녀 이름을 우선 표시한다.
-        // (자녀가 아직 없으면 학부모 본인 이름으로 대체)
+        // 학부모 이름 대신, 첫 번째로 등록한 선수 이름을 우선 표시한다.
+        // (선수가 아직 없으면 학부모 본인 이름으로 대체)
         setDisplayName(guardian.name);
       } else {
         setDisplayName(user.email);
@@ -460,7 +460,7 @@ export default function DashboardPage() {
 
         setChildren(childList || []);
 
-        // 첫 번째로 등록한 자녀 이름을 인사말에 우선 표시 (요청사항)
+        // 첫 번째로 등록한 선수 이름을 인사말에 우선 표시 (요청사항)
         if (childList && childList.length > 0) {
           setDisplayName(childList[0].name);
         }
@@ -479,7 +479,7 @@ export default function DashboardPage() {
 
           const membershipMap = {};
           (activeMemberships || []).forEach((ms) => {
-            // 자녀당 가장 최근(첫 번째로 걸리는) 활성 회원권 하나만 사용
+            // 선수당 가장 최근(첫 번째로 걸리는) 활성 회원권 하나만 사용
             if (membershipMap[ms.member_id] !== undefined) return;
             const total = ms.membership_plans?.sessions_per_month || 0;
             membershipMap[ms.member_id] = {
@@ -830,7 +830,7 @@ export default function DashboardPage() {
 
               {children.length === 0 && (
                 <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-                  등록된 자녀가 없습니다.
+                  등록된 선수가 없습니다.
                 </p>
               )}
 
@@ -900,7 +900,7 @@ export default function DashboardPage() {
                     cursor: "pointer",
                   }}
                 >
-                  자녀 관리 · 수업 예약
+                  선수 관리 · 수업 예약
                 </button>
               </Link>
             </div>

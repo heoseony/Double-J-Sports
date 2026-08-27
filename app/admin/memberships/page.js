@@ -225,7 +225,7 @@ export default function AdminMembershipsPage() {
             새 회원권 배정
           </div>
           <form onSubmit={handleSubmit}>
-            <label style={labelStyle}>회원 (자녀) 선택</label>
+            <label style={labelStyle}>회원 (선수) 선택</label>
             <select
               value={memberId}
               onChange={(e) => setMemberId(e.target.value)}

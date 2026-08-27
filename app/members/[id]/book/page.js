@@ -61,7 +61,7 @@ export default function BookClassPage() {
       .single();
 
     if (memberError || !memberData || memberData.guardian_id !== guardian?.id) {
-      setErrorMsg("자녀 정보를 찾을 수 없습니다.");
+      setErrorMsg("선수 정보를 찾을 수 없습니다.");
       setLoading(false);
       return;
     }
@@ -178,7 +178,7 @@ export default function BookClassPage() {
             {errorMsg}
           </div>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 13 }}>
-            ← 자녀 목록으로
+            ← 선수 목록으로
           </Link>
         </div>
       </main>
@@ -366,7 +366,7 @@ export default function BookClassPage() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 자녀 목록으로
+            ← 선수 목록으로
           </Link>
         </div>
       </div>

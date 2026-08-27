@@ -491,7 +491,7 @@ export default function SubscribePage() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 자녀 관리로 돌아가기
+            ← 선수 관리로 돌아가기
           </Link>
         </div>
       </div>

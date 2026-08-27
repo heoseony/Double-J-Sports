@@ -63,7 +63,7 @@ export default function ClassDetailPage() {
       .single();
 
     if (memberError || !memberData || memberData.guardian_id !== guardian?.id) {
-      setErrorMsg("자녀 정보를 찾을 수 없습니다.");
+      setErrorMsg("선수 정보를 찾을 수 없습니다.");
       setLoading(false);
       return;
     }

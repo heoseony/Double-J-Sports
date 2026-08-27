@@ -70,7 +70,7 @@ function BookPageInner() {
     setErrorMsg("");
 
     if (!memberId) {
-      setErrorMsg("자녀 정보가 없습니다. 자녀 목록에서 다시 시도해주세요.");
+      setErrorMsg("선수 정보가 없습니다. 선수 목록에서 다시 시도해주세요.");
       setLoading(false);
       return;
     }
@@ -91,7 +91,7 @@ function BookPageInner() {
       .single();
 
     if (memberError || !memberData) {
-      setErrorMsg("자녀 정보를 불러오지 못했습니다.");
+      setErrorMsg("선수 정보를 불러오지 못했습니다.");
       setLoading(false);
       return;
     }
@@ -192,7 +192,7 @@ function BookPageInner() {
 
     setSessions(kidsSessions);
 
-    // member_id를 같이 받아와서, 렌더링할 때 "이 참가자가 지금 보고 있는 내 자녀인지"를
+    // member_id를 같이 받아와서, 렌더링할 때 "이 참가자가 지금 보고 있는 내 선수인지"를
     // 판별할 수 있게 한다 (본인은 마스킹 해제 + 파란색 표시).
     const { data: participantData } = await supabase
       .from("session_participants_kids")
@@ -721,7 +721,7 @@ function BookPageInner() {
 
         <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
           <Link href="/members" style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}>
-            ← 자녀 관리로
+            ← 선수 관리로
           </Link>
         </div>
       </div>
