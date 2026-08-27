@@ -92,6 +92,17 @@ export async function POST(request) {
 
 
     let invoiceNumber = customInvoiceNumber;
+    if (customInvoiceNumber) {
+      const parts = String(customInvoiceNumber).split("-");
+      const yearPart = Number(parts[0]);
+      const numPart = Number(parts[1]);
+      if (!isNaN(yearPart) && !isNaN(numPart)) {
+        await supabaseAdmin.rpc("sync_invoice_counter", {
+          p_year: yearPart,
+          p_number: numPart,
+        });
+      }
+    }
     if (!invoiceNumber) {
       const { data: generatedNumber, error: numError } = await supabaseAdmin.rpc(
         "next_invoice_number"
