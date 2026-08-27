@@ -28,6 +28,11 @@ export default function NewMemberPage() {
       return;
     }
 
+    if (!nameEn.trim()) {
+      setErrorMsg("영문 이름을 입력해주세요. (인보이스 발급에 필요합니다)");
+      return;
+    }
+
     setLoading(true);
 
     const {
@@ -124,7 +129,7 @@ export default function NewMemberPage() {
           />
 
           <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
-            영문 이름 (선택, 인보이스 발급 시 사용)
+            영문 이름 (필수, 인보이스 발급 시 사용)
           </label>
           <input
             type="text"
