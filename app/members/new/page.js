@@ -12,6 +12,8 @@ export default function NewMemberPage() {
   const [nameEn, setNameEn] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [gender, setGender] = useState("");
+  const [region, setRegion] = useState("frankfurt");
+  const [program, setProgram] = useState("kids");
   const [experience, setExperience] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,6 +57,8 @@ export default function NewMemberPage() {
       name: name.trim(),
       name_en: nameEn.trim() || null,
       birth_date: birthdate || null,
+      region,
+      program,
       gender: gender || null,
       experience_level: experience || null,
       emergency_contact: emergencyContact || null,
@@ -177,6 +181,47 @@ export default function NewMemberPage() {
               boxSizing: "border-box",
             }}
           />
+
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>지역</label>
+          <select
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 16,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+              background: "white",
+            }}
+          >
+            <option value="frankfurt">Frankfurt</option>
+            <option value="dusseldorf">Düsseldorf</option>
+          </select>
+
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>프로그램</label>
+          <select
+            value={program}
+            onChange={(e) => setProgram(e.target.value)}
+            style={{
+              width: "100%",
+              padding: 12,
+              marginTop: 6,
+              marginBottom: 16,
+              fontSize: 14,
+              border: "1px solid #e5eaf2",
+              borderRadius: 10,
+              boxSizing: "border-box",
+              background: "white",
+            }}
+          >
+            <option value="kids">Kids</option>
+            <option value="women">Women's</option>
+            <option value="men">Men's</option>
+          </select>
 
           <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>축구 경험 (선택)</label>
           <input
