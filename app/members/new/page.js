@@ -54,9 +54,9 @@ export default function NewMemberPage() {
       guardian_id: guardian.id,
       name: name.trim(),
       name_en: nameEn.trim() || null,
-      birthdate: birthdate || null,
+      birth_date: birthdate || null,
       gender: gender || null,
-      experience: experience || null,
+      experience_level: experience || null,
       emergency_contact: emergencyContact || null,
     });
 
