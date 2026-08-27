@@ -121,6 +121,12 @@ export default function MemberEditPage() {
       setErrorMsg("선수 이름을 입력해주세요.");
       setSaving(false);
       return;
+
+    if (!nameEn.trim()) {
+      setErrorMsg("영문 이름을 입력해주세요. (인보이스 발급에 필요합니다)");
+      setSaving(false);
+      return;
+    }
     }
 
     const { error } = await supabase
@@ -279,7 +285,7 @@ export default function MemberEditPage() {
           <label style={labelStyle}>이름</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} />
 
-          <label style={labelStyle}>영문 이름 (인보이스용, 선택)</label>
+          <label style={labelStyle}>영문 이름 (필수, 인보이스용)</label>
           <input type="text" value={nameEn} onChange={(e) => setNameEn(e.target.value)} style={fieldStyle} />
 
           <label style={labelStyle}>생년월일</label>
