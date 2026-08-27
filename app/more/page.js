@@ -43,7 +43,6 @@ const MENU_BY_ROLE = {
     { label: "출석 관리", href: "/admin/attendance" },
     { label: "회원 관리", href: "/admin/members" },
     { label: "결제 관리", href: "/admin/payments" },
-    { label: "결제 관리", href: "/admin/payments" },
     { label: "회원권 상품 관리", href: "/admin/plans" },
     { label: "공지사항 관리", href: "/notices" },
     { label: "갤러리 관리", href: "/photos" },
