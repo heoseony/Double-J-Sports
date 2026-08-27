@@ -334,7 +334,7 @@ export default function AdminPaymentsPage() {
     setClearedBefore(now);
   }
 
-  async function handleConfirm(payment, description) {
+  async function handleConfirm(payment, description, customInvoiceNumber) {
     setErrorMsg("");
     setSuccessMsg("");
     setConfirmingId(payment.id);
