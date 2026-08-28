@@ -22,7 +22,7 @@ const PROGRAM_TABS = [
   { value: "kids", label: "Kids" },
   { value: "women", label: "Women's" },
   { value: "men", label: "Men's" },
-  { value: "test", label: "🧪 테스트" },
+  { value: "test", label: "테스트" },
 ];
 
 const STATUS_STYLE = {
@@ -514,7 +514,7 @@ export default function AdminMembersPage() {
                               borderRadius: 999,
                             }}
                           >
-                            🧪 테스트
+                            테스트
                           </span>
                         )}
                         <span style={{ fontSize: 11, color: "#8ea0b8", fontWeight: 600 }}>
@@ -630,7 +630,7 @@ export default function AdminMembersPage() {
                           checked={!!m.is_test}
                           onChange={() => handleToggleTest(m)}
                         />
-                        🧪 테스트 계정으로 표시
+                        테스트 계정으로 표시
                       </label>
 
                       <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 16 }}>
