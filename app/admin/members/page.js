@@ -636,14 +636,15 @@ export default function AdminMembersPage() {
                       <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 16 }}>
                         회원권 배정 (현장 결제 등 수동 배정)
                       </div>
-                      <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                      <div style={{ marginTop: 8 }}>
                         <select
                           value={assignPlanId[m.id] || ""}
                           onChange={(e) =>
                             setAssignPlanId((prev) => ({ ...prev, [m.id]: e.target.value }))
                           }
                           style={{
-                            flex: 1,
+                            width: "100%",
+                            boxSizing: "border-box",
                             padding: 8,
                             fontSize: 13,
                             border: "1px solid #e5eaf2",
@@ -666,7 +667,10 @@ export default function AdminMembersPage() {
                           disabled={assigningId === m.id}
                           onClick={() => handleAssignMembership(m.id, m.program)}
                           style={{
-                            padding: "8px 14px",
+                            marginTop: 8,
+                            width: "100%",
+                            boxSizing: "border-box",
+                            padding: "10px 14px",
                             fontSize: 13,
                             fontWeight: 700,
                             border: "none",
@@ -674,7 +678,6 @@ export default function AdminMembersPage() {
                             background: BLUE,
                             color: "white",
                             cursor: "pointer",
-                            whiteSpace: "nowrap",
                           }}
                         >
                           {assigningId === m.id ? "배정 중..." : "배정하기"}
