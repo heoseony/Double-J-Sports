@@ -185,7 +185,13 @@ export default function BookClassPage() {
     );
   }
 
-  const remaining = membership?.sessions_remaining ?? 0;
+  const remaining = membership
+    ? Math.max(
+        (membership.membership_plans?.sessions_per_month ?? 0) -
+          (membership.sessions_used ?? 0),
+        0
+      )
+    : 0;
   const visibleSessions = sessions
     .filter((s) => (s.classes?.region || "frankfurt") === selectedRegion)
     .filter((s) => allowedClassIds === null || allowedClassIds.includes(s.class_id));

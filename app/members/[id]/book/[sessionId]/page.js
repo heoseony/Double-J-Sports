@@ -224,7 +224,13 @@ export default function ClassDetailPage() {
     );
   }
 
-  const remaining = membership?.sessions_remaining ?? 0;
+  const remaining = membership
+    ? Math.max(
+        (membership.membership_plans?.sessions_per_month ?? 0) -
+          (membership.sessions_used ?? 0),
+        0
+      )
+    : 0;
   const canBook = !!membership && remaining > 0 && !alreadyBooked && isClassAllowed;
   const cls = session.classes;
 
