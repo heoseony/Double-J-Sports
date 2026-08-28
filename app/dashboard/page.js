@@ -118,6 +118,15 @@ function formatShortDate(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
+function getDDay(dateStr) {
+  if (!dateStr) return null;
+  const today = toDateStr(nowInGermany());
+  const diff = Math.round(
+    (new Date(dateStr + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000
+  );
+  return diff;
+}
+
 function formatNoticeDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -804,19 +813,36 @@ export default function DashboardPage() {
                       {b.session.classInfo?.class_name}
                     </div>
                   </div>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: BLUE,
-                      background: "#e9f1fb",
-                      padding: "4px 10px",
-
-                      borderRadius: 999,
-                    }}
-                  >
-                    예약 완료
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: getDDay(b.session.session_date) === 0 ? "#b3261e" : BLUE,
+                        background: "#e9f1fb",
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                      }}
+                    >
+                      {getDDay(b.session.session_date) === 0
+                        ? "D-DAY"
+                        : `D-${getDDay(b.session.session_date)}`}
+                    </span>
+                    <Link
+                      href={`/members/${b.member_id}/book/${b.class_session_id}`}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#fff",
+                        background: BLUE,
+                        padding: "4px 10px",
+                        borderRadius: 6,
+                        textDecoration: "none",
+                      }}
+                    >
+                      수업 상세보기
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
