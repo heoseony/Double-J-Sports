@@ -172,8 +172,6 @@ export default function ClassDetailPage() {
       p_class_session_id: sessionId,
     });
 
-    alert("DEBUG error: " + JSON.stringify(error));
-
     setBooking(false);
 
     if (error) {
