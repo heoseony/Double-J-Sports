@@ -4,9 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+import { nowInGermany } from "../../../lib/germanyTime";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
+
+function todayStr() {
+  const d = nowInGermany();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 const PROGRAM_TABS = [
   { value: "all", label: "전체" },
@@ -73,6 +82,11 @@ export default function AdminMembersPage() {
   const [savingNameEnId, setSavingNameEnId] = useState(null);
   const [nameEnMsg, setNameEnMsg] = useState("");
 
+  const [plans, setPlans] = useState([]);
+  const [assignPlanId, setAssignPlanId] = useState({});
+  const [assigningId, setAssigningId] = useState(null);
+  const [assignMsg, setAssignMsg] = useState("");
+
   async function loadMembers() {
     const { data, error } = await supabase
       .from("members")
@@ -111,11 +125,50 @@ export default function AdminMembersPage() {
       setIsAdmin(true);
       setAdminUserId(user.id);
       await loadMembers();
+
+      const { data: planData } = await supabase
+        .from("membership_plans")
+        .select("id, name, program, sessions_per_month, price, currency")
+        .eq("active", true)
+        .order("price", { ascending: true });
+      setPlans(planData || []);
+
       setLoading(false);
     }
 
     check();
   }, [router]);
+
+  async function handleAssignMembership(memberId, program) {
+    setAssignMsg("");
+    const planId = assignPlanId[memberId];
+
+    if (!planId) {
+      setAssignMsg("배정할 회원권을 선택해주세요.");
+      return;
+    }
+
+    setAssigningId(memberId);
+
+    const { error } = await supabase.from("memberships").insert({
+      member_id: memberId,
+      plan_id: planId,
+      start_date: todayStr(),
+      status: "active",
+      sessions_used: 0,
+    });
+
+    setAssigningId(null);
+
+    if (error) {
+      setAssignMsg("배정 실패: " + error.message);
+      return;
+    }
+
+    setAssignPlanId((prev) => ({ ...prev, [memberId]: "" }));
+    setAssignMsg("회원권이 배정되었습니다.");
+    await loadMemberships(memberId);
+  }
 
   async function loadMemberships(memberId) {
     const { data } = await supabase
@@ -522,6 +575,59 @@ export default function AdminMembersPage() {
                       {nameEnMsg && (
                         <div style={{ marginTop: 6, fontSize: 12, color: BLUE, fontWeight: 600 }}>
                           {nameEnMsg}
+                        </div>
+                      )}
+
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 16 }}>
+                        회원권 배정 (현장 결제 등 수동 배정)
+                      </div>
+                      <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                        <select
+                          value={assignPlanId[m.id] || ""}
+                          onChange={(e) =>
+                            setAssignPlanId((prev) => ({ ...prev, [m.id]: e.target.value }))
+                          }
+                          style={{
+                            flex: 1,
+                            padding: 8,
+                            fontSize: 13,
+                            border: "1px solid #e5eaf2",
+                            borderRadius: 8,
+                            background: "white",
+                          }}
+                        >
+                          <option value="">회원권 선택</option>
+                          {plans
+                            .filter((p) => p.program === m.program)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.sessions_per_month}회) ·{" "}
+                                {p.price} {p.currency}
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={assigningId === m.id}
+                          onClick={() => handleAssignMembership(m.id, m.program)}
+                          style={{
+                            padding: "8px 14px",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            border: "none",
+                            borderRadius: 8,
+                            background: BLUE,
+                            color: "white",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {assigningId === m.id ? "배정 중..." : "배정하기"}
+                        </button>
+                      </div>
+                      {assignMsg && (
+                        <div style={{ marginTop: 6, fontSize: 12, color: BLUE, fontWeight: 600 }}>
+                          {assignMsg}
                         </div>
                       )}
 
