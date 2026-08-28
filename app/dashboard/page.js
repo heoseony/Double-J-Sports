@@ -1160,55 +1160,39 @@ export default function DashboardPage() {
             </p>
           )}
 
-          {notices.map((n) =>
-            isAdmin ? (
-              <Link
-                key={n.id}
-                href={`/notices/detail?id=${n.id}`}
-                style={{
-                  display: "block",
-                  padding: "8px 0",
-                  borderBottom: "1px solid #f0f3f8",
-                  textDecoration: "none",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{n.title}</span>
-                  <span style={{ fontSize: 12, color: "#aab9cc", flexShrink: 0, marginLeft: 8 }}>
-                    {formatNoticeDate(n.created_at)}
-                  </span>
-                </div>
-                {n.content && (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#8ea0b8",
-                      marginTop: 3,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {n.content}
-                  </div>
-                )}
-              </Link>
-            ) : (
-              <div
-                key={n.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "8px 0",
-                  borderBottom: "1px solid #f0f3f8",
-                  fontSize: 13,
-                }}
-              >
-                <span style={{ color: "#33455e" }}>{n.title}</span>
-                <span style={{ color: "#aab9cc" }}>{formatNoticeDate(n.created_at)}</span>
+          {notices.map((n) => (
+            <Link
+              key={n.id}
+              href={`/notices/detail?id=${n.id}`}
+              style={{
+                display: "block",
+                padding: "8px 0",
+                borderBottom: "1px solid #f0f3f8",
+                textDecoration: "none",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{n.title}</span>
+                <span style={{ fontSize: 12, color: "#aab9cc", flexShrink: 0, marginLeft: 8 }}>
+                  {formatNoticeDate(n.created_at)}
+                </span>
               </div>
-            )
-          )}
+              {n.content && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#8ea0b8",
+                    marginTop: 3,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {n.content}
+                </div>
+              )}
+            </Link>
+          ))}
         </div>
 
         <button
