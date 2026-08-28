@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../../../lib/supabaseClient";
+import { nowInGermany } from "../../../../../lib/germanyTime";
 
 const BLUE = "#3B82C4";
 const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
@@ -32,6 +33,8 @@ export default function ClassDetailPage() {
   const [isClassAllowed, setIsClassAllowed] = useState(true);
   const [applicantCount, setApplicantCount] = useState(0);
   const [alreadyBooked, setAlreadyBooked] = useState(false);
+  const [myBookingId, setMyBookingId] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [step, setStep] = useState("detail"); // detail | confirm | done
@@ -117,14 +120,14 @@ export default function ClassDetailPage() {
 
     const { data: allBookings } = await supabase
       .from("bookings")
-      .select("member_id, status")
+      .select("id, member_id, status")
       .eq("class_session_id", sessionId)
       .in("status", ["booked", "attended"]);
 
     setApplicantCount((allBookings || []).length);
-    setAlreadyBooked(
-      (allBookings || []).some((b) => b.member_id === memberId)
-    );
+    const myBooking = (allBookings || []).find((b) => b.member_id === memberId);
+    setAlreadyBooked(!!myBooking);
+    setMyBookingId(myBooking ? myBooking.id : null);
 
     setLoading(false);
   }
@@ -133,6 +136,32 @@ export default function ClassDetailPage() {
     if (memberId && sessionId) loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId, sessionId]);
+
+  async function handleCancel() {
+    if (!myBookingId) return;
+    setCancelling(true);
+    setErrorMsg("");
+
+    const sessionDay = new Date(`${session.session_date}T00:00:00`);
+    const cutoffTime = new Date(sessionDay.getTime() - 24 * 60 * 60 * 1000);
+    cutoffTime.setHours(23, 59, 59, 999);
+    const isPrior = nowInGermany() < cutoffTime;
+    const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
+
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status: newStatus, cancelled_at: new Date().toISOString() })
+      .eq("id", myBookingId);
+
+    setCancelling(false);
+
+    if (error) {
+      setErrorMsg("취소 실패: " + error.message);
+      return;
+    }
+
+    await loadAll();
+  }
 
   async function handleBook() {
     setBooking(true);
@@ -276,24 +305,45 @@ export default function ClassDetailPage() {
               </div>
             )}
 
-            <button
-              type="button"
-              disabled={!canBook}
-              onClick={() => setStep("confirm")}
-              style={{
-                width: "100%",
-                padding: 16,
-                fontSize: 15,
-                fontWeight: 700,
-                color: "white",
-                background: canBook ? BLUE : "#c7d2e0",
-                border: "none",
-                borderRadius: 12,
-                cursor: canBook ? "pointer" : "default",
-              }}
-            >
-              {alreadyBooked ? "이미 예약된 수업입니다" : !membership ? "회원권이 없습니다" : !isClassAllowed ? "이 회원권으로 예약할 수 없는 수업입니다" : remaining <= 0 ? "잔여 횟수가 없습니다" : "수업 예약하기"}
-            </button>
+            {alreadyBooked ? (
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={handleCancel}
+                style={{
+                  width: "100%",
+                  padding: 16,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "#b3261e",
+                  background: "white",
+                  border: "1px solid #f3c6c2",
+                  borderRadius: 12,
+                  cursor: cancelling ? "default" : "pointer",
+                }}
+              >
+                {cancelling ? "취소 중..." : "예약 취소"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!canBook}
+                onClick={() => setStep("confirm")}
+                style={{
+                  width: "100%",
+                  padding: 16,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "white",
+                  background: canBook ? BLUE : "#c7d2e0",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor: canBook ? "pointer" : "default",
+                }}
+              >
+                {!membership ? "회원권이 없습니다" : !isClassAllowed ? "이 회원권으로 예약할 수 없는 수업입니다" : remaining <= 0 ? "잔여 횟수가 없습니다" : "수업 예약하기"}
+              </button>
+            )}
           </>
         )}
 
