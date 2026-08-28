@@ -397,7 +397,7 @@ export default function DashboardPage() {
       // 공지사항 최신 2건 (모든 역할 공통)
       const { data: noticeData } = await supabase
         .from("notices")
-        .select("id, title, created_at")
+        .select("id, title, content, created_at")
         .order("created_at", { ascending: false })
         .limit(2);
       setNotices(noticeData || []);
@@ -1161,19 +1161,37 @@ export default function DashboardPage() {
           )}
 
           {notices.map((n) => (
-            <div
+            <Link
               key={n.id}
+              href={`/notices/detail?id=${n.id}`}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
+                display: "block",
                 padding: "8px 0",
                 borderBottom: "1px solid #f0f3f8",
-                fontSize: 13,
+                textDecoration: "none",
               }}
             >
-              <span style={{ color: "#33455e" }}>{n.title}</span>
-              <span style={{ color: "#aab9cc" }}>{formatNoticeDate(n.created_at)}</span>
-            </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{n.title}</span>
+                <span style={{ fontSize: 12, color: "#aab9cc", flexShrink: 0, marginLeft: 8 }}>
+                  {formatNoticeDate(n.created_at)}
+                </span>
+              </div>
+              {n.content && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#8ea0b8",
+                    marginTop: 3,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {n.content}
+                </div>
+              )}
+            </Link>
           ))}
         </div>
 
