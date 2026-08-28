@@ -174,12 +174,13 @@ export default function AdminMembersPage() {
     setNameEnMsg("영문 이름이 저장되었습니다.");
   }
 
-  async function handleAdjust(membershipId, memberId) {
+  async function handleAdjust(membershipId, memberId, delta) {
+    // delta: +1 = "1회 추가" (잔여 횟수 증가 → sessions_used 감소)
+    //        -1 = "1회 차감" (잔여 횟수 감소 → sessions_used 증가)
     setAdjustMsg("");
 
-    const amount = Number(adjustAmount);
-    if (!amount || !adjustReason) {
-      setAdjustMsg("조정량과 사유를 모두 입력해주세요.");
+    if (!adjustReason) {
+      setAdjustMsg("사유를 입력해주세요.");
       return;
     }
 
@@ -188,7 +189,7 @@ export default function AdminMembersPage() {
     const list = membershipsByMember[memberId] || [];
     const target = list.find((m) => m.id === membershipId);
     const currentUsed = target?.sessions_used || 0;
-    const newUsed = Math.max(currentUsed - amount, 0);
+    const newUsed = Math.max(currentUsed - delta, 0);
 
     const { error: updateError } = await supabase
       .from("memberships")
@@ -203,13 +204,12 @@ export default function AdminMembersPage() {
 
     await supabase.from("membership_adjustments").insert({
       membership_id: membershipId,
-      adjustment_amount: amount,
+      adjustment_amount: delta,
       reason: adjustReason,
       created_by: adminUserId,
     });
 
     setAdjustingId(null);
-    setAdjustAmount("");
     setAdjustReason("");
     setAdjustMsg("조정이 완료되었습니다.");
     await loadMemberships(memberId);
@@ -569,28 +569,13 @@ export default function AdminMembersPage() {
                             {ms.status}
                           </div>
 
-                          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-                            <input
-                              type="number"
-                              placeholder="조정량 (예: 1 또는 -1)"
-                              value={adjustingId === null ? adjustAmount : undefined}
-                              onChange={(e) => setAdjustAmount(e.target.value)}
-                              style={{
-                                flex: 1,
-                                padding: 8,
-                                fontSize: 13,
-                                border: "1px solid #e5eaf2",
-                                borderRadius: 8,
-                              }}
-                            />
-                          </div>
                           <input
                             type="text"
                             placeholder="사유 (예: 사정으로 인한 보충)"
                             value={adjustReason}
                             onChange={(e) => setAdjustReason(e.target.value)}
                             style={{
-                              marginTop: 6,
+                              marginTop: 8,
                               width: "100%",
                               padding: 8,
                               fontSize: 13,
@@ -599,24 +584,44 @@ export default function AdminMembersPage() {
                               boxSizing: "border-box",
                             }}
                           />
-                          <button
-                            type="button"
-                            style={{
-                              marginTop: 8,
-                              padding: "8px 14px",
-                              fontSize: 13,
-                              fontWeight: 700,
-                              border: "none",
-                              borderRadius: 8,
-                              background: BLUE,
-                              color: "white",
-                              cursor: "pointer",
-                            }}
-                            disabled={adjustingId === ms.id}
-                            onClick={() => handleAdjust(ms.id, m.id)}
-                          >
-                            {adjustingId === ms.id ? "적용 중..." : "횟수 조정 적용"}
-                          </button>
+                          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                            <button
+                              type="button"
+                              style={{
+                                flex: 1,
+                                padding: "10px 14px",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                border: "none",
+                                borderRadius: 8,
+                                background: BLUE,
+                                color: "white",
+                                cursor: "pointer",
+                              }}
+                              disabled={adjustingId === ms.id}
+                              onClick={() => handleAdjust(ms.id, m.id, 1)}
+                            >
+                              {adjustingId === ms.id ? "적용 중..." : "➕ 1회 추가"}
+                            </button>
+                            <button
+                              type="button"
+                              style={{
+                                flex: 1,
+                                padding: "10px 14px",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                border: "1px solid #f3c6c2",
+                                borderRadius: 8,
+                                background: "white",
+                                color: "#b3261e",
+                                cursor: "pointer",
+                              }}
+                              disabled={adjustingId === ms.id}
+                              onClick={() => handleAdjust(ms.id, m.id, -1)}
+                            >
+                              {adjustingId === ms.id ? "적용 중..." : "➖ 1회 차감"}
+                            </button>
+                          </div>
                           {adjustMsg && (
                             <div style={{ marginTop: 6, fontSize: 12, color: BLUE, fontWeight: 600 }}>
                               {adjustMsg}
