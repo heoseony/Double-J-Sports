@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 
@@ -8,6 +8,7 @@ const BLUE = "#3B82C4";
 
 export default function NewMemberPage() {
   const router = useRouter();
+  const fileInputRef = useRef(null);
   const [name, setName] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [birthdate, setBirthdate] = useState("");
@@ -18,7 +19,16 @@ export default function NewMemberPage() {
   const [emergencyContact, setEmergencyContact] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
 
+
+  function handlePhotoSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreviewUrl(URL.createObjectURL(file));
+  }
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg("");
@@ -57,25 +67,45 @@ export default function NewMemberPage() {
       return;
     }
 
-    const { error } = await supabase.from("members").insert({
-      guardian_id: guardian.id,
-      name: name.trim(),
-      name_en: nameEn.trim() || null,
-      birth_date: birthdate || null,
-      region,
-      program,
-      gender: gender || null,
-      experience_level: experience || null,
-      emergency_contact: emergencyContact || null,
-    });
-
-    setLoading(false);
+    const { data: newMember, error } = await supabase
+      .from("members")
+      .insert({
+        guardian_id: guardian.id,
+        name: name.trim(),
+        name_en: nameEn.trim() || null,
+        birth_date: birthdate || null,
+        region,
+        program,
+        gender: gender || null,
+        experience_level: experience || null,
+        emergency_contact: emergencyContact || null,
+      })
+      .select()
+      .single();
 
     if (error) {
       setErrorMsg("등록 실패: " + error.message);
+      setLoading(false);
       return;
     }
 
+    if (photoFile && newMember) {
+      const ext = photoFile.name.split(".").pop();
+      const path = `${newMember.id}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, photoFile, { upsert: true });
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        await supabase
+          .from("members")
+          .update({ profile_image_url: urlData.publicUrl })
+          .eq("id", newMember.id);
+      }
+    }
+
+    setLoading(false);
     router.push("/members");
   }
 
@@ -110,6 +140,67 @@ export default function NewMemberPage() {
             boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
           }}
         >
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
+            <div style={{ position: "relative" }}>
+              {photoPreviewUrl ? (
+                <img
+                  src={photoPreviewUrl}
+                  alt="미리보기"
+                  style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: "50%",
+                    background: BLUE,
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 30,
+                    fontWeight: 800,
+                  }}
+                >
+                  {name?.[0] || "?"}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  position: "absolute",
+                  right: -2,
+                  bottom: -2,
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  background: BLUE,
+                  border: "3px solid white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoSelect}
+                style={{ display: "none" }}
+              />
+            </div>
+            <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 8 }}>
+              프로필 사진을 선택할 수 있습니다.
+            </div>
+          </div>
           <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>선수 이름</label>
           <input
             type="text"
