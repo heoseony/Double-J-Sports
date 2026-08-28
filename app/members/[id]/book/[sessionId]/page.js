@@ -209,14 +209,15 @@ export default function ClassDetailPage() {
     >
       {/* ===================== 헤더 ===================== */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 18px 4px" }}>
-        <Link
-          href={step === "done" ? `/members/${memberId}/book` : `/members/${memberId}/book`}
-          style={{ color: "#1b3a63", display: "flex" }}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          style={{ color: "#1b3a63", display: "flex", background: "none", border: "none", padding: 0, cursor: "pointer" }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
-        </Link>
+        </button>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
           {step === "detail" && "수업 상세"}
           {step === "confirm" && "예약 확인"}
