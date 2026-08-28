@@ -22,6 +22,7 @@ const PROGRAM_TABS = [
   { value: "kids", label: "Kids" },
   { value: "women", label: "Women's" },
   { value: "men", label: "Men's" },
+  { value: "test", label: "🧪 테스트" },
 ];
 
 const STATUS_STYLE = {
@@ -91,7 +92,7 @@ export default function AdminMembersPage() {
     const { data, error } = await supabase
       .from("members")
       .select(
-        "id, name, name_en, program, status, birth_date, gender, referred_by, guardians(name, phone, referred_by), users(email, phone)"
+        "id, name, name_en, program, status, birth_date, gender, referred_by, is_test, guardians(name, phone, referred_by), users(email, phone)"
       )
       .order("created_at", { ascending: false });
 
@@ -138,6 +139,21 @@ export default function AdminMembersPage() {
 
     check();
   }, [router]);
+
+  async function handleToggleTest(member) {
+    const { error } = await supabase
+      .from("members")
+      .update({ is_test: !member.is_test })
+      .eq("id", member.id);
+
+    if (!error) {
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.id === member.id ? { ...m, is_test: !member.is_test } : m
+        )
+      );
+    }
+  }
 
   async function handleAssignMembership(memberId, program) {
     setAssignMsg("");
@@ -303,6 +319,12 @@ export default function AdminMembersPage() {
   const filtered = members.filter((m) => {
     const matchesQuery =
       !query || m.name?.toLowerCase().includes(query.toLowerCase());
+
+    if (programFilter === "test") {
+      return matchesQuery && m.is_test === true;
+    }
+    if (m.is_test === true) return false;
+
     const matchesProgram =
       programFilter === "all" || m.program === programFilter;
     const matchesStatus =
@@ -481,6 +503,20 @@ export default function AdminMembersPage() {
                         <span style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
                           {m.name}
                         </span>
+                        {m.is_test && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: "#c07a1e",
+                              background: "#fff4e5",
+                              padding: "2px 6px",
+                              borderRadius: 999,
+                            }}
+                          >
+                            🧪 테스트
+                          </span>
+                        )}
                         <span style={{ fontSize: 11, color: "#8ea0b8", fontWeight: 600 }}>
                           {m.program}
                         </span>
@@ -577,6 +613,25 @@ export default function AdminMembersPage() {
                           {nameEnMsg}
                         </div>
                       )}
+
+                      <label
+                        style={{
+                          marginTop: 16,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 13,
+                          color: "#5b7699",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!m.is_test}
+                          onChange={() => handleToggleTest(m)}
+                        />
+                        🧪 테스트 계정으로 표시
+                      </label>
 
                       <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 16 }}>
                         회원권 배정 (현장 결제 등 수동 배정)
