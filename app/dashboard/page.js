@@ -303,6 +303,7 @@ export default function DashboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
   const [isCoach, setIsCoach] = useState(false);
   const [isAdultMember, setIsAdultMember] = useState(false);
   const [adultMemberName, setAdultMemberName] = useState("");
@@ -366,6 +367,14 @@ export default function DashboardPage() {
       const coach = profile?.role === "coach";
       setIsAdmin(admin);
       setIsCoach(coach);
+
+      if (admin) {
+        const { count: pendingCount } = await supabase
+          .from("payments")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending");
+        setPendingPaymentsCount(pendingCount || 0);
+      }
 
       const { data: selfMember } = await supabase
         .from("members")
@@ -1127,6 +1136,7 @@ export default function DashboardPage() {
                     >
                       <div
                         style={{
+                          position: "relative",
                           width: 44,
                           height: 44,
                           borderRadius: "50%",
@@ -1137,6 +1147,30 @@ export default function DashboardPage() {
                         }}
                       >
                         <MenuIcon type={m.icon} color={m.color} />
+                        {m.label === "결제 관리" && pendingPaymentsCount > 0 && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: -2,
+                              right: -2,
+                              minWidth: 18,
+                              height: 18,
+                              padding: "0 4px",
+                              borderRadius: 999,
+                              background: "#e53935",
+                              color: "white",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              lineHeight: 1,
+                              boxShadow: "0 0 0 2px white",
+                            }}
+                          >
+                            {pendingPaymentsCount > 99 ? "99+" : pendingPaymentsCount}
+                          </span>
+                        )}
                       </div>
                       <div
                         style={{
