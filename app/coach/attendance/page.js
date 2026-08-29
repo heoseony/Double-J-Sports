@@ -143,7 +143,7 @@ function AttendanceInner() {
 
     const { data: bookingData, error } = await supabase
       .from("bookings")
-      .select("id, status, member_id, checked_by_name, members(name)")
+      .select("id, status, member_id, checked_by_name, members(name, profile_image_url)")
       .eq("class_session_id", sessionId)
       .neq("status", "cancelled_prior")
       .order("created_at", { ascending: true });
@@ -315,6 +315,37 @@ function AttendanceInner() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {b.members?.profile_image_url ? (
+                      <img
+                        src={b.members.profile_image_url}
+                        alt=""
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          background: "#e9f1fb",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#3B82C4",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {(b.members?.name || "?")[0]}
+                      </div>
+                    )}
                     <span style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
                       {b.members?.name || "(알 수 없음)"}
                     </span>
