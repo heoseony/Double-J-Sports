@@ -328,10 +328,12 @@ export default function ClassDetailPage() {
                     </a>
                   </div>
                 )}
-                <InfoRow label="담당 코치" value={coachName || "-"} />
-                {assistantCoachNames.length > 0 && (
-                  <InfoRow label="보조 코치" value={assistantCoachNames.join(", ")} />
-                )}
+                <InfoRow
+                  label="코치"
+                  value={
+                    [coachName, ...assistantCoachNames].filter(Boolean).join(", ") || "-"
+                  }
+                />
                 <InfoRow label="대상" value={member.name + " · " + (cls.program === "kids" ? "Kids" : cls.program)} />
                 <InfoRow
                   label="정원"
@@ -442,6 +444,16 @@ export default function ClassDetailPage() {
               >
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>{member.name}</span>
                 <span style={{ fontSize: 12, color: "#5b7699" }}>{member.program === "kids" ? "Kids" : member.program}</span>
+              </div>
+
+              <div style={{ marginTop: 18, textAlign: "left", display: "flex", flexDirection: "column", gap: 8 }}>
+                <InfoRow label="장소" value={cls.location || "-"} />
+                <InfoRow
+                  label="코치"
+                  value={
+                    [coachName, ...assistantCoachNames].filter(Boolean).join(", ") || "-"
+                  }
+                />
               </div>
 
               <p style={{ fontSize: 14, color: "#33455e", marginTop: 20 }}>
