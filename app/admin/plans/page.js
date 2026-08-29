@@ -192,12 +192,37 @@ export default function AdminPlansPage() {
   if (loading || !isAdmin) {
 
   async function handleDelete(planId, planName) {
-    if (!confirm(`"${planName}" 상품을 정말 삭제할까요?\n\n이미 신청/배정된 회원권이 있으면 삭제가 안 될 수 있어요.`)) return;
+    const { count: membershipCount } = await supabase
+      .from("memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("plan_id", planId);
+
+    const { count: paymentCount } = await supabase
+      .from("payments")
+      .select("id", { count: "exact", head: true })
+      .eq("plan_id", planId);
+
+    const mCount = membershipCount || 0;
+    const pCount = paymentCount || 0;
+
+    let confirmMsg = `"${planName}" 상품을 정말 삭제할까요?`;
+    if (mCount > 0 || pCount > 0) {
+      confirmMsg += `\n\n이 상품에 배정된 회원권 ${mCount}건, 결제내역 ${pCount}건이 있습니다.\n삭제하면 결제내역은 함께 삭제되고, 회원권은 상품 연결만 해제됩니다.`;
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    if (pCount > 0) {
+      await supabase.from("payments").delete().eq("plan_id", planId);
+    }
+    if (mCount > 0) {
+      await supabase.from("memberships").update({ plan_id: null }).eq("plan_id", planId);
+    }
 
     const { error } = await supabase.from("membership_plans").delete().eq("id", planId);
 
     if (error) {
-      alert("삭제 실패: 이미 신청/배정된 회원권이 연결되어 있어서 삭제할 수 없습니다.");
+      alert("삭제 실패: " + error.message);
       return;
     }
 
@@ -562,13 +587,14 @@ export default function AdminPlansPage() {
                     : `특정 수업만 예약 가능 (${allowedCount}개 수업)`}
                 </div>
 
-                <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
                   <button
                     type="button"
                     onClick={() => startEdit(p)}
                     style={{
-                      padding: "8px 2px",
-                      flex: 1,
+                      padding: "10px 2px",
+                      width: "100%",
+                      boxSizing: "border-box",
                       textAlign: "center",
                       fontSize: 12,
                       whiteSpace: "nowrap",
@@ -586,8 +612,9 @@ export default function AdminPlansPage() {
                     type="button"
                     onClick={() => toggleActive(p.id, p.active)}
                     style={{
-                      padding: "8px 2px",
-                      flex: 1,
+                      padding: "10px 2px",
+                      width: "100%",
+                      boxSizing: "border-box",
                       textAlign: "center",
                       fontSize: 12,
                       whiteSpace: "nowrap",
@@ -601,13 +628,13 @@ export default function AdminPlansPage() {
                   >
                     {p.active ? "비활성화" : "활성화"}
                   </button>
-                </div>
                   <button
                     type="button"
                     onClick={() => handleDelete(p.id, p.name)}
                     style={{
-                      padding: "8px 2px",
-                      flex: 1,
+                      padding: "10px 2px",
+                      width: "100%",
+                      boxSizing: "border-box",
                       textAlign: "center",
                       fontSize: 12,
                       whiteSpace: "nowrap",
@@ -621,6 +648,7 @@ export default function AdminPlansPage() {
                   >
                     삭제
                   </button>
+                </div>
               </div>
             );
           })}
