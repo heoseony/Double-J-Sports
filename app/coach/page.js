@@ -280,7 +280,7 @@ export default function CoachHomePage() {
             </div>
             <div
               style={{
-                background: getRegionBg(s.classInfo?.region),
+                background: "white",
                 borderRadius: 16,
                 overflow: "hidden",
                 boxShadow: "0 2px 10px rgba(30,60,110,0.06)",

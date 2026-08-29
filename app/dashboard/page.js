@@ -1096,18 +1096,19 @@ export default function DashboardPage() {
             </div>
             <WeekCalendarGrid
               weekSessions={thisWeekSessions}
-              selectedDate={toDateStr(nowInGermany())}
-              onSelectDate={(d) => router.push(`/admin/classes?date=${d}`)}
+              selectedDate={selectedDashDate}
+              onSelectDate={(d) => setSelectedDashDate(d)}
             />
           </div>
 
           <div style={cardStyle}>
             <div style={cardTitleRow}>
-              <span style={cardTitle}>오늘의 수업</span>
+              <span style={cardTitle}>{selectedDashDate === toDateStr(nowInGermany()) ? "오늘의 수업" : `${selectedDashDate} 수업`}</span>
             </div>
             <TodayClassList
               sessions={thisWeekSessions}
               sessionCounts={thisWeekSessionCounts}
+              targetDate={selectedDashDate}
               role="admin"
             />
           </div>
