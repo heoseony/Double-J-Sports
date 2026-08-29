@@ -85,6 +85,32 @@ export default function AdminPaymentsPage() {
   const [allConfirmedPayments, setAllConfirmedPayments] = useState([]);
   const [revenueLoaded, setRevenueLoaded] = useState(false);
 
+  async function handleReject(payment) {
+    if (
+      !confirm(
+        `${payment.members?.name || "이 회원"}님의 입금신청을 목록에서 제외하시겠습니까? (10월 이전 실수로 신청된 건 등 정리용)`
+      )
+    ) {
+      return;
+    }
+
+    setConfirmingId(payment.id);
+
+    const { error } = await supabase
+      .from("payments")
+      .update({ status: "rejected" })
+      .eq("id", payment.id);
+
+    setConfirmingId(null);
+
+    if (error) {
+      alert("처리 실패: " + error.message);
+      return;
+    }
+
+    await loadPayments();
+  }
+
   async function loadPayments() {
     const { data: pending } = await supabase
       .from("payments")
@@ -557,14 +583,24 @@ export default function AdminPaymentsPage() {
                   <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
                     입금자명: <strong>{p.depositor_name}</strong> · 신청일시: {new Date(p.requested_at).toLocaleString("ko-KR")}
                   </div>
-                  <button
-                    type="button"
-                    style={{ marginTop: 10, padding: "10px 18px", fontSize: 13, fontWeight: 700, border: "none", borderRadius: 10, background: BLUE, color: "white", cursor: "pointer" }}
-                    disabled={confirmingId === p.id}
-                    onClick={() => openConfirmModal(p)}
-                  >
-                    {confirmingId === p.id ? "처리 중..." : "입금확인 · 회원권 활성화"}
-                  </button>
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      style={{ padding: "10px 18px", fontSize: 13, fontWeight: 700, border: "none", borderRadius: 10, background: BLUE, color: "white", cursor: "pointer" }}
+                      disabled={confirmingId === p.id}
+                      onClick={() => openConfirmModal(p)}
+                    >
+                      {confirmingId === p.id ? "처리 중..." : "입금확인 · 회원권 활성화"}
+                    </button>
+                    <button
+                      type="button"
+                      style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#8ea0b8", cursor: "pointer" }}
+                      disabled={confirmingId === p.id}
+                      onClick={() => handleReject(p)}
+                    >
+                      닫기
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
