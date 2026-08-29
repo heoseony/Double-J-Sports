@@ -160,8 +160,8 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
   });
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-      {[0, 1, 2, 3, 4, 5, 6].map((offset) => {
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4 }}>
+      {[0, 1, 2, 3, 4, 5].map((offset) => {
         const date = addDays(monday, offset);
         const dateStr = toDateStr(date);
         const isToday = dateStr === todayStr;
