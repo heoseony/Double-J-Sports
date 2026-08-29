@@ -100,8 +100,9 @@ export default function AdultBookPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, class_id, session_date, start_time, end_time, classes(id, class_name, program, weekday, active, region)"
+        "id, class_id, session_date, start_time, end_time, is_cancelled, classes(id, class_name, program, weekday, active, region)"
       )
+      .or("is_cancelled.is.null,is_cancelled.eq.false")
       .gte("session_date", today)
       .order("session_date", { ascending: true })
       .order("start_time", { ascending: true });

@@ -94,8 +94,9 @@ export default function BookClassPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, session_date, class_id, classes!inner(id, program, class_name, start_time, end_time, location, active, region)"
+        "id, session_date, class_id, is_cancelled, classes!inner(id, program, class_name, start_time, end_time, location, active, region)"
       )
+      .or("is_cancelled.is.null,is_cancelled.eq.false")
       .eq("status", "scheduled")
       .eq("classes.program", memberData.program)
       .eq("classes.active", true)

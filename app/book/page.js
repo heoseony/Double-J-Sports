@@ -162,8 +162,9 @@ function BookPageInner() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, class_id, session_date, start_time, end_time, status, classes(id, class_name, program, weekday, active, region, location)"
+        "id, class_id, session_date, start_time, end_time, status, is_cancelled, classes(id, class_name, program, weekday, active, region, location)"
       )
+      .or("is_cancelled.is.null,is_cancelled.eq.false")
       .gte("session_date", today)
       .order("session_date", { ascending: true })
       .order("start_time", { ascending: true });
