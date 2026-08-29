@@ -207,7 +207,8 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
   );
 }
 
-function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds }) {
+function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role }) {
+  const router = useRouter();
   const todayStr = targetDate || toDateStr(nowInGermany());
   const todaySessions = sessions
     .filter((s) => s.session_date === todayStr)
@@ -229,6 +230,13 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds }) {
         return (
           <div
             key={s.id}
+            onClick={() => {
+              if (role === "coach") {
+                router.push(`/coach/attendance?sessionId=${s.id}`);
+              } else if (role === "admin") {
+                router.push("/admin/attendance");
+              }
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -238,6 +246,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds }) {
               border: myClassIds && myClassIds.includes(s.class_id) ? "2px solid #e05252" : "1px solid #eef2f8",
               opacity: s.is_cancelled ? 0.5 : 1,
               background: getRegionBg(s.classes?.region),
+              cursor: role ? "pointer" : "default",
             }}
           >
             <div>
@@ -1026,6 +1035,7 @@ export default function DashboardPage() {
               sessionCounts={thisWeekSessionCounts}
               targetDate={selectedDashDate}
               myClassIds={myCoachClassIds}
+              role="coach"
             />
           </div>
         </div>
@@ -1089,6 +1099,7 @@ export default function DashboardPage() {
             <TodayClassList
               sessions={thisWeekSessions}
               sessionCounts={thisWeekSessionCounts}
+              role="admin"
             />
           </div>
 
