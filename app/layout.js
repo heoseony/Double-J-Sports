@@ -1,5 +1,6 @@
 ﻿import "./globals.css";
 import BottomNav from "./components/BottomNav";
+import RefreshButton from "./components/RefreshButton";
 
 export const metadata = {
   title: "Double J Sports",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body>
         {children}
+        <RefreshButton />
         <BottomNav />
       </body>
     </html>
