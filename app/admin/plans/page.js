@@ -189,10 +189,7 @@ export default function AdminPlansPage() {
     await loadAll();
   }
 
-  if (loading || !isAdmin) {
-
   async function handleDelete(planId, planName) {
-    alert("DEBUG: handleDelete called with " + planId);
     const { count: membershipCount } = await supabase
       .from("memberships")
       .select("id", { count: "exact", head: true })
@@ -229,6 +226,8 @@ export default function AdminPlansPage() {
 
     await loadAll();
   }
+
+  if (loading || !isAdmin) {
     return (
       <LoadingScreen text="확인 중..." />
     );
