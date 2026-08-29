@@ -94,11 +94,11 @@ export default function BookClassPage() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, session_date, class_id, classes!inner(id, program, class_name, start_time, end_time, location, is_active, region)"
+        "id, session_date, class_id, classes!inner(id, program, class_name, start_time, end_time, location, active, region)"
       )
       .eq("status", "scheduled")
       .eq("classes.program", memberData.program)
-      .eq("classes.is_active", true)
+      .eq("classes.active", true)
       .gte("session_date", today)
       .order("session_date", { ascending: true });
 
