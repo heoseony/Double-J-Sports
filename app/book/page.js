@@ -48,6 +48,8 @@ function BookPageInner() {
   const [myBookedSessionIds, setMyBookedSessionIds] = useState([]);
   const [myBookingIdBySession, setMyBookingIdBySession] = useState({});
   const [cancellingSessionId, setCancellingSessionId] = useState(null);
+  const [coachesByClass, setCoachesByClass] = useState({});
+  const [confirmSessionId, setConfirmSessionId] = useState(null);
   const [cutoffHours, setCutoffHours] = useState(24);
   const [bookingCutoffHours, setBookingCutoffHours] = useState(2);
   const [allClassesAllowed, setAllClassesAllowed] = useState(true);
@@ -160,7 +162,7 @@ function BookPageInner() {
     const { data: sessionData, error: sessionError } = await supabase
       .from("class_sessions")
       .select(
-        "id, class_id, session_date, start_time, end_time, status, classes(id, class_name, program, weekday, active, region)"
+        "id, class_id, session_date, start_time, end_time, status, classes(id, class_name, program, weekday, active, region, location)"
       )
       .gte("session_date", today)
       .order("session_date", { ascending: true })
@@ -191,6 +193,24 @@ function BookPageInner() {
     }
 
     setSessions(kidsSessions);
+
+    const classIds = [...new Set(kidsSessions.map((s) => s.class_id))];
+    if (classIds.length > 0) {
+      const { data: coachRows } = await supabase
+        .from("class_coaches")
+        .select("class_id, coach_role, coach_profiles(name)")
+        .in("class_id", classIds);
+
+      const coachMap = {};
+      (coachRows || []).forEach((c) => {
+        if (!coachMap[c.class_id]) coachMap[c.class_id] = { main: null, assistants: [] };
+        const name = c.coach_profiles?.name;
+        if (!name) return;
+        if (c.coach_role === "main") coachMap[c.class_id].main = name;
+        else if (c.coach_role === "assistant") coachMap[c.class_id].assistants.push(name);
+      });
+      setCoachesByClass(coachMap);
+    }
 
     // member_id를 같이 받아와서, 렌더링할 때 "이 참가자가 지금 보고 있는 내 선수인지"를
     // 판별할 수 있게 한다 (본인은 마스킹 해제 + 파란색 표시).
@@ -708,7 +728,7 @@ function BookPageInner() {
                       cursor: "pointer",
                     }}
                     disabled={bookingSessionId === s.id}
-                    onClick={() => handleBook(s.id)}
+                    onClick={() => setConfirmSessionId(s.id)}
                   >
                     {bookingSessionId === s.id ? "예약 중..." : "예약하기"}
                   </button>
@@ -725,6 +745,106 @@ function BookPageInner() {
           </Link>
         </div>
       </div>
+
+      {confirmSessionId && (() => {
+        const s = sessions.find((x) => x.id === confirmSessionId);
+        if (!s) return null;
+        const coachInfo = coachesByClass[s.class_id];
+        const coachText = coachInfo
+          ? [coachInfo.main, ...coachInfo.assistants.map((n) => `${n} 코치님`)]
+              .filter(Boolean)
+              .join(", ") || "-"
+          : "-";
+        return (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(20,35,60,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: 20,
+            }}
+            onClick={() => setConfirmSessionId(null)}
+          >
+            <div
+              style={{
+                background: "white",
+                borderRadius: 16,
+                padding: 22,
+                width: "100%",
+                maxWidth: 360,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63", marginBottom: 4 }}>
+                {s.classes.class_name}
+              </div>
+              <div style={{ fontSize: 13, color: "#3B82C4", fontWeight: 700, marginBottom: 16 }}>
+                {s.session_date} · {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+                  <span style={{ color: "#8ea0b8" }}>장소</span>
+                  <span style={{ color: "#1b3a63", fontWeight: 600 }}>{s.classes.location || "-"}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+                  <span style={{ color: "#8ea0b8" }}>코치</span>
+                  <span style={{ color: "#1b3a63", fontWeight: 600 }}>{coachText}</span>
+                </div>
+              </div>
+
+              <p style={{ fontSize: 14, color: "#33455e", marginBottom: 18, textAlign: "center" }}>
+                위 내용으로 예약하시겠습니까?
+              </p>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setConfirmSessionId(null)}
+                  style={{
+                    flex: 1,
+                    padding: 14,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    border: "1px solid #e5eaf2",
+                    borderRadius: 10,
+                    background: "white",
+                    color: "#5b7699",
+                    cursor: "pointer",
+                  }}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetId = confirmSessionId;
+                    setConfirmSessionId(null);
+                    handleBook(targetId);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: 14,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    border: "none",
+                    borderRadius: 10,
+                    background: "#3B82C4",
+                    color: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  예약 확인
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </main>
   );
 }

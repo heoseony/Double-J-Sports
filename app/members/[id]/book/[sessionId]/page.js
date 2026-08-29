@@ -331,7 +331,7 @@ export default function ClassDetailPage() {
                 <InfoRow
                   label="코치"
                   value={
-                    [coachName, ...assistantCoachNames].filter(Boolean).join(", ") || "-"
+                    [coachName, ...assistantCoachNames.map((n) => `${n} 코치님`)].filter(Boolean).join(", ") || "-"
                   }
                 />
                 <InfoRow label="대상" value={member.name + " · " + (cls.program === "kids" ? "Kids" : cls.program)} />
@@ -451,7 +451,7 @@ export default function ClassDetailPage() {
                 <InfoRow
                   label="코치"
                   value={
-                    [coachName, ...assistantCoachNames].filter(Boolean).join(", ") || "-"
+                    [coachName, ...assistantCoachNames.map((n) => `${n} 코치님`)].filter(Boolean).join(", ") || "-"
                   }
                 />
               </div>

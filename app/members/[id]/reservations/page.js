@@ -438,25 +438,6 @@ export default function ReservationsPage() {
                     </span>
                   </Link>
 
-                  {activeTab === "upcoming" && (
-                    <button
-                      type="button"
-                      disabled={cancellingId === b.id}
-                      onClick={() => handleCancel(b)}
-                      style={{
-                        padding: "8px 14px",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        border: "1px solid #f3c6c2",
-                        color: "#b3261e",
-                        borderRadius: 8,
-                        background: "white",
-                        cursor: cancellingId === b.id ? "default" : "pointer",
-                      }}
-                    >
-                      {cancellingId === b.id ? "취소 중..." : "예약 취소"}
-                    </button>
-                  )}
                 </div>
               </div>
             );
