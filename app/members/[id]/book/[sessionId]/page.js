@@ -282,6 +282,23 @@ export default function ClassDetailPage() {
 
               <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
                 <InfoRow label="장소" value={cls.location || "-"} />
+                {cls.location && (
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4, marginBottom: 4 }}>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cls.location)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: BLUE,
+                        textDecoration: "none",
+                      }}
+                    >
+                      위치보기 {"\u2192"}
+                    </a>
+                  </div>
+                )}
                 <InfoRow label="담당 코치" value={coachName || "-"} />
                 <InfoRow label="대상" value={member.name + " · " + (cls.program === "kids" ? "Kids" : cls.program)} />
                 <InfoRow
