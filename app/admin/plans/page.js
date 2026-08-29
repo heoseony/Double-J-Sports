@@ -55,8 +55,9 @@ export default function AdminPlansPage() {
     const { data: planData } = await supabase
       .from("membership_plans")
       .select(
-        "id, name, program, sessions_per_month, price, currency, active, all_classes_allowed"
+        "id, name, program, sessions_per_month, price, currency, active, all_classes_allowed, is_hidden"
       )
+      .or("is_hidden.is.null,is_hidden.eq.false")
       .order("program", { ascending: true });
     setPlans(planData || []);
 
@@ -190,48 +191,18 @@ export default function AdminPlansPage() {
   }
 
   async function handleDelete(planId, planName) {
-    const { count: membershipCount } = await supabase
-      .from("memberships")
-      .select("id", { count: "exact", head: true })
-      .eq("plan_id", planId);
-
-    const { count: paymentCount } = await supabase
-      .from("payments")
-      .select("id", { count: "exact", head: true })
-      .eq("plan_id", planId);
-
-    const mCount = membershipCount || 0;
-    const pCount = paymentCount || 0;
-
-    let confirmMsg = `"${planName}" 상품을 정말 삭제할까요?`;
-    if (mCount > 0 || pCount > 0) {
-      confirmMsg += `\n\n이 상품에 배정된 회원권 ${mCount}건, 결제내역 ${pCount}건이 있습니다.\n삭제하면 결제내역은 함께 삭제되고, 회원권은 상품 연결만 해제됩니다.`;
+    if (
+      !confirm(
+        `"${planName}" 상품을 목록에서 삭제할까요?\n\n(기존 결제내역·회원권 기록은 안전하게 보존되고, 목록에서만 안 보이게 됩니다)`
+      )
+    ) {
+      return;
     }
 
-    if (!confirm(confirmMsg)) return;
-
-    if (pCount > 0) {
-      const { error: paymentsDeleteError } = await supabase
-        .from("payments")
-        .delete()
-        .eq("plan_id", planId);
-      if (paymentsDeleteError) {
-        alert("결제내역 삭제 실패: " + paymentsDeleteError.message);
-        return;
-      }
-    }
-    if (mCount > 0) {
-      const { error: membershipsUpdateError } = await supabase
-        .from("memberships")
-        .update({ plan_id: null })
-        .eq("plan_id", planId);
-      if (membershipsUpdateError) {
-        alert("회원권 연결 해제 실패: " + membershipsUpdateError.message);
-        return;
-      }
-    }
-
-    const { error } = await supabase.from("membership_plans").delete().eq("id", planId);
+    const { error } = await supabase
+      .from("membership_plans")
+      .update({ is_hidden: true })
+      .eq("id", planId);
 
     if (error) {
       alert("삭제 실패: " + error.message);
