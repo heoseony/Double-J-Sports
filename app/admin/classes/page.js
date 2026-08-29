@@ -174,6 +174,64 @@ function AdminClassesPageInner() {
     setLoadingCalendar(false);
   }
 
+  async function handleDeleteSession(sessionId) {
+    if (!confirm("이 수업을 정말 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.")) {
+      return;
+    }
+
+    const { data: existingBookings } = await supabase
+      .from("bookings")
+      .select("id, member_id")
+      .eq("class_session_id", sessionId)
+      .in("status", ["booked", "attended"]);
+
+    if (existingBookings && existingBookings.length > 0) {
+      if (
+        !confirm(
+          `이 수업에 이미 ${existingBookings.length}건의 예약이 있습니다. 예약을 취소 처리하고 각 회원의 잔여 횟수를 복구한 뒤 수업을 삭제할까요? (관리자에 의한 취소이므로 당일이어도 전액 복구됩니다)`
+        )
+      ) {
+        return;
+      }
+
+      await supabase
+        .from("bookings")
+        .update({ status: "cancelled_prior", cancelled_at: new Date().toISOString() })
+        .eq("class_session_id", sessionId)
+        .in("status", ["booked", "attended"]);
+
+      for (const b of existingBookings) {
+        const { data: activeMembership } = await supabase
+          .from("memberships")
+          .select("id, sessions_used")
+          .eq("member_id", b.member_id)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (activeMembership) {
+          await supabase
+            .from("memberships")
+            .update({ sessions_used: Math.max((activeMembership.sessions_used || 0) - 1, 0) })
+            .eq("id", activeMembership.id);
+        }
+      }
+    }
+
+    const { error } = await supabase
+      .from("class_sessions")
+      .delete()
+      .eq("id", sessionId);
+
+    if (error) {
+      alert("삭제 실패: " + error.message);
+      return;
+    }
+
+    setMonthSessions((prev) => prev.filter((s) => s.id !== sessionId));
+  }
+
   async function handleToggleCancelSession(sessionId, currentValue) {
     const { error } = await supabase
       .from("class_sessions")
@@ -635,6 +693,23 @@ function AdminClassesPageInner() {
                     }}
                   >
                     {s.is_cancelled ? "휴강 취소" : "휴강 처리"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSession(s.id)}
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "3px 8px",
+                      borderRadius: 6,
+                      border: "1px solid #b3261e",
+                      background: "white",
+                      color: "#b3261e",
+                      cursor: "pointer",
+                    }}
+                  >
+                    삭제
                   </button>
 
                   <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
