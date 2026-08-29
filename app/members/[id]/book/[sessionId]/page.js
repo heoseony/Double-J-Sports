@@ -29,6 +29,7 @@ export default function ClassDetailPage() {
   const [member, setMember] = useState(null);
   const [session, setSession] = useState(null);
   const [coachName, setCoachName] = useState(null);
+  const [assistantCoachNames, setAssistantCoachNames] = useState([]);
   const [membership, setMembership] = useState(null);
   const [isClassAllowed, setIsClassAllowed] = useState(true);
   const [applicantCount, setApplicantCount] = useState(0);
@@ -88,13 +89,18 @@ export default function ClassDetailPage() {
     setSession(sessionData);
 
     if (sessionData.class_id) {
-      const { data: coachData } = await supabase
+      const { data: coachRows } = await supabase
         .from("class_coaches")
-        .select("coach_profiles(name)")
-        .eq("class_id", sessionData.class_id)
-        .limit(1)
-        .maybeSingle();
-      if (coachData?.coach_profiles?.name) setCoachName(coachData.coach_profiles.name);
+        .select("coach_role, coach_profiles(name)")
+        .eq("class_id", sessionData.class_id);
+
+      const mainCoach = (coachRows || []).find((c) => c.coach_role === "main");
+      const assistants = (coachRows || []).filter((c) => c.coach_role === "assistant");
+
+      if (mainCoach?.coach_profiles?.name) setCoachName(mainCoach.coach_profiles.name);
+      setAssistantCoachNames(
+        assistants.map((c) => c.coach_profiles?.name).filter(Boolean)
+      );
     }
 
     const { data: membershipData } = await supabase
@@ -153,13 +159,31 @@ export default function ClassDetailPage() {
       .update({ status: newStatus, cancelled_at: new Date().toISOString() })
       .eq("id", myBookingId);
 
-    setCancelling(false);
-
     if (error) {
+      setCancelling(false);
       setErrorMsg("취소 실패: " + error.message);
       return;
     }
 
+    if (isPrior) {
+      const { data: activeMembership } = await supabase
+        .from("memberships")
+        .select("id, sessions_used")
+        .eq("member_id", memberId)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeMembership) {
+        await supabase
+          .from("memberships")
+          .update({ sessions_used: Math.max((activeMembership.sessions_used || 0) - 1, 0) })
+          .eq("id", activeMembership.id);
+      }
+    }
+
+    setCancelling(false);
     await loadAll();
   }
 
@@ -300,6 +324,9 @@ export default function ClassDetailPage() {
                   </div>
                 )}
                 <InfoRow label="담당 코치" value={coachName || "-"} />
+                {assistantCoachNames.length > 0 && (
+                  <InfoRow label="보조 코치" value={assistantCoachNames.join(", ")} />
+                )}
                 <InfoRow label="대상" value={member.name + " · " + (cls.program === "kids" ? "Kids" : cls.program)} />
                 <InfoRow
                   label="정원"

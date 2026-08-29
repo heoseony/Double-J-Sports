@@ -143,13 +143,31 @@ export default function ReservationsPage() {
       .update({ status: newStatus, cancelled_at: new Date().toISOString() })
       .eq("id", booking.id);
 
-    setCancellingId(null);
-
     if (error) {
+      setCancellingId(null);
       setErrorMsg("취소 실패: " + error.message);
       return;
     }
 
+    if (isPrior) {
+      const { data: activeMembership } = await supabase
+        .from("memberships")
+        .select("id, sessions_used")
+        .eq("member_id", memberId)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeMembership) {
+        await supabase
+          .from("memberships")
+          .update({ sessions_used: Math.max((activeMembership.sessions_used || 0) - 1, 0) })
+          .eq("id", activeMembership.id);
+      }
+    }
+
+    setCancellingId(null);
     await loadAll();
   }
 
