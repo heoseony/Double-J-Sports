@@ -211,10 +211,24 @@ export default function AdminPlansPage() {
     if (!confirm(confirmMsg)) return;
 
     if (pCount > 0) {
-      await supabase.from("payments").delete().eq("plan_id", planId);
+      const { error: paymentsDeleteError } = await supabase
+        .from("payments")
+        .delete()
+        .eq("plan_id", planId);
+      if (paymentsDeleteError) {
+        alert("결제내역 삭제 실패: " + paymentsDeleteError.message);
+        return;
+      }
     }
     if (mCount > 0) {
-      await supabase.from("memberships").update({ plan_id: null }).eq("plan_id", planId);
+      const { error: membershipsUpdateError } = await supabase
+        .from("memberships")
+        .update({ plan_id: null })
+        .eq("plan_id", planId);
+      if (membershipsUpdateError) {
+        alert("회원권 연결 해제 실패: " + membershipsUpdateError.message);
+        return;
+      }
     }
 
     const { error } = await supabase.from("membership_plans").delete().eq("id", planId);
