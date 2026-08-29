@@ -49,6 +49,7 @@ export default function ReservationsPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [activeTab, setActiveTab] = useState("upcoming");
   const [cancellingId, setCancellingId] = useState(null);
+  const [cancelMsg, setCancelMsg] = useState("");
 
   async function loadAll() {
     setLoading(true);
@@ -165,10 +166,14 @@ export default function ReservationsPage() {
           .update({ sessions_used: Math.max((activeMembership.sessions_used || 0) - 1, 0) })
           .eq("id", activeMembership.id);
       }
+      setCancelMsg("예약이 취소되었고, 잔여 횟수가 복구되었습니다.");
+    } else {
+      setCancelMsg("당일 취소로 잔여 횟수는 복구되지 않습니다.");
     }
 
     setCancellingId(null);
     await loadAll();
+    setTimeout(() => setCancelMsg(""), 4000);
   }
 
   if (loading) {
@@ -310,6 +315,12 @@ export default function ReservationsPage() {
         {errorMsg && (
           <div style={{ background: "#fdecec", color: "#b3261e", padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14 }}>
             {errorMsg}
+          </div>
+        )}
+
+        {cancelMsg && (
+          <div style={{ background: "#e9f1fb", color: BLUE, padding: 12, borderRadius: 10, fontSize: 13, marginBottom: 14, fontWeight: 600 }}>
+            {cancelMsg}
           </div>
         )}
 
