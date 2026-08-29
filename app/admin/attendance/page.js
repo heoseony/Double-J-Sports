@@ -87,7 +87,7 @@ export default function AdminAttendancePage() {
       const { data: sessionData, error } = await supabase
         .from("class_sessions")
         .select(
-          "id, session_date, start_time, end_time, classes(class_name, program, coach_id)"
+          "id, class_id, session_date, start_time, end_time, classes(class_name, program)"
         )
         .gte("session_date", startStr)
         .lte("session_date", endStr)
@@ -100,29 +100,36 @@ export default function AdminAttendancePage() {
         return;
       }
 
-      const coachIds = [
-        ...new Set(
-          (sessionData || []).map((s) => s.classes?.coach_id).filter(Boolean)
-        ),
-      ];
+      const classIds = [...new Set((sessionData || []).map((s) => s.class_id))];
 
-      let coachEmailById = {};
-      if (coachIds.length > 0) {
+      let coachNamesByClass = {};
+      if (classIds.length > 0) {
         const { data: coachRows } = await supabase
-          .from("users")
-          .select("id, email")
-          .in("id", coachIds);
+          .from("class_coaches")
+          .select("class_id, coach_role, coach_profiles(name)")
+          .in("class_id", classIds);
+
         (coachRows || []).forEach((c) => {
-          coachEmailById[c.id] = c.email;
+          if (!coachNamesByClass[c.class_id]) {
+            coachNamesByClass[c.class_id] = { main: null, assistants: [] };
+          }
+          const name = c.coach_profiles?.name;
+          if (!name) return;
+          if (c.coach_role === "main") coachNamesByClass[c.class_id].main = name;
+          else if (c.coach_role === "assistant") coachNamesByClass[c.class_id].assistants.push(name);
         });
       }
 
-      const withCoach = (sessionData || []).map((s) => ({
-        ...s,
-        coachEmail: s.classes?.coach_id
-          ? coachEmailById[s.classes.coach_id] || "(알 수 없음)"
-          : "미지정",
-      }));
+      const withCoach = (sessionData || []).map((s) => {
+        const info = coachNamesByClass[s.class_id];
+        const names = info
+          ? [info.main, ...info.assistants.map((n) => `${n} 코치님`)].filter(Boolean)
+          : [];
+        return {
+          ...s,
+          coachEmail: names.length > 0 ? names.join(", ") : "미지정",
+        };
+      });
 
       setSessions(withCoach);
       setLoading(false);
