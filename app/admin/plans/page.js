@@ -192,6 +192,7 @@ export default function AdminPlansPage() {
   if (loading || !isAdmin) {
 
   async function handleDelete(planId, planName) {
+    alert("DEBUG: handleDelete called with " + planId);
     const { count: membershipCount } = await supabase
       .from("memberships")
       .select("id", { count: "exact", head: true })
