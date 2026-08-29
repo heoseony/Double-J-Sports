@@ -8,6 +8,12 @@ import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
+const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+
+function formatDateWithWeekday(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${dateStr} (${WEEKDAY_LABEL[d.getDay()]})`;
+}
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -208,7 +214,7 @@ export default function AdminAttendancePage() {
         {dateKeys.map((dateStr) => (
           <div key={dateStr} style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#1b3a63", marginBottom: 8 }}>
-              {dateStr}
+              {formatDateWithWeekday(dateStr)}
             </div>
             <div style={{ background: "white", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
               {sessionsByDate[dateStr].map((s, idx) => (
