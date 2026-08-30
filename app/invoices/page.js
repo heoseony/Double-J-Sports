@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -16,6 +17,7 @@ function formatDate(dateStr) {
 
 export default function InvoicesPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
@@ -38,7 +40,7 @@ export default function InvoicesPage() {
       const result = await res.json();
 
       if (!res.ok) {
-        setErrorMsg(result.error || "인보이스를 불러오지 못했습니다.");
+        setErrorMsg(result.error || t("invoices.errLoadFailed"));
         setLoading(false);
         return;
       }
@@ -76,7 +78,7 @@ export default function InvoicesPage() {
     setOpeningId(null);
 
     if (!res.ok) {
-      setErrorMsg(result.error || "다운로드 링크 생성 실패");
+      setErrorMsg(result.error || t("invoices.errDownloadLinkFailed"));
       if (newTab) newTab.close();
       return;
     }
@@ -111,10 +113,10 @@ export default function InvoicesPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
       </div>
-      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>내 인보이스</div>
+      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>{t("invoices.subtitle")}</div>
 
       {errorMsg && (
         <div className="message error" style={{ marginBottom: 14 }}>
@@ -125,7 +127,7 @@ export default function InvoicesPage() {
       <div style={{ background: "white", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
         {invoices.length === 0 && !errorMsg && (
           <p style={{ fontSize: 14, color: "#8ea0b8", padding: 18, margin: 0 }}>
-            아직 발급된 인보이스가 없습니다.
+            {t("invoices.noInvoices")}
           </p>
         )}
 
@@ -160,7 +162,7 @@ export default function InvoicesPage() {
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>
-                {inv.invoice_number} · {inv.payments?.members?.name || "회원"}
+                {inv.invoice_number} · {inv.payments?.members?.name || t("invoices.memberFallback")}
               </div>
               <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2 }}>
                 {formatDate(inv.issued_at)} · {inv.total_amount} EUR
@@ -184,14 +186,14 @@ export default function InvoicesPage() {
                 flexShrink: 0,
               }}
             >
-              {openingId === inv.id ? "여는 중..." : "PDF 보기"}
+              {openingId === inv.id ? t("invoices.opening") : t("invoices.viewPdf")}
             </button>
           </div>
         ))}
       </div>
 
       <div className="link-row">
-        <Link href="/members">← 선수 관리로</Link>
+        <Link href="/members">{t("invoices.backToPlayers")}</Link>
       </div>
     </main>
   );

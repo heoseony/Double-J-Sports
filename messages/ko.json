@@ -309,5 +309,15 @@
     "logout": "로그아웃",
     "versionPrefix": "버전 ",
     "parentSuffix": "학부모님"
+  },
+  "invoices": {
+    "errLoadFailed": "인보이스를 불러오지 못했습니다.",
+    "errDownloadLinkFailed": "다운로드 링크 생성 실패",
+    "subtitle": "내 인보이스",
+    "noInvoices": "아직 발급된 인보이스가 없습니다.",
+    "memberFallback": "회원",
+    "opening": "여는 중...",
+    "viewPdf": "PDF 보기",
+    "backToPlayers": "← 선수 관리로"
   }
 }

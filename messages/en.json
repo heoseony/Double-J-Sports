@@ -309,5 +309,15 @@
     "logout": "Log Out",
     "versionPrefix": "Version ",
     "parentSuffix": "Parent"
+  },
+  "invoices": {
+    "errLoadFailed": "Failed to load invoices.",
+    "errDownloadLinkFailed": "Failed to generate download link",
+    "subtitle": "My Invoices",
+    "noInvoices": "No invoices issued yet.",
+    "memberFallback": "Member",
+    "opening": "Opening...",
+    "viewPdf": "View PDF",
+    "backToPlayers": "← Back to Players"
   }
 }
