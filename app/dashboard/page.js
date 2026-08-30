@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionBg, getProgramTextColor } from "../../lib/classColors";
+import { getRegionBg, getRegionLabel, getProgramTextColor } from "../../lib/classColors";
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
@@ -154,9 +154,13 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
   const todayStr = toDateStr(nowInGermany());
 
   const countByDate = {};
+  const regionsByDate = {};
   weekSessions.forEach((s) => {
     if (s.is_cancelled) return;
     countByDate[s.session_date] = (countByDate[s.session_date] || 0) + 1;
+    const region = s.classes?.region || "frankfurt";
+    if (!regionsByDate[s.session_date]) regionsByDate[s.session_date] = new Set();
+    regionsByDate[s.session_date].add(region);
   });
 
   return (
@@ -200,6 +204,21 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
             <span style={{ fontSize: 10, color: count > 0 ? "#3B82C4" : "#c2ccd9" }}>
               {count > 0 ? `${count}수업` : "-"}
             </span>
+            {regionsByDate[dateStr] && regionsByDate[dateStr].size > 0 && (
+              <div style={{ display: "flex", gap: 2 }}>
+                {[...regionsByDate[dateStr]].map((r) => (
+                  <span
+                    key={r}
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: r === "dusseldorf" ? "#8b5fd6" : "#3B82C4",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </button>
         );
       })}
@@ -250,10 +269,22 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role 
             }}
           >
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "flex", alignItems: "center", gap: 6 }}>
                 {s.start_time ? s.start_time.slice(0, 5) : ""}
                 {" ~ "}
                 {s.end_time ? s.end_time.slice(0, 5) : ""}
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "1px 6px",
+                    borderRadius: 999,
+                    color: (s.classes?.region || "frankfurt") === "dusseldorf" ? "#8b5fd6" : "#3B82C4",
+                    background: (s.classes?.region || "frankfurt") === "dusseldorf" ? "#F2EEFC" : "#EAF4FC",
+                  }}
+                >
+                  {getRegionLabel(s.classes?.region || "frankfurt")}
+                </span>
                 {s.is_cancelled && (
                   <span
                     style={{
