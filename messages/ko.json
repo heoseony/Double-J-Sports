@@ -180,5 +180,25 @@
     "errCancelFailedPrefix": "취소 실패: ",
     "successCancelledRestored": "취소되었습니다. 잔여 횟수가 복구되었습니다.",
     "successCancelledNotRestored": "취소되었습니다. 당일 취소라 잔여 횟수는 복구되지 않습니다."
+  },
+  "reservations": {
+    "loading": "불러오는 중...",
+    "title": "{name} 예약 내역",
+    "tabUpcoming": "예정",
+    "tabDone": "완료",
+    "tabCancelled": "취소",
+    "emptyUpcoming": "예정된 예약이 없습니다.",
+    "emptyDone": "완료된 수업이 없습니다.",
+    "emptyCancelled": "취소된 예약이 없습니다.",
+    "attended": "출석",
+    "cancelledBadge": "취소됨",
+    "viewDetails": "상세보기",
+    "backToClassList": "← 수업 목록으로",
+    "backToPlayers": "← 선수 목록으로",
+    "errMemberNotFound": "선수 정보를 찾을 수 없습니다.",
+    "errLoadBookingsPrefix": "예약 내역을 불러오지 못했습니다: ",
+    "errCancelFailedPrefix": "취소 실패: ",
+    "successCancelledRestored": "예약이 취소되었고, 잔여 횟수가 복구되었습니다.",
+    "successCancelledNotRestored": "당일 취소로 잔여 횟수는 복구되지 않습니다."
   }
 }

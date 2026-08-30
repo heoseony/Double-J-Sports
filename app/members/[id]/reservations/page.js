@@ -5,24 +5,22 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { nowInGermany } from "../../../../lib/germanyTime";
 import { supabase } from "../../../../lib/supabaseClient";
+import { useLanguage } from "../../../../lib/i18n/LanguageContext";
+import { translateClassName } from "../../../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
-
-const TABS = [
-  { key: "upcoming", label: "예정" },
-  { key: "done", label: "완료" },
-  { key: "cancelled", label: "취소" },
-];
+const WEEKDAY_LABEL_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
 }
 
-function formatDateLabel(dateStr) {
+function formatDateLabel(dateStr, lang) {
   const d = new Date(dateStr + "T00:00:00");
-  return `${dateStr} (${WEEKDAY_LABEL[d.getDay()]})`;
+  const labels = lang === "en" ? WEEKDAY_LABEL_EN : WEEKDAY_LABEL_KO;
+  return `${dateStr} (${labels[d.getDay()]})`;
 }
 
 function dDayLabel(dateStr) {
@@ -40,6 +38,7 @@ export default function ReservationsPage() {
   const params = useParams();
   const router = useRouter();
   const memberId = params.id;
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
@@ -77,7 +76,7 @@ export default function ReservationsPage() {
       .single();
 
     if (memberError || !memberData || memberData.guardian_id !== guardian?.id) {
-      setErrorMsg("선수 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("reservations.errMemberNotFound"));
       setLoading(false);
       return;
     }
@@ -99,7 +98,7 @@ export default function ReservationsPage() {
       .order("class_sessions(session_date)", { ascending: false });
 
     if (bookingError) {
-      setErrorMsg("예약 내역을 불러오지 못했습니다: " + bookingError.message);
+      setErrorMsg(t("reservations.errLoadBookingsPrefix") + bookingError.message);
       setLoading(false);
       return;
     }
@@ -146,7 +145,7 @@ export default function ReservationsPage() {
 
     if (error) {
       setCancellingId(null);
-      setErrorMsg("취소 실패: " + error.message);
+      setErrorMsg(t("reservations.errCancelFailedPrefix") + error.message);
       return;
     }
 
@@ -166,9 +165,9 @@ export default function ReservationsPage() {
           .update({ sessions_used: Math.max((activeMembership.sessions_used || 0) - 1, 0) })
           .eq("id", activeMembership.id);
       }
-      setCancelMsg("예약이 취소되었고, 잔여 횟수가 복구되었습니다.");
+      setCancelMsg(t("reservations.successCancelledRestored"));
     } else {
-      setCancelMsg("당일 취소로 잔여 횟수는 복구되지 않습니다.");
+      setCancelMsg(t("reservations.successCancelledNotRestored"));
     }
 
     setCancellingId(null);
@@ -179,7 +178,7 @@ export default function ReservationsPage() {
   if (loading) {
     return (
       <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
-        <div style={{ fontSize: 14, color: "#5b7699" }}>불러오는 중...</div>
+        <div style={{ fontSize: 14, color: "#5b7699" }}>{t("reservations.loading")}</div>
       </main>
     );
   }
@@ -208,7 +207,7 @@ export default function ReservationsPage() {
             {errorMsg}
           </div>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 13 }}>
-            ← 선수 목록으로
+            {t("reservations.backToPlayers")}
           </Link>
         </div>
       </main>
@@ -241,6 +240,11 @@ export default function ReservationsPage() {
   };
 
   const currentList = listByTab[activeTab];
+  const TABS = [
+    { key: "upcoming", label: t("reservations.tabUpcoming") },
+    { key: "done", label: t("reservations.tabDone") },
+    { key: "cancelled", label: t("reservations.tabCancelled") },
+  ];
 
   return (
     <main
@@ -257,7 +261,7 @@ export default function ReservationsPage() {
           </svg>
         </Link>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          {member.name} 예약 내역
+          {t("reservations.title", { name: member.name })}
         </div>
       </div>
 
@@ -334,9 +338,9 @@ export default function ReservationsPage() {
         >
           {currentList.length === 0 && (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              {activeTab === "upcoming" && "예정된 예약이 없습니다."}
-              {activeTab === "done" && "완료된 수업이 없습니다."}
-              {activeTab === "cancelled" && "취소된 예약이 없습니다."}
+              {activeTab === "upcoming" && t("reservations.emptyUpcoming")}
+              {activeTab === "done" && t("reservations.emptyDone")}
+              {activeTab === "cancelled" && t("reservations.emptyCancelled")}
             </p>
           )}
 
@@ -357,15 +361,15 @@ export default function ReservationsPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
-                      {cls?.class_name}
+                      {translateClassName(cls?.class_name, lang)}
                     </div>
                     <div style={{ fontSize: 13, color: "#33455e", marginTop: 4 }}>
-                      {formatDateLabel(sessionDate)} · {formatTime(cls?.start_time)}~{formatTime(cls?.end_time)}
+                      {formatDateLabel(sessionDate, lang)} · {formatTime(cls?.start_time)}~{formatTime(cls?.end_time)}
                     </div>
                     {cls?.location && (
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
                         {cls.location}
-                        {coachName ? ` · ${coachName} 코치` : ""}
+                        {coachName ? (lang === "en" ? ` · Coach ${coachName}` : ` · ${coachName} 코치`) : ""}
                       </div>
                     )}
                   </div>
@@ -397,7 +401,7 @@ export default function ReservationsPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      출석
+                      {t("reservations.attended")}
                     </span>
                   )}
                   {activeTab === "cancelled" && (
@@ -412,7 +416,7 @@ export default function ReservationsPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      취소됨
+                      {t("reservations.cancelledBadge")}
                     </span>
                   )}
                 </div>
@@ -434,7 +438,7 @@ export default function ReservationsPage() {
                         color: "#1b3a63",
                       }}
                     >
-                      상세보기
+                      {t("reservations.viewDetails")}
                     </span>
                   </Link>
 
@@ -446,7 +450,7 @@ export default function ReservationsPage() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href={`/members/${memberId}/book`} style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 수업 목록으로
+            {t("reservations.backToClassList")}
           </Link>
         </div>
       </div>

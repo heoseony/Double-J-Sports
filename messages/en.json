@@ -180,5 +180,25 @@
     "errCancelFailedPrefix": "Cancellation failed: ",
     "successCancelledRestored": "Cancelled. Your remaining session has been restored.",
     "successCancelledNotRestored": "Cancelled. Same-day cancellations do not restore your remaining session."
+  },
+  "reservations": {
+    "loading": "Loading...",
+    "title": "{name}'s Bookings",
+    "tabUpcoming": "Upcoming",
+    "tabDone": "Completed",
+    "tabCancelled": "Cancelled",
+    "emptyUpcoming": "No upcoming bookings.",
+    "emptyDone": "No completed classes yet.",
+    "emptyCancelled": "No cancelled bookings.",
+    "attended": "Attended",
+    "cancelledBadge": "Cancelled",
+    "viewDetails": "View Details",
+    "backToClassList": "← Back to Class List",
+    "backToPlayers": "← Back to Players",
+    "errMemberNotFound": "Player information not found.",
+    "errLoadBookingsPrefix": "Failed to load bookings: ",
+    "errCancelFailedPrefix": "Cancellation failed: ",
+    "successCancelledRestored": "Booking cancelled and your remaining session has been restored.",
+    "successCancelledNotRestored": "Same-day cancellation does not restore your remaining session."
   }
 }
