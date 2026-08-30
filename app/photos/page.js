@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { useLanguage } from "../../lib/i18n/LanguageContext";
+import { translateCategoryName } from "../../lib/i18n/nameTranslations";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -664,7 +665,7 @@ function Lightbox({
 export default function PhotosPage() {
   const router = useRouter();
   const fileInputRef = useRef(null);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [canUpload, setCanUpload] = useState(false);
@@ -1243,7 +1244,7 @@ export default function PhotosPage() {
                   }}
                 />
               )}
-              {c.name}
+              {translateCategoryName(c.name, lang)}
             </button>
           );
         })}
