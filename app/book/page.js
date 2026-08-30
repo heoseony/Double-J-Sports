@@ -3,12 +3,14 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getProgramTextColor } from "../../lib/classColors";
+import { getProgramTextColor, getRegionLabel } from "../../lib/classColors";
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
-const WEEKDAY_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_HEADERS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_HEADERS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function maskName(name) {
   if (!name) return "";
@@ -33,6 +35,7 @@ function BookPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const memberId = searchParams.get("memberId");
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -72,7 +75,7 @@ function BookPageInner() {
     setErrorMsg("");
 
     if (!memberId) {
-      setErrorMsg("선수 정보가 없습니다. 선수 목록에서 다시 시도해주세요.");
+      setErrorMsg(t("book.errNoMemberInfo"));
       setLoading(false);
       return;
     }
@@ -93,7 +96,7 @@ function BookPageInner() {
       .single();
 
     if (memberError || !memberData) {
-      setErrorMsg("선수 정보를 불러오지 못했습니다.");
+      setErrorMsg(t("book.errLoadMember"));
       setLoading(false);
       return;
     }
@@ -170,7 +173,7 @@ function BookPageInner() {
       .order("start_time", { ascending: true });
 
     if (sessionError) {
-      setErrorMsg("수업 목록을 불러오지 못했습니다: " + sessionError.message);
+      setErrorMsg(t("book.errLoadSessionsPrefix") + sessionError.message);
       setLoading(false);
       return;
     }
@@ -280,13 +283,13 @@ function BookPageInner() {
     setSuccessMsg("");
 
     if (remaining <= 0 || !membershipId) {
-      setErrorMsg("잔여 이용 횟수가 없습니다. 관리자에게 문의해주세요.");
+      setErrorMsg(t("book.errNoRemaining"));
       isBookingRef.current = false;
       return;
     }
 
     if (myBookedSessionIds.includes(sessionId)) {
-      setErrorMsg("이미 이 수업에 예약되어 있습니다.");
+      setErrorMsg(t("book.errAlreadyBooked"));
       isBookingRef.current = false;
       return;
     }
@@ -301,7 +304,7 @@ function BookPageInner() {
       );
       if (nowInGermany() > deadline) {
         setErrorMsg(
-          `예약이 마감되었습니다. (수업 시작 ${bookingCutoffHours}시간 전까지 예약 가능)`
+          t("book.errBookingClosed", { hours: bookingCutoffHours })
         );
         isBookingRef.current = false;
         return;
@@ -322,10 +325,10 @@ function BookPageInner() {
       // DB 유니크 제약(bookings_unique_active_booking) 위반 = 이미 예약된 경우.
       // 사용자에게는 에러 메시지 대신 안내 문구를 보여주고 최신 상태로 새로고침한다.
       if (bookingError.code === "23505") {
-        setErrorMsg("이미 이 수업에 예약되어 있습니다.");
+        setErrorMsg(t("book.errAlreadyBooked"));
         await loadAll();
       } else {
-        setErrorMsg("예약 실패: " + bookingError.message);
+        setErrorMsg(t("book.errBookingFailedPrefix") + bookingError.message);
       }
       return;
     }
@@ -342,7 +345,7 @@ function BookPageInner() {
       .eq("id", membershipId);
 
     setBookingSessionId(null);
-    setSuccessMsg("예약이 완료되었습니다.");
+    setSuccessMsg(t("book.successBooked"));
     isBookingRef.current = false;
     await loadAll();
   }
@@ -353,13 +356,13 @@ function BookPageInner() {
 
     const bookingId = myBookingIdBySession[sessionId];
     if (!bookingId) {
-      setErrorMsg("예약 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("book.errBookingNotFound"));
       return;
     }
 
     const session = sessions.find((s) => s.id === sessionId);
     if (!session) {
-      setErrorMsg("수업 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("book.errSessionNotFound"));
       return;
     }
 
@@ -379,7 +382,7 @@ function BookPageInner() {
 
     if (cancelError) {
       setCancellingSessionId(null);
-      setErrorMsg("취소 실패: " + cancelError.message);
+      setErrorMsg(t("book.errCancelFailedPrefix") + cancelError.message);
       return;
     }
 
@@ -401,8 +404,8 @@ function BookPageInner() {
     setCancellingSessionId(null);
     setSuccessMsg(
       isPrior
-        ? "취소되었습니다. 잔여 횟수가 복구되었습니다."
-        : "취소되었습니다. 당일 취소라 잔여 횟수는 복구되지 않습니다."
+        ? t("book.successCancelledRestored")
+        : t("book.successCancelledNotRestored")
     );
     await loadAll();
   }
@@ -413,20 +416,24 @@ function BookPageInner() {
     );
   }
 
-  const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
+  const monthLabel =
+    lang === "en"
+      ? currentMonth.toLocaleDateString("en-US", { year: "numeric", month: "long" })
+      : `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
   const selectedSessions = sessionsByDate[selectedDate] || [];
+  const weekdayHeaders = lang === "en" ? WEEKDAY_HEADERS_EN : WEEKDAY_HEADERS_KO;
 
   return (
     <main style={{ background: "#f3f7fc", minHeight: "100vh", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "18px 18px 4px" }}>
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
       </div>
       <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 20, textAlign: "center" }}>
-        {member?.name}님 수업 예약 · 잔여 {Math.max(remaining, 0)}회
-        {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
+        {t("book.summary", { name: member?.name, remaining: Math.max(remaining, 0) })}
+        {!allClassesAllowed && t("book.limitedMembership")}
       </div>
 
       <div style={{ display: "flex", gap: 8, padding: "0 18px 14px" }}>
@@ -445,7 +452,7 @@ function BookPageInner() {
             cursor: "pointer",
           }}
         >
-          프랑크푸르트
+          {getRegionLabel("frankfurt", lang)}
         </button>
         <button
           type="button"
@@ -462,7 +469,7 @@ function BookPageInner() {
             cursor: "pointer",
           }}
         >
-          뒤셀도르프
+          {getRegionLabel("dusseldorf", lang)}
         </button>
       </div>
 
@@ -527,7 +534,7 @@ function BookPageInner() {
             marginBottom: 4,
           }}
         >
-          {WEEKDAY_HEADERS.map((w) => (
+          {weekdayHeaders.map((w) => (
             <div key={w}>{w}</div>
           ))}
         </div>
@@ -589,12 +596,12 @@ function BookPageInner() {
 
         <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
-          {selectedDate} 수업
+          {t("book.classesOnDate", { date: selectedDate })}
         </div>
 
         {selectedSessions.length === 0 && (
           <p style={{ fontSize: 14, color: "#777" }}>
-            이 날짜에는 예약 가능한 수업이 없습니다.
+            {t("book.noSessionsForDate")}
           </p>
         )}
 
@@ -622,7 +629,7 @@ function BookPageInner() {
                 {s.classes.class_name}
               </div>
               <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-                현재 신청 {names.length}명
+                {t("book.currentApplicants", { count: names.length })}
               </div>
 
               <button
@@ -640,7 +647,7 @@ function BookPageInner() {
                   setExpandedSessionId(isExpanded ? null : s.id)
                 }
               >
-                {isExpanded ? "참가자 숨기기" : "참가자 보기"}
+                {isExpanded ? t("book.hideParticipants") : t("book.showParticipants")}
               </button>
 
               {isExpanded && (
@@ -653,7 +660,7 @@ function BookPageInner() {
                   }}
                 >
                   {names.length === 0
-                    ? "아직 신청자가 없습니다."
+                    ? t("book.noApplicantsYet")
                     : names.map((p, i) => {
                         const isMe = p.memberId === memberId;
                         return (
@@ -683,7 +690,7 @@ function BookPageInner() {
                         fontWeight: 700,
                       }}
                     >
-                      ✓ 예약됨
+                      {t("book.booked")}
                     </span>
                     <button
                       type="button"
@@ -701,8 +708,8 @@ function BookPageInner() {
                       onClick={() => handleCancel(s.id)}
                     >
                       {cancellingSessionId === s.id
-                        ? "취소 중..."
-                        : "예약 취소"}
+                        ? t("book.cancelling")
+                        : t("book.cancelBooking")}
                     </button>
                   </div>
                 ) : isPastDeadline ? (
@@ -713,8 +720,7 @@ function BookPageInner() {
                       fontWeight: 700,
                     }}
                   >
-                    예약 마감 (수업 시작 {bookingCutoffHours}시간 전까지 예약
-                    가능)
+                    {t("book.bookingClosed", { hours: bookingCutoffHours })}
                   </div>
                 ) : (
                   <button
@@ -731,7 +737,7 @@ function BookPageInner() {
                     disabled={bookingSessionId === s.id}
                     onClick={() => setConfirmSessionId(s.id)}
                   >
-                    {bookingSessionId === s.id ? "예약 중..." : "예약하기"}
+                    {bookingSessionId === s.id ? t("book.booking") : t("book.bookNow")}
                   </button>
                 )}
               </div>
@@ -742,7 +748,7 @@ function BookPageInner() {
 
         <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
           <Link href="/members" style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}>
-            ← 선수 관리로
+            {t("book.backToPlayers")}
           </Link>
         </div>
       </div>
@@ -752,7 +758,7 @@ function BookPageInner() {
         if (!s) return null;
         const coachInfo = coachesByClass[s.class_id];
         const coachText = coachInfo
-          ? [coachInfo.main, ...coachInfo.assistants.map((n) => `${n} 코치님`)]
+          ? [coachInfo.main, ...coachInfo.assistants.map((n) => (lang === "en" ? n : `${n} 코치님`))]
               .filter(Boolean)
               .join(", ") || "-"
           : "-";
@@ -789,17 +795,17 @@ function BookPageInner() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-                  <span style={{ color: "#8ea0b8" }}>장소</span>
+                  <span style={{ color: "#8ea0b8" }}>{t("book.location")}</span>
                   <span style={{ color: "#1b3a63", fontWeight: 600 }}>{s.classes.location || "-"}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-                  <span style={{ color: "#8ea0b8" }}>코치</span>
+                  <span style={{ color: "#8ea0b8" }}>{t("book.coach")}</span>
                   <span style={{ color: "#1b3a63", fontWeight: 600 }}>{coachText}</span>
                 </div>
               </div>
 
               <p style={{ fontSize: 14, color: "#33455e", marginBottom: 18, textAlign: "center" }}>
-                위 내용으로 예약하시겠습니까?
+                {t("book.confirmQuestion")}
               </p>
 
               <div style={{ display: "flex", gap: 10 }}>
@@ -818,7 +824,7 @@ function BookPageInner() {
                     cursor: "pointer",
                   }}
                 >
-                  취소
+                  {t("book.cancel")}
                 </button>
                 <button
                   type="button"
@@ -839,7 +845,7 @@ function BookPageInner() {
                     cursor: "pointer",
                   }}
                 >
-                  예약 확인
+                  {t("book.confirmBooking")}
                 </button>
               </div>
             </div>
