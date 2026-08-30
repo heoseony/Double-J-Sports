@@ -1302,15 +1302,15 @@ export default function DashboardPage() {
         {/* 공지사항 (공통) */}
         <div style={cardStyle}>
           <div style={cardTitleRow}>
-            <span style={cardTitle}>공지사항</span>
+            <span style={cardTitle}>{t("dashboard.notices")}</span>
             <Link href="/notices" style={seeAllLink}>
-              전체 보기 ›
+              {t("dashboard.seeAll")}
             </Link>
           </div>
 
           {notices.length === 0 && (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              등록된 공지사항이 없습니다.
+              {t("dashboard.noNotices")}
             </p>
           )}
 
@@ -1363,7 +1363,7 @@ export default function DashboardPage() {
             marginTop: 4,
           }}
         >
-          로그아웃
+          {t("dashboard.logout")}
         </button>
       </div>
     </main>

@@ -34,6 +34,16 @@
     "noMembership": "No membership",
     "manageAndBook": "My Children · Book a Class",
     "bookClassButton": "Book a Class ({name})",
-    "parentGreeting": "{name}'s Parent"
+    "parentGreeting": "{name}'s Parent",
+    "notices": "Notices",
+    "noNotices": "No notices yet.",
+    "logout": "Log Out"
+  },
+  "nav": {
+    "home": "Home",
+    "bookClass": "Book Class",
+    "gallery": "Gallery",
+    "bookings": "Bookings",
+    "more": "More"
   }
 }

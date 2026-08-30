@@ -34,6 +34,16 @@
     "noMembership": "회원권 없음",
     "manageAndBook": "선수 관리 · 수업 예약",
     "bookClassButton": "수업 예약 ({name}님)",
-    "parentGreeting": "{name} 학부모님"
+    "parentGreeting": "{name} 학부모님",
+    "notices": "공지사항",
+    "noNotices": "등록된 공지사항이 없습니다.",
+    "logout": "로그아웃"
+  },
+  "nav": {
+    "home": "홈",
+    "bookClass": "수업예약",
+    "gallery": "갤러리",
+    "bookings": "예약내역",
+    "more": "더보기"
   }
 }

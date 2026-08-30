@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 const HIDDEN_PATHS = ["/login", "/signup", "/auth"];
 const BLUE = "#3B82C4";
@@ -72,13 +73,14 @@ function MenuIcon(props) {
   );
 }
 
-const NAV_BY_ROLE = {
+function getNavByRole(t) {
+  return {
   guardian: [
-    { label: "홈", href: "/dashboard", Icon: HomeIcon },
-    { label: "수업예약", href: "/members", Icon: CalendarIcon },
-    { label: "갤러리", href: "/photos", Icon: ImageIcon },
-    { label: "예약내역", href: "/dashboard", Icon: ListIcon },
-    { label: "더보기", href: "/more", Icon: MenuIcon },
+    { label: t("nav.home"), key: "home", href: "/dashboard", Icon: HomeIcon },
+    { label: t("nav.bookClass"), key: "bookClass", href: "/members", Icon: CalendarIcon },
+    { label: t("nav.gallery"), key: "gallery", href: "/photos", Icon: ImageIcon },
+    { label: t("nav.bookings"), key: "bookings", href: "/dashboard", Icon: ListIcon },
+    { label: t("nav.more"), key: "more", href: "/more", Icon: MenuIcon },
   ],
   coach: [
     { label: "홈", href: "/dashboard", Icon: HomeIcon },
@@ -94,11 +96,13 @@ const NAV_BY_ROLE = {
     { label: "회원관리", href: "/admin/members", Icon: PeopleIcon },
     { label: "더보기", href: "/more", Icon: MenuIcon },
   ],
-};
+  };
+}
 
 export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useLanguage();
   const [role, setRole] = useState("guardian");
   const [firstChildId, setFirstChildId] = useState(null);
 
@@ -158,9 +162,10 @@ export default function BottomNav() {
     return null;
   }
 
-  const items = NAV_BY_ROLE[role] || NAV_BY_ROLE.guardian;
+  const navByRole = getNavByRole(t);
+  const items = navByRole[role] || navByRole.guardian;
   const resolvedItems = items.map((item) =>
-    item.label === "예약내역" && firstChildId
+    item.key === "bookings" && firstChildId
       ? { ...item, href: `/members/${firstChildId}/reservations` }
       : item
   );
