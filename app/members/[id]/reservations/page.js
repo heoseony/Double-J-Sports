@@ -44,7 +44,7 @@ export default function ReservationsPage() {
   const [member, setMember] = useState(null);
   const [siblings, setSiblings] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [coachNameByClassId, setCoachNameByClassId] = useState({});
+  const [coachNamesByClassId, setCoachNamesByClassId] = useState({});
   const [errorMsg, setErrorMsg] = useState("");
   const [activeTab, setActiveTab] = useState("upcoming");
   const [cancellingId, setCancellingId] = useState(null);
@@ -105,19 +105,20 @@ export default function ReservationsPage() {
 
 
     const classIds = [...new Set((bookingData || []).map((b) => b.class_sessions?.class_id).filter(Boolean))];
-    let coachNameByClassId = {};
+    let coachNamesByClassId = {};
     if (classIds.length > 0) {
       const { data: ccData } = await supabase
         .from("class_coaches")
         .select("class_id, coach_profiles(name)")
         .in("class_id", classIds);
       (ccData || []).forEach((cc) => {
-        if (!coachNameByClassId[cc.class_id] && cc.coach_profiles?.name) {
-          coachNameByClassId[cc.class_id] = cc.coach_profiles.name;
+        if (!coachNamesByClassId[cc.class_id]) coachNamesByClassId[cc.class_id] = [];
+        if (cc.coach_profiles?.name) {
+          coachNamesByClassId[cc.class_id].push(cc.coach_profiles.name);
         }
       });
     }
-    setCoachNameByClassId(coachNameByClassId);
+    setCoachNamesByClassId(coachNamesByClassId);
     setBookings(bookingData || []);
     setLoading(false);
   }
@@ -346,7 +347,10 @@ export default function ReservationsPage() {
 
           {currentList.map((b, idx) => {
             const classId = b.class_sessions.class_id;
-            const coachName = coachNameByClassId[classId];
+            const coachNames = coachNamesByClassId[classId] || [];
+            const coachDisplay = coachNames
+              .map((n) => (n.includes("감독님") ? n : `${n} 코치님`))
+              .join(", ");
             const cls = b.class_sessions.classes;
             const sessionDate = b.class_sessions.session_date;
 
@@ -369,7 +373,7 @@ export default function ReservationsPage() {
                     {cls?.location && (
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
                         {cls.location}
-                        {coachName ? ` · ${coachName}` : ""}
+                        {coachDisplay ? ` · ${coachDisplay}` : ""}
                       </div>
                     )}
                   </div>
