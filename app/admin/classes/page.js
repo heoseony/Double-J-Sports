@@ -57,6 +57,7 @@ function AdminClassesPageInner() {
   const [classes, setClasses] = useState([]);
 
   const [program, setProgram] = useState("kids");
+  const [classType, setClassType] = useState("group");
   const [className, setClassName] = useState("Kids");
   const [weekday, setWeekday] = useState("1");
   const [startTime, setStartTime] = useState("16:00");
@@ -83,6 +84,7 @@ function AdminClassesPageInner() {
   const [assigningClassId, setAssigningClassId] = useState(null);
   const [editingClassId, setEditingClassId] = useState(null);
   const [editProgram, setEditProgram] = useState("kids");
+  const [editClassType, setEditClassType] = useState("group");
   const [editClassName, setEditClassName] = useState("");
   const [editWeekday, setEditWeekday] = useState("1");
   const [editStartTime, setEditStartTime] = useState("");
@@ -483,6 +485,7 @@ function AdminClassesPageInner() {
         start_time: editStartTime,
         end_time: editEndTime,
         location: editLocation || null,
+        class_type: editClassType,
       })
       .eq("id", classId);
 
@@ -544,6 +547,7 @@ function AdminClassesPageInner() {
       location: location || null,
       active: true,
       region,
+      class_type: classType,
     });
 
     setSaving(false);
@@ -965,6 +969,17 @@ function AdminClassesPageInner() {
                 <option value="kids">Kids</option>
                 <option value="women">Women's</option>
                 <option value="men">Men's</option>
+                <option value="pro">Pro</option>
+              </select>
+
+              <label>수업 형태</label>
+              <select
+                value={classType}
+                onChange={(e) => setClassType(e.target.value)}
+                style={{ width: "100%", padding: 14, fontSize: 16, border: "1px solid #ddd", borderRadius: 10, background: "#fafafa" }}
+              >
+                <option value="group">그룹</option>
+                <option value="private">1:1</option>
               </select>
 
               <label>수업 이름</label>
@@ -1088,6 +1103,17 @@ function AdminClassesPageInner() {
                       <option value="kids">Kids</option>
                       <option value="women">Women's</option>
                       <option value="men">Men's</option>
+                      <option value="pro">Pro</option>
+                    </select>
+
+                    <label style={{ fontSize: 12 }}>수업 형태</label>
+                    <select
+                      value={editClassType}
+                      onChange={(e) => setEditClassType(e.target.value)}
+                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8 }}
+                    >
+                      <option value="group">그룹</option>
+                      <option value="private">1:1</option>
                     </select>
 
                     <label style={{ fontSize: 12 }}>수업 이름</label>
