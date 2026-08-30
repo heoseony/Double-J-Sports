@@ -18,5 +18,21 @@
     "googleLogin": "Google로 로그인",
     "noAccount": "아직 계정이 없으신가요?",
     "signup": "회원가입"
+  },
+  "dashboard": {
+    "greeting": "안녕하세요!",
+    "greetingSubParent": "오늘도 좋은 하루 보내세요!",
+    "parentSuffix": "학부모님",
+    "memberSuffix": "님",
+    "thisWeekClasses": "이번 주 수업",
+    "seeAll": "전체 보기 ›",
+    "noClassesThisWeek": "이번 주 예정된 수업이 없습니다.",
+    "classDetail": "수업 상세보기",
+    "attendanceCheckWeek": "출석 체크 (이번 주)",
+    "noRegisteredPlayers": "등록된 선수가 없습니다.",
+    "remainingSessions": "잔여 {remaining}/{total}회",
+    "noMembership": "회원권 없음",
+    "manageAndBook": "선수 관리 · 수업 예약",
+    "bookClassButton": "수업 예약 ({name}님)"
   }
 }

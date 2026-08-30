@@ -7,6 +7,7 @@ import { getRegionBg, getRegionLabel, getRegionTextColor, getProgramTextColor } 
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토"];
@@ -374,6 +375,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
 
   const [displayName, setDisplayName] = useState("");
@@ -793,7 +795,7 @@ export default function DashboardPage() {
     ? "아카데미 운영을 효율적으로 관리하세요."
     : isCoach
     ? "오늘도 멋진 수업 만들어가요!"
-    : "오늘도 좋은 하루 보내세요!";
+    : t("dashboard.greetingSubParent");
 
   const monday = getMonday(nowInGermany());
   const todayStr = toDateStr(nowInGermany());
@@ -852,7 +854,7 @@ export default function DashboardPage() {
       >
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
       </div>
 
@@ -877,7 +879,7 @@ export default function DashboardPage() {
         >
 
           <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 4 }}>
-            안녕하세요!
+            {t("dashboard.greeting")}
           </div>
           <div style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>
             {isAdmin ? (
@@ -885,7 +887,7 @@ export default function DashboardPage() {
             ) : (
               displayName || email
             )}
-            {roleLabel === "학부모" ? " 학부모님" : roleLabel === "" ? "님" : ` ${roleLabel}님`}
+            {roleLabel === "학부모" ? ` ${t("dashboard.parentSuffix")}` : roleLabel === "" ? t("dashboard.memberSuffix") : ` ${roleLabel}님`}
           </div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>{greetingSub}</div>
         </div>
@@ -895,15 +897,15 @@ export default function DashboardPage() {
           <>
             <div style={cardStyle}>
               <div style={cardTitleRow}>
-                <span style={cardTitle}>이번 주 수업</span>
+                <span style={cardTitle}>{t("dashboard.thisWeekClasses")}</span>
                 <Link href="/members" style={seeAllLink}>
-                  전체 보기 ›
+                  {t("dashboard.seeAll")}
                 </Link>
               </div>
 
               {upcomingThisWeek.length === 0 && (
                 <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-                  이번 주 예정된 수업이 없습니다.
+                  {t("dashboard.noClassesThisWeek")}
                 </p>
               )}
 
@@ -954,7 +956,7 @@ export default function DashboardPage() {
                         textDecoration: "none",
                       }}
                     >
-                      수업 상세보기
+                      {t("dashboard.classDetail")}
                     </Link>
                   </div>
                 </div>
@@ -965,12 +967,12 @@ export default function DashboardPage() {
               <>
             <div style={cardStyle}>
               <div style={cardTitleRow}>
-                <span style={cardTitle}>출석 체크 (이번 주)</span>
+                <span style={cardTitle}>{t("dashboard.attendanceCheckWeek")}</span>
               </div>
 
               {children.length === 0 && (
                 <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-                  등록된 선수가 없습니다.
+                  {t("dashboard.noRegisteredPlayers")}
                 </p>
               )}
 
@@ -1000,11 +1002,11 @@ export default function DashboardPage() {
                           borderRadius: 999,
                         }}
                       >
-                        잔여 {ms.remaining}/{ms.total}회
+                        {t("dashboard.remainingSessions", { remaining: ms.remaining, total: ms.total })}
                       </span>
                     ) : (
                       <span style={{ fontSize: 11, color: "#c2cbd9" }}>
-                        회원권 없음
+                        {t("dashboard.noMembership")}
                       </span>
                     )}
                   </div>
@@ -1040,7 +1042,7 @@ export default function DashboardPage() {
                     cursor: "pointer",
                   }}
                 >
-                  선수 관리 · 수업 예약
+                  {t("dashboard.manageAndBook")}
                 </button>
               </Link>
             </div>
@@ -1066,7 +1068,7 @@ export default function DashboardPage() {
                   cursor: "pointer",
                 }}
               >
-                수업 예약 ({adultMemberName}님)
+                {t("dashboard.bookClassButton", { name: adultMemberName })}
               </button>
             </Link>
           </div>

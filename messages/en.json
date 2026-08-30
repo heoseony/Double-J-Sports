@@ -18,5 +18,21 @@
     "googleLogin": "Continue with Google",
     "noAccount": "Don't have an account?",
     "signup": "Sign up"
+  },
+  "dashboard": {
+    "greeting": "Hello!",
+    "greetingSubParent": "Have a great day!",
+    "parentSuffix": "Guardian",
+    "memberSuffix": "",
+    "thisWeekClasses": "This Week's Classes",
+    "seeAll": "See all ›",
+    "noClassesThisWeek": "No classes scheduled this week.",
+    "classDetail": "View Class Details",
+    "attendanceCheckWeek": "Attendance (This Week)",
+    "noRegisteredPlayers": "No players registered.",
+    "remainingSessions": "{remaining}/{total} sessions left",
+    "noMembership": "No membership",
+    "manageAndBook": "Manage Players · Book Class",
+    "bookClassButton": "Book a Class ({name})"
   }
 }
