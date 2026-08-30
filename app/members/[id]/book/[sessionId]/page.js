@@ -6,18 +6,22 @@ import Link from "next/link";
 import { supabase } from "../../../../../lib/supabaseClient";
 import { nowInGermany } from "../../../../../lib/germanyTime";
 import LoadingScreen from "../../../../components/LoadingScreen";
+import { useLanguage } from "../../../../../lib/i18n/LanguageContext";
+import { translateClassName } from "../../../../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
 }
 
-function formatDateLabel(dateStr) {
+function formatDateLabel(dateStr, lang) {
   const d = new Date(dateStr + "T00:00:00");
-  return `${dateStr} (${WEEKDAY_LABEL[d.getDay()]})`;
+  const labels = lang === "en" ? WEEKDAY_LABEL_EN : WEEKDAY_LABEL_KO;
+  return `${dateStr} (${labels[d.getDay()]})`;
 }
 
 export default function ClassDetailPage() {
@@ -25,6 +29,7 @@ export default function ClassDetailPage() {
   const router = useRouter();
   const memberId = params.id;
   const sessionId = params.sessionId;
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
@@ -69,7 +74,7 @@ export default function ClassDetailPage() {
       .single();
 
     if (memberError || !memberData || memberData.guardian_id !== guardian?.id) {
-      setErrorMsg("선수 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("classDetail.errMemberNotFound"));
       setLoading(false);
       return;
     }
@@ -84,7 +89,7 @@ export default function ClassDetailPage() {
       .single();
 
     if (sessionError || !sessionData) {
-      setErrorMsg("수업 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("classDetail.errSessionNotFound"));
       setLoading(false);
       return;
     }
@@ -163,7 +168,7 @@ export default function ClassDetailPage() {
 
     if (error) {
       setCancelling(false);
-      setErrorMsg("취소 실패: " + error.message);
+      setErrorMsg(t("classDetail.errCancelFailedPrefix") + error.message);
       return;
     }
 
@@ -183,9 +188,9 @@ export default function ClassDetailPage() {
           .update({ sessions_used: Math.max((activeMembership.sessions_used || 0) - 1, 0) })
           .eq("id", activeMembership.id);
       }
-      setCancelMsg("예약이 취소되었고, 잔여 횟수가 복구되었습니다.");
+      setCancelMsg(t("classDetail.successCancelledRestored"));
     } else {
-      setCancelMsg("당일 취소로 잔여 횟수는 복구되지 않습니다.");
+      setCancelMsg(t("classDetail.successCancelledNotRestored"));
     }
 
     setCancelling(false);
@@ -205,7 +210,7 @@ export default function ClassDetailPage() {
     setBooking(false);
 
     if (error) {
-      setErrorMsg("예약 실패: " + error.message);
+      setErrorMsg(t("classDetail.errBookingFailedPrefix") + error.message);
       return;
     }
 
@@ -243,7 +248,7 @@ export default function ClassDetailPage() {
             href={`/members/${memberId}/book`}
             style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 13 }}
           >
-            ← 수업 목록으로
+            {t("classDetail.backToClassList")}
           </Link>
         </div>
       </main>
@@ -259,6 +264,8 @@ export default function ClassDetailPage() {
     : 0;
   const canBook = !!membership && remaining > 0 && !alreadyBooked && isClassAllowed;
   const cls = session.classes;
+  const coachDisplay =
+    [coachName, ...assistantCoachNames].filter(Boolean).map((n) => (n.includes("감독님") ? n : `${n} 코치님`)).join(", ") || "-";
 
   return (
     <main
@@ -280,9 +287,9 @@ export default function ClassDetailPage() {
           </svg>
         </button>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          {step === "detail" && "수업 상세"}
-          {step === "confirm" && "예약 확인"}
-          {step === "done" && "예약 완료"}
+          {step === "detail" && t("classDetail.stepDetail")}
+          {step === "confirm" && t("classDetail.stepConfirm")}
+          {step === "done" && t("classDetail.stepDone")}
         </div>
       </div>
 
@@ -300,14 +307,14 @@ export default function ClassDetailPage() {
               }}
             >
               <div style={{ fontSize: 19, fontWeight: 800, color: "#1b3a63" }}>
-                {cls.class_name}
+                {translateClassName(cls.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: BLUE, fontWeight: 700, marginTop: 4 }}>
-                {formatDateLabel(session.session_date)} · {formatTime(cls.start_time)}~{formatTime(cls.end_time)}
+                {formatDateLabel(session.session_date, lang)} · {formatTime(cls.start_time)}~{formatTime(cls.end_time)}
               </div>
 
               <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-                <InfoRow label="장소" value={cls.location || "-"} />
+                <InfoRow label={t("classDetail.location")} value={cls.location || "-"} />
                 {cls.location && (
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4, marginBottom: 4 }}>
                     <a
@@ -321,20 +328,19 @@ export default function ClassDetailPage() {
                         textDecoration: "none",
                       }}
                     >
-                      위치보기 {"\u2192"}
+                      {t("classDetail.viewLocation")} {"\u2192"}
                     </a>
                   </div>
                 )}
+                <InfoRow label={t("classDetail.coach")} value={coachDisplay} />
+                <InfoRow label={t("classDetail.target")} value={member.name + " · " + (cls.program === "kids" ? "Kids" : cls.program)} />
                 <InfoRow
-                  label="코치"
+                  label={t("classDetail.capacity")}
                   value={
-                    [coachName, ...assistantCoachNames.map((n) => `${n} 코치님`)].filter(Boolean).join(", ") || "-"
+                    cls.capacity
+                      ? t("classDetail.capacityWithTotal", { count: applicantCount, capacity: cls.capacity })
+                      : t("classDetail.capacityNoTotal", { count: applicantCount })
                   }
-                />
-                <InfoRow label="대상" value={member.name + " · " + (cls.program === "kids" ? "Kids" : cls.program)} />
-                <InfoRow
-                  label="정원"
-                  value={cls.capacity ? `${applicantCount}/${cls.capacity}명 신청` : `${applicantCount}명 신청`}
                 />
               </div>
 
@@ -349,7 +355,7 @@ export default function ClassDetailPage() {
                   lineHeight: 1.6,
                 }}
               >
-                안내사항: 수업 시작 10분 전 도착해주세요. 개인 물통을 준비해주세요.
+                {t("classDetail.noticeText")}
               </div>
             </div>
 
@@ -382,7 +388,7 @@ export default function ClassDetailPage() {
                   cursor: cancelling ? "default" : "pointer",
                 }}
               >
-                {cancelling ? "취소 중..." : "예약 취소"}
+                {cancelling ? t("classDetail.cancelling") : t("classDetail.cancelBooking")}
               </button>
             ) : (
               <button
@@ -401,7 +407,13 @@ export default function ClassDetailPage() {
                   cursor: canBook ? "pointer" : "default",
                 }}
               >
-                {!membership ? "회원권이 없습니다" : !isClassAllowed ? "이 회원권으로 예약할 수 없는 수업입니다" : remaining <= 0 ? "잔여 횟수가 없습니다" : "수업 예약하기"}
+                {!membership
+                  ? t("classDetail.noMembership")
+                  : !isClassAllowed
+                  ? t("classDetail.notAllowedClass")
+                  : remaining <= 0
+                  ? t("classDetail.noRemaining")
+                  : t("classDetail.bookNow")}
               </button>
             )}
           </>
@@ -422,10 +434,10 @@ export default function ClassDetailPage() {
             >
               <div style={{ fontSize: 56, marginBottom: 10 }}>⚽</div>
               <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>
-                {cls.class_name}
+                {translateClassName(cls.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: BLUE, fontWeight: 700, marginTop: 4, marginBottom: 18 }}>
-                {formatDateLabel(session.session_date)} · {formatTime(cls.start_time)}~{formatTime(cls.end_time)}
+                {formatDateLabel(session.session_date, lang)} · {formatTime(cls.start_time)}~{formatTime(cls.end_time)}
               </div>
 
               <div
@@ -444,17 +456,12 @@ export default function ClassDetailPage() {
               </div>
 
               <div style={{ marginTop: 18, textAlign: "left", display: "flex", flexDirection: "column", gap: 8 }}>
-                <InfoRow label="장소" value={cls.location || "-"} />
-                <InfoRow
-                  label="코치"
-                  value={
-                    [coachName, ...assistantCoachNames.map((n) => `${n} 코치님`)].filter(Boolean).join(", ") || "-"
-                  }
-                />
+                <InfoRow label={t("classDetail.location")} value={cls.location || "-"} />
+                <InfoRow label={t("classDetail.coach")} value={coachDisplay} />
               </div>
 
               <p style={{ fontSize: 14, color: "#33455e", marginTop: 20 }}>
-                위 내용으로 예약하시겠습니까?
+                {t("classDetail.confirmQuestion")}
               </p>
             </div>
 
@@ -480,7 +487,7 @@ export default function ClassDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                취소
+                {t("classDetail.cancel")}
               </button>
               <button
                 type="button"
@@ -498,7 +505,7 @@ export default function ClassDetailPage() {
                   cursor: booking ? "default" : "pointer",
                 }}
               >
-                {booking ? "예약 중..." : "예약하기"}
+                {booking ? t("classDetail.booking") : t("classDetail.confirmBooking")}
               </button>
             </div>
           </>
@@ -543,13 +550,13 @@ export default function ClassDetailPage() {
               </div>
 
               <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63", marginBottom: 6 }}>
-                수업 예약이 완료되었어요!
+                {t("classDetail.doneTitle")}
               </div>
               <div style={{ fontSize: 14, color: "#33455e" }}>
-                {cls.class_name}
+                {translateClassName(cls.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: BLUE, fontWeight: 700, marginTop: 4 }}>
-                {formatDateLabel(session.session_date)} · {formatTime(cls.start_time)}~{formatTime(cls.end_time)}
+                {formatDateLabel(session.session_date, lang)} · {formatTime(cls.start_time)}~{formatTime(cls.end_time)}
               </div>
             </div>
 
@@ -569,7 +576,7 @@ export default function ClassDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                예약 내역 보기
+                {t("classDetail.viewBookings")}
               </button>
               <button
                 type="button"
@@ -586,7 +593,7 @@ export default function ClassDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                홈으로 이동
+                {t("classDetail.goHome")}
               </button>
             </div>
           </>
