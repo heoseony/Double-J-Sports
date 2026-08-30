@@ -266,5 +266,18 @@
     "submitting": "Submitting...",
     "submit": "Submit",
     "backToPlayers": "← Back to Players"
+  },
+  "memberBook": {
+    "errMemberNotFound": "Player information not found.",
+    "errLoadSessionsPrefix": "Failed to load class schedule: ",
+    "backToPlayers": "← Back to Players",
+    "title": "Book a Class for {name}",
+    "membershipSummary": "{planName} · {remaining} Sessions Remaining",
+    "limitedSuffix": " · Limited to specific classes",
+    "noMembership": "No active membership. Please contact the administrator.",
+    "viewReservations": "My Bookings →",
+    "noSessionsAvailable": "No classes available yet.",
+    "currentApplicants": "{count} currently booked",
+    "booked": "Booked"
   }
 }

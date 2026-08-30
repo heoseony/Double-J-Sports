@@ -3,28 +3,33 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionBg, getProgramTextColor } from "../../../../lib/classColors";
+import { getRegionBg, getProgramTextColor, getRegionLabel } from "../../../../lib/classColors";
 import { nowInGermany } from "../../../../lib/germanyTime";
 import { supabase } from "../../../../lib/supabaseClient";
 import LoadingScreen from "../../../components/LoadingScreen";
+import { useLanguage } from "../../../../lib/i18n/LanguageContext";
+import { translateClassName, translatePlanName } from "../../../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
 }
 
-function formatDateLabel(dateStr) {
+function formatDateLabel(dateStr, lang) {
   const d = new Date(dateStr + "T00:00:00");
-  return `${dateStr} (${WEEKDAY_LABEL[d.getDay()]})`;
+  const labels = lang === "en" ? WEEKDAY_LABEL_EN : WEEKDAY_LABEL_KO;
+  return `${dateStr} (${labels[d.getDay()]})`;
 }
 
 export default function BookClassPage() {
   const params = useParams();
   const router = useRouter();
   const memberId = params.id;
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
@@ -62,7 +67,7 @@ export default function BookClassPage() {
       .single();
 
     if (memberError || !memberData || memberData.guardian_id !== guardian?.id) {
-      setErrorMsg("선수 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("memberBook.errMemberNotFound"));
       setLoading(false);
       return;
     }
@@ -105,7 +110,7 @@ export default function BookClassPage() {
       .order("session_date", { ascending: true });
 
     if (sessionError) {
-      setErrorMsg("수업표를 불러오지 못했습니다: " + sessionError.message);
+      setErrorMsg(t("memberBook.errLoadSessionsPrefix") + sessionError.message);
       setLoading(false);
       return;
     }
@@ -176,7 +181,7 @@ export default function BookClassPage() {
             {errorMsg}
           </div>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 13 }}>
-            ← 선수 목록으로
+            {t("memberBook.backToPlayers")}
           </Link>
         </div>
       </main>
@@ -225,7 +230,7 @@ export default function BookClassPage() {
           </svg>
         </Link>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          {member.name} 수업 예약
+          {t("memberBook.title", { name: member.name })}
         </div>
       </div>
 
@@ -233,14 +238,14 @@ export default function BookClassPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ fontSize: 13, color: "#8ea0b8" }}>
             {membership
-              ? `${membership.membership_plans?.name} · 잔여 ${remaining}회` + (allowedClassIds !== null ? " · 특정 수업만 예약 가능한 회원권" : "")
-              : "활성화된 회원권이 없습니다. 관리자에게 문의해주세요."}
+              ? t("memberBook.membershipSummary", { planName: translatePlanName(membership.membership_plans?.name, lang), remaining }) + (allowedClassIds !== null ? t("memberBook.limitedSuffix") : "")
+              : t("memberBook.noMembership")}
           </div>
           <Link
             href={`/members/${memberId}/reservations`}
             style={{ fontSize: 12, fontWeight: 700, color: BLUE, textDecoration: "none" }}
           >
-            예약내역 →
+            {t("memberBook.viewReservations")}
           </Link>
         </div>
 
@@ -260,7 +265,7 @@ export default function BookClassPage() {
               cursor: "pointer",
             }}
           >
-            프랑크푸르트
+            {getRegionLabel("frankfurt", lang)}
           </button>
           <button
             type="button"
@@ -277,7 +282,7 @@ export default function BookClassPage() {
               cursor: "pointer",
             }}
           >
-            뒤셀도르프
+            {getRegionLabel("dusseldorf", lang)}
           </button>
         </div>
 
@@ -306,7 +311,7 @@ export default function BookClassPage() {
         >
           {visibleSessions.length === 0 && (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              예약 가능한 수업이 아직 없습니다.
+              {t("memberBook.noSessionsAvailable")}
             </p>
           )}
 
@@ -330,16 +335,16 @@ export default function BookClassPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
-                        {formatDateLabel(s.session_date)} ·{" "}
+                        {formatDateLabel(s.session_date, lang)} ·{" "}
                         {formatTime(s.classes.start_time)}~
                         {formatTime(s.classes.end_time)}
                       </div>
                       <div style={{ fontSize: 13, color: "#33455e", marginTop: 6 }}>
-                        {s.classes.class_name}
+                        {translateClassName(s.classes.class_name, lang)}
                         {s.classes.location ? ` · ${s.classes.location}` : ""}
                       </div>
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
-                        현재 신청 {count}명
+                        {t("memberBook.currentApplicants", { count })}
                       </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -354,7 +359,7 @@ export default function BookClassPage() {
                             borderRadius: 999,
                           }}
                         >
-                          예약됨
+                          {t("memberBook.booked")}
                         </span>
                       )}
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c7d2e0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -370,7 +375,7 @@ export default function BookClassPage() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 선수 목록으로
+            {t("memberBook.backToPlayers")}
           </Link>
         </div>
       </div>

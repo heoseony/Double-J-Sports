@@ -266,5 +266,18 @@
     "submitting": "신청 중...",
     "submit": "신청하기",
     "backToPlayers": "← 선수 관리로 돌아가기"
+  },
+  "memberBook": {
+    "errMemberNotFound": "선수 정보를 찾을 수 없습니다.",
+    "errLoadSessionsPrefix": "수업표를 불러오지 못했습니다: ",
+    "backToPlayers": "← 선수 목록으로",
+    "title": "{name} 수업 예약",
+    "membershipSummary": "{planName} · 잔여 {remaining}회",
+    "limitedSuffix": " · 특정 수업만 예약 가능한 회원권",
+    "noMembership": "활성화된 회원권이 없습니다. 관리자에게 문의해주세요.",
+    "viewReservations": "예약내역 →",
+    "noSessionsAvailable": "예약 가능한 수업이 아직 없습니다.",
+    "currentApplicants": "현재 신청 {count}명",
+    "booked": "예약됨"
   }
 }
