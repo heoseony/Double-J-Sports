@@ -369,7 +369,7 @@ export default function ReservationsPage() {
                     {cls?.location && (
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
                         {cls.location}
-                        {coachName ? (lang === "en" ? ` · Coach ${coachName}` : ` · ${coachName} 코치`) : ""}
+                        {coachName ? ` · ${coachName}` : ""}
                       </div>
                     )}
                   </div>
