@@ -49,10 +49,23 @@ export default function LoginPage() {
         .single();
 
       // 로그인 화면에서 선택한 언어를 members(본인/자녀) preferred_language에 동기화
-      await supabase
-        .from("members")
-        .update({ preferred_language: lang })
-        .or(`user_id.eq.${user.id},guardian_id.eq.${user.id}`);
+      const { data: guardianRow } = await supabase
+        .from("guardians")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (guardianRow?.id) {
+        await supabase
+          .from("members")
+          .update({ preferred_language: lang })
+          .or(`user_id.eq.${user.id},guardian_id.eq.${guardianRow.id}`);
+      } else {
+        await supabase
+          .from("members")
+          .update({ preferred_language: lang })
+          .eq("user_id", user.id);
+      }
 
       if (profile?.role === "coach") {
         router.push("/coach/select-profile");
