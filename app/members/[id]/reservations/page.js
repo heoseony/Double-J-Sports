@@ -23,13 +23,13 @@ function formatDateLabel(dateStr, lang) {
   return `${dateStr} (${labels[d.getDay()]})`;
 }
 
-function dDayLabel(dateStr) {
+function dDayLabel(dateStr, lang) {
   const today = nowInGermany();
   today.setHours(0, 0, 0, 0);
   const target = new Date(dateStr + "T00:00:00");
   const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return "D-day";
+  if (diffDays === 0) return lang === "en" ? "Today" : "D-day";
   if (diffDays > 0) return `D-${diffDays}`;
   return `D+${Math.abs(diffDays)}`;
 }
@@ -390,7 +390,7 @@ export default function ReservationsPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {dDayLabel(sessionDate)}
+                      {dDayLabel(sessionDate, lang)}
                     </span>
                   )}
                   {activeTab === "done" && (
