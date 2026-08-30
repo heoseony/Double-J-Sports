@@ -176,7 +176,7 @@ export default function MemberEditPage() {
   }
 
   if (loading) {
-    return <LoadingScreen text="불러오는 중..." />;
+    return <LoadingScreen />;
   }
 
   const fieldStyle = {
