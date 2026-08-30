@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -12,9 +13,9 @@ function formatDate(dateStr) {
   ).padStart(2, "0")}`;
 }
 
-function roleLabel(role) {
-  if (role === "admin") return "관리자";
-  if (role === "coach") return "코치";
+function roleLabel(role, t) {
+  if (role === "admin") return t("gallery.roleAdmin");
+  if (role === "coach") return t("gallery.roleCoach");
   return "";
 }
 
@@ -447,7 +448,7 @@ function Lightbox({
               cursor: "pointer",
             }}
           >
-            ↓ 다운로드
+            ↓ {t("gallery.download")}
           </button>
           <button
             type="button"
@@ -482,7 +483,7 @@ function Lightbox({
           <button
             type="button"
             onClick={() => onChange(index - 1)}
-            aria-label="이전 사진"
+            aria-label={t("gallery.prevPhotoAria")}
             style={navZoneStyle("left")}
           >
             <span style={navCircleStyle}>‹</span>
@@ -508,7 +509,7 @@ function Lightbox({
           <button
             type="button"
             onClick={() => onChange(index + 1)}
-            aria-label="다음 사진"
+            aria-label={t("gallery.nextPhotoAria")}
             style={navZoneStyle("right")}
           >
             <span style={navCircleStyle}>›</span>
@@ -663,6 +664,7 @@ function Lightbox({
 export default function PhotosPage() {
   const router = useRouter();
   const fileInputRef = useRef(null);
+  const { t } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [canUpload, setCanUpload] = useState(false);
@@ -731,7 +733,7 @@ export default function PhotosPage() {
       }));
       setPosts(withSortedMedia);
     } else {
-      setErrorMsg("갤러리를 불러오지 못했습니다: " + error.message);
+      setErrorMsg(t("gallery.errLoadPrefix") + error.message);
     }
   }
 
@@ -960,10 +962,10 @@ export default function PhotosPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
           <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
           <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-            더블제이 스포츠 아카데미
+            {t("login.title")}
           </div>
         </div>
-        <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>갤러리</div>
+        <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>{t("gallery.subtitle")}</div>
         {[1, 2].map((i) => (
           <div
             key={i}
@@ -1022,10 +1024,10 @@ export default function PhotosPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
       </div>
-      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>갤러리</div>
+      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>{t("gallery.subtitle")}</div>
 
       {canUpload && (
         <div className="card" style={{ marginBottom: 20 }}>
@@ -1206,7 +1208,7 @@ export default function PhotosPage() {
           paddingBottom: 2,
         }}
       >
-        {[{ id: "all", name: "전체" }, ...categories].map((c) => {
+        {[{ id: "all", name: t("gallery.allCategory") }, ...categories].map((c) => {
           const active = categoryFilter === c.id;
           const dotColor = c.id === "all" ? null : getCategoryColor(c.id, categories);
           return (
@@ -1270,7 +1272,7 @@ export default function PhotosPage() {
                 }}
                 onClick={() => setLightbox({ postId: latestPost.id, index: 0 })}
               >
-                <span style={{ fontWeight: 700 }}>새로운 사진이 업로드 되었어요!</span>{" "}
+                <span style={{ fontWeight: 700 }}>{t("gallery.newPhotoBanner")}</span>{" "}
                 {latestPost.title
                   ? `${latestPost.title} · ${formatDate(latestPost.created_at)}`
                   : formatDate(latestPost.created_at)}
@@ -1280,7 +1282,7 @@ export default function PhotosPage() {
             {filteredPosts.length === 0 && !errorMsg && (
               <div className="card">
                 <p style={{ fontSize: 14, color: "#777", margin: 0 }}>
-                  아직 등록된 사진/동영상이 없습니다.
+                  {t("gallery.noPosts")}
                 </p>
               </div>
             )}
@@ -1378,7 +1380,7 @@ export default function PhotosPage() {
                           textShadow: "0 1px 3px rgba(0,0,0,0.4)",
                         }}
                       >
-                        {post.title || "제목 없음"}
+                        {post.title || t("gallery.noTitle")}
                       </div>
                       <div
                         style={{
@@ -1405,8 +1407,8 @@ export default function PhotosPage() {
           index={lightboxIndex}
           title={lightboxPost.title}
           caption={lightboxPost.caption}
-          authorLabel={lightboxPost.author?.name || "알 수 없음"}
-          roleText={roleLabel(lightboxPost.author?.role)}
+          authorLabel={lightboxPost.author?.name || t("gallery.unknownAuthor")}
+          roleText={roleLabel(lightboxPost.author?.role, t)}
           dateLabel={formatDate(lightboxPost.created_at)}
           canDelete={isAdmin || lightboxPost.uploaded_by === userId}
           isEditing={editingPostId === lightboxPost.id}

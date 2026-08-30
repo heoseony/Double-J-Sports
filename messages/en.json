@@ -279,5 +279,19 @@
     "noSessionsAvailable": "No classes available yet.",
     "currentApplicants": "{count} currently booked",
     "booked": "Booked"
+  },
+  "gallery": {
+    "subtitle": "Gallery",
+    "download": "Download",
+    "prevPhotoAria": "Previous photo",
+    "nextPhotoAria": "Next photo",
+    "allCategory": "All",
+    "newPhotoBanner": "New photos have been uploaded!",
+    "noPosts": "No photos or videos yet.",
+    "noTitle": "Untitled",
+    "unknownAuthor": "Unknown",
+    "errLoadPrefix": "Failed to load gallery: ",
+    "roleAdmin": "Manager",
+    "roleCoach": "Coach"
   }
 }
