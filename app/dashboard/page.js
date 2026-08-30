@@ -1162,18 +1162,22 @@ export default function DashboardPage() {
                 }}
               >
                 {[
-                  { label: "아카데미 회원수", value: totalActiveMembers },
+                  { label: "총 회원", value: totalActiveMembers },
                   { label: "오늘 수업", value: adminStats.classesToday },
                   { label: "출석", value: adminStats.attended },
-                  { label: "결석", value: adminStats.absent },
+                  { label: "미체크", value: todayNeedAttendanceCount, clickable: true },
                 ].map((s) => (
                   <div
                     key={s.label}
+                    onClick={() => {
+                      if (s.clickable) router.push("/admin/attendance");
+                    }}
                     style={{
                       background: "#f3f7fc",
                       borderRadius: 12,
                       padding: "12px 6px",
                       textAlign: "center",
+                      cursor: s.clickable ? "pointer" : "default",
                     }}
                   >
                     <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63" }}>
