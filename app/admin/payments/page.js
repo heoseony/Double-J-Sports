@@ -381,6 +381,13 @@ export default function AdminPaymentsPage() {
       return;
     }
 
+    // 기존 active 회원권이 있으면 먼저 만료 처리 (중복 방지)
+    await supabase
+      .from("memberships")
+      .update({ status: "expired" })
+      .eq("member_id", payment.member_id)
+      .eq("status", "active");
+
     const { error: membershipError } = await supabase
       .from("memberships")
       .insert({
