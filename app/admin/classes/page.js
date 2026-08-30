@@ -59,7 +59,7 @@ function AdminClassesPageInner() {
   const [program, setProgram] = useState("kids");
   const [classType, setClassType] = useState("group");
   const [className, setClassName] = useState("Kids");
-  const [weekday, setWeekday] = useState("1");
+  const [selectedWeekdays, setSelectedWeekdays] = useState(["1"]);
   const [startTime, setStartTime] = useState("16:00");
   const [endTime, setEndTime] = useState("17:00");
   const [location, setLocation] = useState("");
@@ -536,19 +536,27 @@ function AdminClassesPageInner() {
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg("");
+
+    if (selectedWeekdays.length === 0) {
+      setErrorMsg("요일을 하나 이상 선택해주세요.");
+      return;
+    }
+
     setSaving(true);
 
-    const { error } = await supabase.from("classes").insert({
+    const rows = selectedWeekdays.map((wd) => ({
       program,
       class_name: className,
-      weekday: Number(weekday),
+      weekday: Number(wd),
       start_time: startTime,
       end_time: endTime,
       location: location || null,
       active: true,
       region,
       class_type: classType,
-    });
+    }));
+
+    const { error } = await supabase.from("classes").insert(rows);
 
     setSaving(false);
 
@@ -560,7 +568,9 @@ function AdminClassesPageInner() {
     setClassName("Kids");
     setLocation("");
     setRegion("frankfurt");
+    setSelectedWeekdays(["1"]);
     await loadClasses();
+    await loadMonthSessions(currentMonth);
   }
 
   if (loading || !isAdmin) {
@@ -984,19 +994,42 @@ function AdminClassesPageInner() {
               <label>수업 이름</label>
               <input type="text" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="예: Kids" />
 
-              <label>요일</label>
-              <select
-                value={weekday}
-                onChange={(e) => setWeekday(e.target.value)}
-                style={{ width: "100%", padding: 14, fontSize: 16, border: "1px solid #ddd", borderRadius: 10, background: "#fafafa" }}
-              >
-                <option value="1">월요일</option>
-                <option value="2">화요일</option>
-                <option value="3">수요일</option>
-                <option value="4">목요일</option>
-                <option value="5">금요일</option>
-                <option value="6">토요일</option>
-              </select>
+              <label>요일 (여러 개 선택 가능)</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                {[
+                  { value: "1", label: "월" },
+                  { value: "2", label: "화" },
+                  { value: "3", label: "수" },
+                  { value: "4", label: "목" },
+                  { value: "5", label: "금" },
+                  { value: "6", label: "토" },
+                ].map((d) => {
+                  const checked = selectedWeekdays.includes(d.value);
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() =>
+                        setSelectedWeekdays((prev) =>
+                          checked ? prev.filter((v) => v !== d.value) : [...prev, d.value]
+                        )
+                      }
+                      style={{
+                        padding: "10px 14px",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        borderRadius: 10,
+                        border: checked ? "2px solid #3B82C4" : "1px solid #ddd",
+                        background: checked ? "#eaf4fc" : "#fafafa",
+                        color: checked ? "#3B82C4" : "#555",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
 
               <label>시작 시간</label>
               <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
