@@ -226,7 +226,7 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
   );
 }
 
-function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role }) {
+function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role, coachNamesByClass }) {
   const router = useRouter();
   const todayStr = targetDate || toDateStr(nowInGermany());
   const todaySessions = sessions
@@ -246,6 +246,12 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role 
       {todaySessions.map((s) => {
         const info = s.classes;
         const count = sessionCounts[s.id] || 0;
+        const isDusseldorf = (s.classes?.region || "frankfurt") === "dusseldorf";
+        const coachInfo = coachNamesByClass?.[s.class_id];
+        const coachText = coachInfo
+          ? [coachInfo.main, ...coachInfo.assistants.map((n) => `${n} 코치님`)].filter(Boolean).join(", ")
+          : "";
+
         return (
           <div
             key={s.id}
@@ -258,29 +264,43 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role 
             }}
             style={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: 12,
+              alignItems: "stretch",
+              gap: 10,
               borderRadius: 12,
               border: myClassIds && myClassIds.includes(s.class_id) ? "2px solid #e05252" : "1px solid #eef2f8",
               opacity: s.is_cancelled ? 0.5 : 1,
-              background: getRegionBg(s.classes?.region),
+              overflow: "hidden",
               cursor: role ? "pointer" : "default",
+              background: "white",
             }}
           >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "flex", alignItems: "center", gap: 6 }}>
+            <div
+              style={{
+                width: 4,
+                flexShrink: 0,
+                background: getProgramTextColor(info?.program),
+              }}
+            />
+
+            <div style={{ padding: "10px 4px 10px 0", flexShrink: 0, textAlign: "center", minWidth: 46 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#1b3a63" }}>
                 {s.start_time ? s.start_time.slice(0, 5) : ""}
-                {" ~ "}
-                {s.end_time ? s.end_time.slice(0, 5) : ""}
+              </div>
+              <div style={{ fontSize: 10, color: "#8ea0b8", marginTop: 1 }}>
+                ~{s.end_time ? s.end_time.slice(0, 5) : ""}
+              </div>
+            </div>
+
+            <div style={{ flex: 1, padding: "10px 0", minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span
                   style={{
                     fontSize: 10,
                     fontWeight: 700,
                     padding: "1px 6px",
                     borderRadius: 999,
-                    color: (s.classes?.region || "frankfurt") === "dusseldorf" ? "#8b5fd6" : "#3B82C4",
-                    background: (s.classes?.region || "frankfurt") === "dusseldorf" ? "#F2EEFC" : "#EAF4FC",
+                    color: isDusseldorf ? "#8b5fd6" : "#3B82C4",
+                    background: isDusseldorf ? "#F2EEFC" : "#EAF4FC",
                   }}
                 >
                   {getRegionLabel(s.classes?.region || "frankfurt")}
@@ -288,7 +308,6 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role 
                 {s.is_cancelled && (
                   <span
                     style={{
-                      marginLeft: 6,
                       fontSize: 10,
                       fontWeight: 700,
                       color: "#b3261e",
@@ -301,25 +320,30 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role 
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: getProgramTextColor(info?.program), marginTop: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: getProgramTextColor(info?.program), marginTop: 4 }}>
                 {info ? `${info.program ? "[" + info.program + "] " : ""}${info.class_name}` : "수업 정보 없음"}
               </div>
-              {info?.location && (
-                <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 2 }}>
-                  {info.location} · {count}명
-                </div>
-              )}
+              <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 2 }}>
+                {coachText && <span>{coachText}</span>}
+                {coachText && info?.location && " · "}
+                {info?.location && <span>{info.location}</span>}
+                {(coachText || info?.location) && " · "}
+                {count}명
+              </div>
             </div>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: BLUE,
-                whiteSpace: "nowrap",
-              }}
-            >
-              출석체크 →
-            </span>
+
+            <div style={{ display: "flex", alignItems: "center", paddingRight: 12 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: BLUE,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                출석체크 →
+              </span>
+            </div>
           </div>
         );
       })}
@@ -355,6 +379,7 @@ export default function DashboardPage() {
 
   // 이번주 수업 요약(코치/관리자 공통)
   const [thisWeekSessions, setThisWeekSessions] = useState([]);
+  const [coachNamesByClass, setCoachNamesByClass] = useState({});
   const [selectedDashDate, setSelectedDashDate] = useState(toDateStr(nowInGermany()));
   const [thisWeekSessionCounts, setThisWeekSessionCounts] = useState({});
   const [totalActiveMembers, setTotalActiveMembers] = useState(0);
@@ -473,6 +498,24 @@ export default function DashboardPage() {
           .order("start_time", { ascending: true });
 
         setThisWeekSessions(wSessions || []);
+
+        const weekClassIds = [...new Set((wSessions || []).map((s) => s.class_id))];
+        if (weekClassIds.length > 0) {
+          const { data: coachRows } = await supabase
+            .from("class_coaches")
+            .select("class_id, coach_role, coach_profiles(name)")
+            .in("class_id", weekClassIds);
+
+          const coachMap = {};
+          (coachRows || []).forEach((c) => {
+            if (!coachMap[c.class_id]) coachMap[c.class_id] = { main: null, assistants: [] };
+            const name = c.coach_profiles?.name;
+            if (!name) return;
+            if (c.coach_role === "main") coachMap[c.class_id].main = name;
+            else if (c.coach_role === "assistant") coachMap[c.class_id].assistants.push(name);
+          });
+          setCoachNamesByClass(coachMap);
+        }
 
         const cancelledCount = (wSessions || []).filter((s) => s.is_cancelled).length;
         setThisWeekCancelledCount(cancelledCount);
@@ -1076,6 +1119,7 @@ export default function DashboardPage() {
               targetDate={selectedDashDate}
               myClassIds={myCoachClassIds}
               role="coach"
+              coachNamesByClass={coachNamesByClass}
             />
           </div>
         </div>
@@ -1141,6 +1185,7 @@ export default function DashboardPage() {
               sessionCounts={thisWeekSessionCounts}
               targetDate={selectedDashDate}
               role="admin"
+              coachNamesByClass={coachNamesByClass}
             />
           </div>
 
