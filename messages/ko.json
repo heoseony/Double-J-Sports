@@ -1,0 +1,22 @@
+{
+  "common": {
+    "loading": "로딩중...",
+    "confirm": "확인",
+    "cancel": "취소"
+  },
+  "login": {
+    "title": "더블제이 스포츠 아카데미",
+    "emailLabel": "이메일",
+    "emailPlaceholder": "이메일을 입력해주세요",
+    "passwordLabel": "비밀번호",
+    "passwordPlaceholder": "비밀번호를 입력해주세요",
+    "rememberMe": "로그인 상태 유지",
+    "forgotPassword": "비밀번호 찾기",
+    "loginButton": "로그인",
+    "loggingIn": "로그인 중...",
+    "or": "또는",
+    "googleLogin": "Google로 로그인",
+    "noAccount": "아직 계정이 없으신가요?",
+    "signup": "회원가입"
+  }
+}

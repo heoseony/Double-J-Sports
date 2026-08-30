@@ -1,0 +1,22 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "login": {
+    "title": "Double J Sports Academy",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Enter your email",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "rememberMe": "Stay logged in",
+    "forgotPassword": "Forgot password?",
+    "loginButton": "Log In",
+    "loggingIn": "Logging in...",
+    "or": "or",
+    "googleLogin": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "signup": "Sign up"
+  }
+}

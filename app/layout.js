@@ -1,6 +1,7 @@
 ﻿import "./globals.css";
 import BottomNav from "./components/BottomNav";
 import RefreshButton from "./components/RefreshButton";
+import { LanguageProvider } from "../lib/i18n/LanguageContext";
 
 export const metadata = {
   title: "Double J Sports",
@@ -25,9 +26,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <body>
-        {children}
-        <RefreshButton />
-        <BottomNav />
+        <LanguageProvider>
+          {children}
+          <RefreshButton />
+          <BottomNav />
+        </LanguageProvider>
       </body>
     </html>
   );

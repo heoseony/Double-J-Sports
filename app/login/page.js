@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase, setRememberMe } from "../../lib/supabaseClient";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { lang, setLang, t } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -100,6 +102,51 @@ export default function LoginPage() {
         }}
       />
       <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
+        {/* 언어 전환 토글 */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              background: "white",
+              borderRadius: 20,
+              padding: 3,
+              boxShadow: "0 2px 8px rgba(59,130,196,0.12)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setLang("ko")}
+              style={{
+                padding: "5px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 16,
+                cursor: "pointer",
+                background: lang === "ko" ? "#3B82C4" : "transparent",
+                color: lang === "ko" ? "white" : "#5b7699",
+              }}
+            >
+              한국어
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              style={{
+                padding: "5px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 16,
+                cursor: "pointer",
+                background: lang === "en" ? "#3B82C4" : "transparent",
+                color: lang === "en" ? "white" : "#5b7699",
+              }}
+            >
+              EN
+            </button>
+          </div>
+        </div>
         {/* 로고 + 브랜드 */}
         <div style={{ textAlign: "center", marginBottom: 12 }}>
           <img
@@ -117,7 +164,7 @@ export default function LoginPage() {
             marginBottom: 4,
           }}
         >
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
         <div
           style={{
@@ -149,7 +196,7 @@ export default function LoginPage() {
                 marginBottom: 8,
               }}
             >
-              이메일
+              {t("login.emailLabel")}
             </label>
             <div style={{ position: "relative", marginBottom: 18 }}>
               <span
@@ -171,7 +218,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="이메일을 입력해주세요"
+                placeholder={t("login.emailPlaceholder")}
                 required
                 style={{
                   width: "100%",
@@ -194,7 +241,7 @@ export default function LoginPage() {
                 marginBottom: 8,
               }}
             >
-              비밀번호
+              {t("login.passwordLabel")}
             </label>
             <div style={{ position: "relative", marginBottom: 14 }}>
               <span
@@ -216,7 +263,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="비밀번호를 입력해주세요"
+                placeholder={t("login.passwordPlaceholder")}
                 required
                 style={{
                   width: "100%",
@@ -285,7 +332,7 @@ export default function LoginPage() {
                   onChange={(e) => setRemember(e.target.checked)}
                   style={{ width: 16, height: 16, accentColor: "#3B82C4" }}
                 />
-                로그인 상태 유지
+                {t("login.rememberMe")}
               </label>
               <Link
                 href="/forgot-password"
@@ -296,7 +343,7 @@ export default function LoginPage() {
                   textDecoration: "none",
                 }}
               >
-                비밀번호 찾기
+                {t("login.forgotPassword")}
               </Link>
             </div>
 
@@ -330,7 +377,7 @@ export default function LoginPage() {
                 cursor: "pointer",
               }}
             >
-              {loading ? "로그인 중..." : "로그인"}
+              {loading ? t("login.loggingIn") : t("login.loginButton")}
             </button>
           </form>
 
@@ -343,7 +390,7 @@ export default function LoginPage() {
             }}
           >
             <div style={{ flex: 1, height: 1, background: "#e5edf6" }} />
-            <span style={{ fontSize: 12, color: "#9db3cc" }}>또는</span>
+            <span style={{ fontSize: 12, color: "#9db3cc" }}>{t("login.or")}</span>
             <div style={{ flex: 1, height: 1, background: "#e5edf6" }} />
           </div>
 
@@ -385,7 +432,7 @@ export default function LoginPage() {
                 d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.5l6.6 5.4C41.4 35.6 44 30.2 44 24c0-1.3-.1-2.7-.4-3.5z"
               />
             </svg>
-            Google로 로그인
+            {t("login.googleLogin")}
           </button>
 
           <div
@@ -396,12 +443,12 @@ export default function LoginPage() {
               marginTop: 20,
             }}
           >
-            아직 계정이 없으신가요?{" "}
+            {t("login.noAccount")}{" "}
             <Link
               href="/"
               style={{ color: "#3B82C4", fontWeight: 700, textDecoration: "none" }}
             >
-              회원가입
+              {t("login.signup")}
             </Link>
           </div>
         </div>
