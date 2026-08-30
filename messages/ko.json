@@ -117,5 +117,33 @@
     "adultSignup": "일반 회원가입",
     "haveAccount": "이미 계정이 있으신가요?",
     "login": "로그인"
+  },
+  "signupAdult": {
+    "title": "일반 회원가입",
+    "programLabel": "프로그램",
+    "programGeneral": "일반/취미",
+    "programPro": "프로",
+    "nameLabel": "이름",
+    "namePlaceholder": "이름",
+    "nameEnLabel": "영문 이름 (인보이스용)",
+    "firstNamePlaceholder": "이름 (예: Dongwoo)",
+    "lastNamePlaceholder": "성 (예: Kim)",
+    "nameEnHint": "인보이스(영수증)에 정확하게 표시되니 실제 영문 이름을 정확히 입력해주세요.",
+    "emailLabel": "이메일",
+    "phoneLabel": "전화번호",
+    "phonePlaceholder": "전화번호",
+    "passwordLabel": "비밀번호 (6자 이상)",
+    "referrerLabel": "추천인 이름 (선택)",
+    "referrerPlaceholder": "나를 추천해준 회원 이름",
+    "consentPrivacy": "(필수) 개인정보 수집 및 이용에 동의합니다.",
+    "consentMedia": "(선택) 사진/영상 촬영 및 활용에 동의합니다.",
+    "consentTerms": "(필수) 서비스 이용약관에 동의합니다.",
+    "submitting": "가입 중...",
+    "submit": "가입하기",
+    "haveAccount": "이미 계정이 있으신가요?",
+    "login": "로그인",
+    "errRequired": "이름, 영문 이름, 이메일, 비밀번호는 필수입니다.",
+    "errPasswordLength": "비밀번호는 6자 이상이어야 합니다.",
+    "errTermsRequired": "필수 약관에 동의해주세요."
   }
 }

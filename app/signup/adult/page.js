@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+import { useLanguage } from "../../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
 export default function AdultSignupPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [program, setProgram] = useState("general");
   const [name, setName] = useState("");
@@ -30,15 +32,15 @@ export default function AdultSignupPage() {
     setErrorMsg("");
 
     if (!name.trim() || !email.trim() || !password || !firstNameEn.trim() || !lastNameEn.trim()) {
-      setErrorMsg("이름, 영문 이름, 이메일, 비밀번호는 필수입니다.");
+      setErrorMsg(t("signupAdult.errRequired"));
       return;
     }
     if (password.length < 6) {
-      setErrorMsg("비밀번호는 6자 이상이어야 합니다.");
+      setErrorMsg(t("signupAdult.errPasswordLength"));
       return;
     }
     if (!agreePrivacy || !agreeTerms) {
-      setErrorMsg("필수 약관에 동의해주세요.");
+      setErrorMsg(t("signupAdult.errTermsRequired"));
       return;
     }
 
@@ -138,14 +140,14 @@ export default function AdultSignupPage() {
         >
           <img
             src="/logo-main.png"
-            alt="로고"
+            alt="Logo"
             style={{ width: 56, height: 56, objectFit: "contain", marginBottom: 10 }}
           />
           <div style={{ fontSize: 20, fontWeight: 800, color: "#1b3a63" }}>
-            더블제이 스포츠 아카데미
+            {t("login.title")}
           </div>
           <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
-            일반 회원가입
+            {t("signupAdult.title")}
           </div>
         </div>
 
@@ -158,47 +160,47 @@ export default function AdultSignupPage() {
           }}
         >
           <form onSubmit={handleSubmit}>
-            <label style={{ ...labelStyle, marginTop: 0 }}>프로그램</label>
+            <label style={{ ...labelStyle, marginTop: 0 }}>{t("signupAdult.programLabel")}</label>
             <select
               value={program}
               onChange={(e) => setProgram(e.target.value)}
               style={inputStyle}
             >
-              <option value="general">일반/취미</option>
-              <option value="pro">프로</option>
+              <option value="general">{t("signupAdult.programGeneral")}</option>
+              <option value="pro">{t("signupAdult.programPro")}</option>
             </select>
 
-            <label style={labelStyle}>이름</label>
+            <label style={labelStyle}>{t("signupAdult.nameLabel")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="이름"
+              placeholder={t("signupAdult.namePlaceholder")}
               style={inputStyle}
             />
 
-            <label style={labelStyle}>영문 이름 (인보이스용)</label>
+            <label style={labelStyle}>{t("signupAdult.nameEnLabel")}</label>
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 type="text"
                 value={firstNameEn}
                 onChange={(e) => setFirstNameEn(e.target.value)}
-                placeholder="이름 (예: Dongwoo)"
+                placeholder={t("signupAdult.firstNamePlaceholder")}
                 style={{ ...inputStyle, flex: 1 }}
               />
               <input
                 type="text"
                 value={lastNameEn}
                 onChange={(e) => setLastNameEn(e.target.value)}
-                placeholder="성 (예: Kim)"
+                placeholder={t("signupAdult.lastNamePlaceholder")}
                 style={{ ...inputStyle, flex: 1 }}
               />
             </div>
             <p style={{ fontSize: 12, color: "#8ea0b8", margin: "6px 0 0" }}>
-              인보이스(영수증)에 정확하게 표시되니 실제 영문 이름을 정확히 입력해주세요.
+              {t("signupAdult.nameEnHint")}
             </p>
 
-            <label style={labelStyle}>이메일</label>
+            <label style={labelStyle}>{t("signupAdult.emailLabel")}</label>
             <input
               type="email"
               value={email}
@@ -207,16 +209,16 @@ export default function AdultSignupPage() {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>전화번호</label>
+            <label style={labelStyle}>{t("signupAdult.phoneLabel")}</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="전화번호"
+              placeholder={t("signupAdult.phonePlaceholder")}
               style={inputStyle}
             />
 
-            <label style={labelStyle}>비밀번호 (6자 이상)</label>
+            <label style={labelStyle}>{t("signupAdult.passwordLabel")}</label>
             <input
               type="password"
               value={password}
@@ -224,12 +226,12 @@ export default function AdultSignupPage() {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>추천인 이름 (선택)</label>
+            <label style={labelStyle}>{t("signupAdult.referrerLabel")}</label>
             <input
               type="text"
               value={referredBy}
               onChange={(e) => setReferredBy(e.target.value)}
-              placeholder="나를 추천해준 회원 이름"
+              placeholder={t("signupAdult.referrerPlaceholder")}
               style={inputStyle}
             />
 
@@ -240,7 +242,7 @@ export default function AdultSignupPage() {
                 onChange={(e) => setAgreePrivacy(e.target.checked)}
                 style={{ marginTop: 2, width: 18, height: 18 }}
               />
-              <span>(필수) 개인정보 수집 및 이용에 동의합니다.</span>
+              <span>{t("signupAdult.consentPrivacy")}</span>
             </div>
             <div style={checkboxRowStyle}>
               <input
@@ -249,7 +251,7 @@ export default function AdultSignupPage() {
                 onChange={(e) => setAgreePhoto(e.target.checked)}
                 style={{ marginTop: 2, width: 18, height: 18 }}
               />
-              <span>(선택) 사진/영상 촬영 및 활용에 동의합니다.</span>
+              <span>{t("signupAdult.consentMedia")}</span>
             </div>
             <div style={checkboxRowStyle}>
               <input
@@ -258,7 +260,7 @@ export default function AdultSignupPage() {
                 onChange={(e) => setAgreeTerms(e.target.checked)}
                 style={{ marginTop: 2, width: 18, height: 18 }}
               />
-              <span>(필수) 서비스 이용약관에 동의합니다.</span>
+              <span>{t("signupAdult.consentTerms")}</span>
             </div>
 
             {errorMsg && (
@@ -292,7 +294,7 @@ export default function AdultSignupPage() {
                 cursor: submitting ? "default" : "pointer",
               }}
             >
-              {submitting ? "가입 중..." : "가입하기"}
+              {submitting ? t("signupAdult.submitting") : t("signupAdult.submit")}
             </button>
           </form>
 
@@ -304,9 +306,9 @@ export default function AdultSignupPage() {
               color: "#8ea0b8",
             }}
           >
-            이미 계정이 있으신가요?{" "}
+            {t("signupAdult.haveAccount")}{" "}
             <Link href="/login" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-              로그인
+              {t("signupAdult.login")}
             </Link>
           </div>
         </div>
