@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionBg, getProgramTextColor } from "../../lib/classColors";
+import { getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../lib/classColors";
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
@@ -290,47 +290,69 @@ export default function CoachHomePage() {
                 <div
                   key={s.id}
                   style={{
-                    padding: "14px 16px",
+                    display: "flex",
+                    alignItems: "stretch",
+                    gap: 10,
                     borderBottom:
                       idx === sessionsByDate[dateStr].length - 1
                         ? "none"
                         : "1px solid #f0f3f8",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 10,
-                    background: getRegionBg(s.classInfo?.region),
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: getProgramTextColor(s.classInfo?.program) }}>
-                      {s.classInfo?.class_name}
-                      <span style={{ fontWeight: 500, color: "#8ea0b8" }}>
-                        {" "}
-                        ({s.classInfo?.program})
-                      </span>
+                  <div
+                    style={{
+                      width: 4,
+                      flexShrink: 0,
+                      background: getProgramTextColor(s.classInfo?.program),
+                    }}
+                  />
+                  <div style={{ padding: "12px 4px 12px 0", flexShrink: 0, textAlign: "center", minWidth: 46 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1b3a63" }}>
+                      {s.start_time?.slice(0, 5)}
                     </div>
-                    <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
-                      {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)}
+                    <div style={{ fontSize: 10, color: "#8ea0b8", marginTop: 1 }}>
+                      ~{s.end_time?.slice(0, 5)}
                     </div>
                   </div>
-                  <Link href={`/coach/attendance?sessionId=${s.id}`}>
-                    <button
-                      style={{
-                        padding: "9px 16px",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "white",
-                        background: BLUE,
-                        border: "none",
-                        borderRadius: 10,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      출석 체크
-                    </button>
-                  </Link>
+                  <div style={{ flex: 1, padding: "12px 0", minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: 999,
+                          color: getRegionTextColor(s.classInfo?.region),
+                          background: "white",
+                          border: "1px solid #eef2f8",
+                        }}
+                      >
+                        {getRegionLabel(s.classInfo?.region || "frankfurt")}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: getProgramTextColor(s.classInfo?.program), marginTop: 4 }}>
+                      {s.classInfo?.class_name}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", paddingRight: 14 }}>
+                    <Link href={`/coach/attendance?sessionId=${s.id}`}>
+                      <button
+                        style={{
+                          padding: "9px 16px",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: "white",
+                          background: BLUE,
+                          border: "none",
+                          borderRadius: 10,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        출석 체크
+                      </button>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
