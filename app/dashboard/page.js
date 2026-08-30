@@ -339,7 +339,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: getProgramTextColor(info?.program), marginTop: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 4 }}>
                 {info ? `${info.program ? "[" + info.program + "] " : ""}${info.class_name}` : "수업 정보 없음"}
               </div>
               <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 2 }}>

@@ -266,7 +266,7 @@ export default function AdminAttendancePage() {
                         {getRegionLabel(s.classes?.region || "frankfurt")}
                       </span>
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: getProgramTextColor(s.classes?.program), marginTop: 4 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63", marginTop: 4 }}>
                       {s.classes?.class_name}
                     </div>
                     <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2 }}>
