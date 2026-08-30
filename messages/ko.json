@@ -293,5 +293,21 @@
     "errLoadPrefix": "갤러리를 불러오지 못했습니다: ",
     "roleAdmin": "관리자",
     "roleCoach": "코치"
+  },
+  "more": {
+    "myInfo": "내 정보 관리",
+    "managePlayers": "선수 관리",
+    "paymentInfo": "수업권 및 결제 정보",
+    "myBookings": "예약 내역",
+    "notices": "공지사항",
+    "gallery": "갤러리",
+    "faq": "자주 묻는 질문",
+    "contact": "문의하기",
+    "title": "더보기",
+    "comingSoon": "준비중",
+    "notificationSettings": "알림 설정",
+    "logout": "로그아웃",
+    "versionPrefix": "버전 ",
+    "parentSuffix": "학부모님"
   }
 }

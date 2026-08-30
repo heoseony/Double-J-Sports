@@ -293,5 +293,21 @@
     "errLoadPrefix": "Failed to load gallery: ",
     "roleAdmin": "Manager",
     "roleCoach": "Coach"
+  },
+  "more": {
+    "myInfo": "My Info",
+    "managePlayers": "Players",
+    "paymentInfo": "Payments & Membership",
+    "myBookings": "My Bookings",
+    "notices": "Notices",
+    "gallery": "Gallery",
+    "faq": "FAQ",
+    "contact": "Contact Us",
+    "title": "More",
+    "comingSoon": "Coming Soon",
+    "notificationSettings": "Notification Settings",
+    "logout": "Log Out",
+    "versionPrefix": "Version ",
+    "parentSuffix": "Parent"
   }
 }

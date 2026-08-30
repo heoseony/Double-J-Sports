@@ -5,28 +5,30 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
-const MENU_BY_ROLE = {
+function getMenuByRole(t) {
+  return {
   guardian: [
-    { label: "내 정보 관리", href: null },
-    { label: "선수 관리", href: "/members" },
-    { label: "수업권 및 결제 정보", href: "/invoices" },
-    { label: "예약 내역", href: null },
-    { label: "공지사항", href: "/notices" },
-    { label: "갤러리", href: "/photos" },
-    { label: "자주 묻는 질문", href: null },
-    { label: "문의하기", href: null },
+    { label: t("more.myInfo"), href: null },
+    { label: t("more.managePlayers"), href: "/members" },
+    { label: t("more.paymentInfo"), href: "/invoices" },
+    { label: t("more.myBookings"), key: "bookings", href: null },
+    { label: t("more.notices"), href: "/notices" },
+    { label: t("more.gallery"), href: "/photos" },
+    { label: t("more.faq"), href: null },
+    { label: t("more.contact"), href: null },
   ],
   adult: [
-    { label: "내 정보 관리", href: null },
-    { label: "수업권 및 결제 정보", href: "/invoices" },
-    { label: "예약 내역", href: null },
-    { label: "공지사항", href: "/notices" },
-    { label: "갤러리", href: "/photos" },
-    { label: "자주 묻는 질문", href: null },
-    { label: "문의하기", href: null },
+    { label: t("more.myInfo"), href: null },
+    { label: t("more.paymentInfo"), href: "/invoices" },
+    { label: t("more.myBookings"), key: "bookings", href: null },
+    { label: t("more.notices"), href: "/notices" },
+    { label: t("more.gallery"), href: "/photos" },
+    { label: t("more.faq"), href: null },
+    { label: t("more.contact"), href: null },
   ],
   coach: [
     { label: "내 정보 관리", href: null },
@@ -48,7 +50,8 @@ const MENU_BY_ROLE = {
     { label: "갤러리 관리", href: "/photos" },
     { label: "운영 통계", href: null },
   ],
-};
+  };
+}
 
 function ChevronRight() {
   return (
@@ -60,6 +63,7 @@ function ChevronRight() {
 
 export default function MorePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("guardian");
   const [profileName, setProfileName] = useState("");
@@ -114,9 +118,7 @@ export default function MorePage() {
             .order("created_at", { ascending: true })
             .limit(1)
             .maybeSingle();
-          setProfileName(
-            firstChild ? ` 학부모님` : "학부모님"
-          );
+          setProfileName(t("more.parentSuffix"));
           if (firstChild) setFirstChildId(firstChild.id);
         } else {
           const { data: selfMember } = await supabase
@@ -128,7 +130,7 @@ export default function MorePage() {
           if (selfMember) {
             setIsAdultMember(true);
             setAdultMemberId(selfMember.id);
-            setProfileName(`${selfMember.name}님`);
+            setProfileName(`${selfMember.name}${t("dashboard.memberSuffix")}`);
           } else {
             setProfileName(user.email);
           }
@@ -152,12 +154,13 @@ export default function MorePage() {
     );
   }
 
-  const menu = (role === "guardian" && isAdultMember) ? MENU_BY_ROLE.adult : (MENU_BY_ROLE[role] || MENU_BY_ROLE.guardian);
+  const menuByRole = getMenuByRole(t);
+  const menu = (role === "guardian" && isAdultMember) ? menuByRole.adult : (menuByRole[role] || menuByRole.guardian);
   const resolvedMenu = menu.map((item) => {
-    if (item.label === "예약 내역" && isAdultMember) {
+    if (item.key === "bookings" && isAdultMember) {
       return { ...item, href: "/adult/reservations" };
     }
-    if (item.label === "예약 내역" && firstChildId) {
+    if (item.key === "bookings" && firstChildId) {
       return { ...item, href: `/members/${firstChildId}/reservations` };
     }
     return item;
@@ -166,7 +169,7 @@ export default function MorePage() {
   return (
     <main style={{ background: "#f3f7fc", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       <div style={{ padding: "18px 18px 8px", fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-        더보기
+        {t("more.title")}
       </div>
 
       <div style={{ padding: "8px 18px 0" }}>
@@ -256,7 +259,7 @@ export default function MorePage() {
                       borderRadius: 999,
                     }}
                   >
-                    준비중
+                    {t("more.comingSoon")}
                   </span>
                 </div>
               );
@@ -296,7 +299,7 @@ export default function MorePage() {
               cursor: "not-allowed",
             }}
           >
-            <span>알림 설정</span>
+            <span>{t("more.notificationSettings")}</span>
             <span
               style={{
                 fontSize: 11,
@@ -307,7 +310,7 @@ export default function MorePage() {
                 borderRadius: 999,
               }}
             >
-              준비중
+              {t("more.comingSoon")}
             </span>
           </div>
         </div>
@@ -327,7 +330,7 @@ export default function MorePage() {
             boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
           }}
         >
-          로그아웃
+          {t("more.logout")}
         </button>
 
         <div
@@ -338,7 +341,7 @@ export default function MorePage() {
             marginTop: 16,
           }}
         >
-          버전 1.0.0
+          {t("more.versionPrefix")}1.0.0
         </div>
       </div>
     </main>
