@@ -3,11 +3,13 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
+import { useLanguage } from "../../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
 export default function NewMemberPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const fileInputRef = useRef(null);
   const [name, setName] = useState("");
   const [nameEn, setNameEn] = useState("");
@@ -34,12 +36,12 @@ export default function NewMemberPage() {
     setErrorMsg("");
 
     if (!name.trim()) {
-      setErrorMsg("선수 이름을 입력해주세요.");
+      setErrorMsg(t("memberNew.errNameRequired"));
       return;
     }
 
     if (!nameEn.trim()) {
-      setErrorMsg("영문 이름을 입력해주세요. (인보이스 발급에 필요합니다)");
+      setErrorMsg(t("memberNew.errNameEnRequired"));
       return;
     }
 
@@ -50,7 +52,7 @@ export default function NewMemberPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      setErrorMsg("로그인이 필요합니다.");
+      setErrorMsg(t("memberNew.errLoginRequired"));
       setLoading(false);
       return;
     }
@@ -62,7 +64,7 @@ export default function NewMemberPage() {
       .maybeSingle();
 
     if (!guardian) {
-      setErrorMsg("학부모 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("memberNew.errGuardianNotFound"));
       setLoading(false);
       return;
     }
@@ -122,13 +124,13 @@ export default function NewMemberPage() {
       >
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
       </div>
 
       <div style={{ padding: "8px 18px 0" }}>
         <div style={{ fontSize: 13, color: "#8ea0b8", marginBottom: 16, textAlign: "center" }}>
-          선수 등록
+          {t("memberNew.title")}
         </div>
 
         <form
@@ -145,7 +147,7 @@ export default function NewMemberPage() {
               {photoPreviewUrl ? (
                 <img
                   src={photoPreviewUrl}
-                  alt="미리보기"
+                  alt={t("memberNew.previewAlt")}
                   style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover" }}
                 />
               ) : (
@@ -198,15 +200,15 @@ export default function NewMemberPage() {
               />
             </div>
             <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 8 }}>
-              프로필 사진을 선택할 수 있습니다.
+              {t("memberNew.photoHint")}
             </div>
           </div>
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>선수 이름</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{t("memberNew.nameLabel")}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="예: 김민수"
+            placeholder={t("memberNew.namePlaceholder")}
             style={{
               width: "100%",
               padding: 12,
@@ -220,13 +222,13 @@ export default function NewMemberPage() {
           />
 
           <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
-            영문 이름 (필수, 인보이스 발급 시 사용)
+            {t("memberNew.nameEnLabel")}
           </label>
           <input
             type="text"
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
-            placeholder="예: Minsu Kim"
+            placeholder={t("memberNew.nameEnPlaceholder")}
             style={{
               width: "100%",
               padding: 12,
@@ -239,7 +241,7 @@ export default function NewMemberPage() {
             }}
           />
 
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>생년월일</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{t("memberNew.birthLabel")}</label>
           <input
             type="date"
             value={birthdate}
@@ -260,12 +262,12 @@ export default function NewMemberPage() {
             }}
           />
 
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>성별 (선택)</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{t("memberNew.genderLabel")}</label>
           <input
             type="text"
             value={gender}
             onChange={(e) => setGender(e.target.value)}
-            placeholder="남 / 여"
+            placeholder={t("memberNew.genderPlaceholder")}
             style={{
               width: "100%",
               padding: 12,
@@ -278,7 +280,7 @@ export default function NewMemberPage() {
             }}
           />
 
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>지역</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{t("memberNew.regionLabel")}</label>
           <select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
@@ -298,7 +300,7 @@ export default function NewMemberPage() {
             <option value="dusseldorf">Düsseldorf</option>
           </select>
 
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>프로그램</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{t("memberNew.programLabel")}</label>
           <select
             value={program}
             onChange={(e) => setProgram(e.target.value)}
@@ -315,16 +317,16 @@ export default function NewMemberPage() {
             }}
           >
             <option value="kids">Kids</option>
-            <option value="pro">프로</option>
-            <option value="general">일반/취미</option>
+            <option value="pro">{t("memberNew.programPro")}</option>
+            <option value="general">{t("memberNew.programGeneral")}</option>
           </select>
 
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>축구 경험 (선택)</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{t("memberNew.experienceLabel")}</label>
           <input
             type="text"
             value={experience}
             onChange={(e) => setExperience(e.target.value)}
-            placeholder="예: 처음, 1년, 3년 이상"
+            placeholder={t("memberNew.experiencePlaceholder")}
             style={{
               width: "100%",
               padding: 12,
@@ -337,7 +339,7 @@ export default function NewMemberPage() {
             }}
           />
 
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>비상연락처 (선택)</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{t("memberNew.emergencyLabel")}</label>
           <input
             type="text"
             value={emergencyContact}
@@ -385,13 +387,13 @@ export default function NewMemberPage() {
               cursor: "pointer",
             }}
           >
-            {loading ? "등록 중..." : "등록하기"}
+            {loading ? t("memberNew.submitting") : t("memberNew.submit")}
           </button>
         </form>
 
         <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
           <a href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 선수 목록으로
+            {t("memberNew.backToList")}
           </a>
         </div>
       </div>
