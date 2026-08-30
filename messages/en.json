@@ -208,7 +208,7 @@
     "location": "Location",
     "coach": "Coach",
     "target": "Player",
-    "capacity": "Capacity",
+    "capacity": "Registered",
     "capacityWithTotal": "{count}/{capacity} registered",
     "capacityNoTotal": "{count} registered",
     "viewLocation": "View Location",
