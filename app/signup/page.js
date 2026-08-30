@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -136,10 +138,10 @@ export default function SignupPage() {
             style={{ width: 56, height: 56, objectFit: "contain", marginBottom: 10 }}
           />
           <div style={{ fontSize: 20, fontWeight: 800, color: "#1b3a63" }}>
-            더블제이 스포츠 아카데미
+            {t("login.title")}
           </div>
           <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
-            학부모 회원가입 (Kids)
+            {t("signup.title")}
           </div>
         </div>
 
@@ -152,16 +154,16 @@ export default function SignupPage() {
           }}
         >
           <form onSubmit={handleSubmit}>
-            <label style={{ ...labelStyle, marginTop: 0 }}>보호자 이름</label>
+            <label style={{ ...labelStyle, marginTop: 0 }}>{t("signup.guardianNameLabel")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="예: 김민지"
+              placeholder={t("signup.guardianNamePlaceholder")}
               style={inputStyle}
             />
 
-            <label style={labelStyle}>이메일</label>
+            <label style={labelStyle}>{t("signup.emailLabel")}</label>
             <input
               type="email"
               value={email}
@@ -170,16 +172,16 @@ export default function SignupPage() {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>전화번호</label>
+            <label style={labelStyle}>{t("signup.phoneLabel")}</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="전화번호"
+              placeholder={t("signup.phonePlaceholder")}
               style={inputStyle}
             />
 
-            <label style={labelStyle}>비밀번호 (6자 이상)</label>
+            <label style={labelStyle}>{t("signup.passwordLabel")}</label>
             <input
               type="password"
               value={password}
@@ -187,12 +189,12 @@ export default function SignupPage() {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>추천인 이름 (선택)</label>
+            <label style={labelStyle}>{t("signup.referrerLabel")}</label>
             <input
               type="text"
               value={referredBy}
               onChange={(e) => setReferredBy(e.target.value)}
-              placeholder="나를 추천해준 회원 이름"
+              placeholder={t("signup.referrerPlaceholder")}
               style={inputStyle}
             />
 
@@ -203,7 +205,7 @@ export default function SignupPage() {
                 onChange={(e) => setAgreePrivacy(e.target.checked)}
                 style={{ marginTop: 2, width: 18, height: 18 }}
               />
-              <span>(필수) 개인정보 수집 및 이용에 동의합니다.</span>
+              <span>{t("signup.consentPrivacy")}</span>
             </div>
             <div style={checkboxRowStyle}>
               <input
@@ -212,7 +214,7 @@ export default function SignupPage() {
                 onChange={(e) => setAgreePhoto(e.target.checked)}
                 style={{ marginTop: 2, width: 18, height: 18 }}
               />
-              <span>(선택) 사진/영상 촬영 및 활용에 동의합니다.</span>
+              <span>{t("signup.consentMedia")}</span>
             </div>
             <div style={checkboxRowStyle}>
               <input
@@ -221,7 +223,7 @@ export default function SignupPage() {
                 onChange={(e) => setAgreeTerms(e.target.checked)}
                 style={{ marginTop: 2, width: 18, height: 18 }}
               />
-              <span>(필수) 서비스 이용약관에 동의합니다.</span>
+              <span>{t("signup.consentTerms")}</span>
             </div>
 
             {errorMsg && (
@@ -255,7 +257,7 @@ export default function SignupPage() {
                 cursor: submitting ? "default" : "pointer",
               }}
             >
-              {submitting ? "가입 중..." : "가입하기"}
+              {submitting ? t("signup.submitting") : t("signup.submit")}
             </button>
           </form>
 
@@ -267,9 +269,9 @@ export default function SignupPage() {
               color: "#8ea0b8",
             }}
           >
-            이미 계정이 있으신가요?{" "}
+            {t("signup.haveAccount")}{" "}
             <Link href="/login" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-              로그인
+              {t("signup.login")}
             </Link>
           </div>
         </div>
