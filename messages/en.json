@@ -25,14 +25,15 @@
     "parentSuffix": "Guardian",
     "memberSuffix": "",
     "thisWeekClasses": "This Week's Classes",
-    "seeAll": "See all ›",
+    "seeAll": "View All",
     "noClassesThisWeek": "No classes scheduled this week.",
     "classDetail": "View Class Details",
-    "attendanceCheckWeek": "Attendance (This Week)",
+    "attendanceCheckWeek": "Attendance This Week",
     "noRegisteredPlayers": "No players registered.",
-    "remainingSessions": "{remaining}/{total} sessions left",
+    "remainingSessions": "{remaining} of {total} Remaining",
     "noMembership": "No membership",
-    "manageAndBook": "Manage Players · Book Class",
-    "bookClassButton": "Book a Class ({name})"
+    "manageAndBook": "My Children · Book a Class",
+    "bookClassButton": "Book a Class ({name})",
+    "parentGreeting": "{name}'s Parent"
   }
 }

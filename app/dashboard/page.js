@@ -884,10 +884,14 @@ export default function DashboardPage() {
           <div style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>
             {isAdmin ? (
               "정연웅 • 정연황"
+            ) : roleLabel === "학부모" ? (
+              t("dashboard.parentGreeting", { name: displayName || email })
             ) : (
-              displayName || email
+              <>
+                {displayName || email}
+                {roleLabel === "" ? t("dashboard.memberSuffix") : ` ${roleLabel}님`}
+              </>
             )}
-            {roleLabel === "학부모" ? ` ${t("dashboard.parentSuffix")}` : roleLabel === "" ? t("dashboard.memberSuffix") : ` ${roleLabel}님`}
           </div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>{greetingSub}</div>
         </div>

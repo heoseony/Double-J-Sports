@@ -33,6 +33,7 @@
     "remainingSessions": "잔여 {remaining}/{total}회",
     "noMembership": "회원권 없음",
     "manageAndBook": "선수 관리 · 수업 예약",
-    "bookClassButton": "수업 예약 ({name}님)"
+    "bookClassButton": "수업 예약 ({name}님)",
+    "parentGreeting": "{name} 학부모님"
   }
 }
