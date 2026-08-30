@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../../lib/supabaseClient";
 import LoadingScreen from "../../../components/LoadingScreen";
+import { useLanguage } from "../../../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
@@ -13,6 +14,7 @@ export default function MemberEditPage() {
   const router = useRouter();
   const memberId = params.id;
   const fileInputRef = useRef(null);
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,7 +54,7 @@ export default function MemberEditPage() {
         .single();
 
       if (error || !memberData) {
-        setErrorMsg("선수 정보를 찾을 수 없습니다.");
+        setErrorMsg(t("memberEdit.errMemberNotFound"));
         setLoading(false);
         return;
       }
@@ -89,7 +91,7 @@ export default function MemberEditPage() {
       .upload(path, file, { upsert: true });
 
     if (uploadError) {
-      setErrorMsg("사진 업로드 실패: " + uploadError.message);
+      setErrorMsg(t("memberEdit.errPhotoUploadPrefix") + uploadError.message);
       setUploadingPhoto(false);
       return;
     }
@@ -105,7 +107,7 @@ export default function MemberEditPage() {
     setUploadingPhoto(false);
 
     if (updateError) {
-      setErrorMsg("사진 저장 실패: " + updateError.message);
+      setErrorMsg(t("memberEdit.errPhotoSavePrefix") + updateError.message);
       return;
     }
 
@@ -118,12 +120,12 @@ export default function MemberEditPage() {
     setSuccessMsg("");
 
     if (!name.trim()) {
-      setErrorMsg("선수 이름을 입력해주세요.");
+      setErrorMsg(t("memberEdit.errNameRequired"));
       setSaving(false);
       return;
 
     if (!nameEn.trim()) {
-      setErrorMsg("영문 이름을 입력해주세요. (인보이스 발급에 필요합니다)");
+      setErrorMsg(t("memberEdit.errNameEnRequired"));
       setSaving(false);
       return;
     }
@@ -147,16 +149,16 @@ export default function MemberEditPage() {
     setSaving(false);
 
     if (error) {
-      setErrorMsg("저장 실패: " + error.message);
+      setErrorMsg(t("memberEdit.errSavePrefix") + error.message);
       return;
     }
 
-    setSuccessMsg("저장되었습니다.");
+    setSuccessMsg(t("memberEdit.successSaved"));
     setTimeout(() => setSuccessMsg(""), 3000);
   }
 
   async function handleDelete() {
-    if (!confirm(`"${name}" 선수 정보를 정말 삭제할까요?\n\n예약/결제 기록이 있으면 삭제가 안 될 수 있습니다.`)) {
+    if (!confirm(t("memberEdit.deleteConfirm", { name }))) {
       return;
     }
 
@@ -168,7 +170,7 @@ export default function MemberEditPage() {
     setDeleting(false);
 
     if (error) {
-      setErrorMsg("삭제 실패: 이미 예약/결제 기록이 있어 삭제할 수 없습니다.");
+      setErrorMsg(t("memberEdit.errDeleteFailed"));
       return;
     }
 
@@ -207,7 +209,7 @@ export default function MemberEditPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>선수 프로필 설정</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>{t("memberEdit.title")}</div>
       </div>
 
       <div style={{ padding: "8px 18px 0" }}>
@@ -278,17 +280,17 @@ export default function MemberEditPage() {
               />
             </div>
             <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 8 }}>
-              {uploadingPhoto ? "업로드 중..." : "프로필 사진을 변경할 수 있습니다."}
+              {uploadingPhoto ? t("memberEdit.uploading") : t("memberEdit.photoHint")}
             </div>
           </div>
 
-          <label style={labelStyle}>이름</label>
+          <label style={labelStyle}>{t("memberEdit.nameLabel")}</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} />
 
-          <label style={labelStyle}>영문 이름 (필수, 인보이스용)</label>
+          <label style={labelStyle}>{t("memberEdit.nameEnLabel")}</label>
           <input type="text" value={nameEn} onChange={(e) => setNameEn(e.target.value)} style={fieldStyle} />
 
-          <label style={labelStyle}>생년월일</label>
+          <label style={labelStyle}>{t("memberEdit.birthLabel")}</label>
           <input
             type="date"
             value={birthdate}
@@ -296,7 +298,7 @@ export default function MemberEditPage() {
             style={{ ...fieldStyle, padding: "0 12px", height: 42, lineHeight: "42px", WebkitAppearance: "none", appearance: "none" }}
           />
 
-          <label style={labelStyle}>성별</label>
+          <label style={labelStyle}>{t("memberEdit.genderLabel")}</label>
           <div style={{ display: "flex", gap: 8, marginTop: 6, marginBottom: 16 }}>
             <button
               type="button"
@@ -313,7 +315,7 @@ export default function MemberEditPage() {
                 cursor: "pointer",
               }}
             >
-              남
+              {t("memberEdit.genderMale")}
             </button>
             <button
               type="button"
@@ -330,33 +332,33 @@ export default function MemberEditPage() {
                 cursor: "pointer",
               }}
             >
-              여
+              {t("memberEdit.genderFemale")}
             </button>
           </div>
 
-          <label style={labelStyle}>지역</label>
+          <label style={labelStyle}>{t("memberEdit.regionLabel")}</label>
           <select value={region} onChange={(e) => setRegion(e.target.value)} style={fieldStyle}>
             <option value="frankfurt">Frankfurt</option>
             <option value="dusseldorf">Düsseldorf</option>
           </select>
 
-          <label style={labelStyle}>프로그램</label>
+          <label style={labelStyle}>{t("memberEdit.programLabel")}</label>
           <select value={program} onChange={(e) => setProgram(e.target.value)} style={fieldStyle}>
             <option value="kids">Kids</option>
-            <option value="pro">프로</option>
-            <option value="general">일반/취미</option>
+            <option value="pro">{t("memberEdit.programPro")}</option>
+            <option value="general">{t("memberEdit.programGeneral")}</option>
           </select>
 
-          <label style={labelStyle}>축구 경험 (선택)</label>
+          <label style={labelStyle}>{t("memberEdit.experienceLabel")}</label>
           <input
             type="text"
             value={experience}
             onChange={(e) => setExperience(e.target.value)}
-            placeholder="예: 처음, 1년, 3년 이상"
+            placeholder={t("memberEdit.experiencePlaceholder")}
             style={fieldStyle}
           />
 
-          <label style={labelStyle}>비상연락처 (선택)</label>
+          <label style={labelStyle}>{t("memberEdit.emergencyLabel")}</label>
           <input
             type="text"
             value={emergencyContact}
@@ -365,11 +367,11 @@ export default function MemberEditPage() {
             style={fieldStyle}
           />
 
-          <label style={labelStyle}>특이사항 (선택)</label>
+          <label style={labelStyle}>{t("memberEdit.notesLabel")}</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="알레르기, 건강상 유의사항 등"
+            placeholder={t("memberEdit.notesPlaceholder")}
             rows={3}
             style={{ ...fieldStyle, resize: "vertical", fontFamily: "inherit" }}
           />
@@ -421,7 +423,7 @@ export default function MemberEditPage() {
               marginBottom: 12,
             }}
           >
-            {saving ? "저장 중..." : "저장하기"}
+            {saving ? t("memberEdit.saving") : t("memberEdit.save")}
           </button>
 
           <button
@@ -440,13 +442,13 @@ export default function MemberEditPage() {
               cursor: "pointer",
             }}
           >
-            {deleting ? "삭제 중..." : "선수 삭제"}
+            {deleting ? t("memberEdit.deleting") : t("memberEdit.deletePlayer")}
           </button>
         </div>
 
         <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 선수 목록으로
+            {t("memberEdit.backToPlayers")}
           </Link>
         </div>
       </div>
