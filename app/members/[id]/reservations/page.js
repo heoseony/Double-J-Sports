@@ -7,6 +7,7 @@ import { nowInGermany } from "../../../../lib/germanyTime";
 import { supabase } from "../../../../lib/supabaseClient";
 import { useLanguage } from "../../../../lib/i18n/LanguageContext";
 import { translateClassName } from "../../../../lib/i18n/nameTranslations";
+import LoadingScreen from "../../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
 const WEEKDAY_LABEL_KO = ["일", "월", "화", "수", "목", "금", "토"];
@@ -178,9 +179,7 @@ export default function ReservationsPage() {
 
   if (loading) {
     return (
-      <main style={{ minHeight: "100vh", background: "#f3f7fc", padding: 20 }}>
-        <div style={{ fontSize: 14, color: "#5b7699" }}>{t("reservations.loading")}</div>
-      </main>
+      <LoadingScreen />
     );
   }
 
