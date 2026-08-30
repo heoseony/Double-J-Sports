@@ -102,51 +102,6 @@ export default function LoginPage() {
         }}
       />
       <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-        {/* 언어 전환 토글 */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-          <div
-            style={{
-              display: "flex",
-              background: "white",
-              borderRadius: 20,
-              padding: 3,
-              boxShadow: "0 2px 8px rgba(59,130,196,0.12)",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setLang("ko")}
-              style={{
-                padding: "5px 12px",
-                fontSize: 12,
-                fontWeight: 700,
-                border: "none",
-                borderRadius: 16,
-                cursor: "pointer",
-                background: lang === "ko" ? "#3B82C4" : "transparent",
-                color: lang === "ko" ? "white" : "#5b7699",
-              }}
-            >
-              한국어
-            </button>
-            <button
-              type="button"
-              onClick={() => setLang("en")}
-              style={{
-                padding: "5px 12px",
-                fontSize: 12,
-                fontWeight: 700,
-                border: "none",
-                borderRadius: 16,
-                cursor: "pointer",
-                background: lang === "en" ? "#3B82C4" : "transparent",
-                color: lang === "en" ? "white" : "#5b7699",
-              }}
-            >
-              EN
-            </button>
-          </div>
-        </div>
         {/* 로고 + 브랜드 */}
         <div style={{ textAlign: "center", marginBottom: 12 }}>
           <img
@@ -175,6 +130,52 @@ export default function LoginPage() {
           }}
         >
           아이들의 성장과 즐거운 축구, 함께합니다.
+        </div>
+
+        {/* 언어 전환 토글 */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          <div
+            style={{
+              display: "flex",
+              background: "white",
+              borderRadius: 20,
+              padding: 3,
+              boxShadow: "0 2px 8px rgba(59,130,196,0.12)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setLang("ko")}
+              style={{
+                padding: "5px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 16,
+                cursor: "pointer",
+                background: lang === "ko" ? "#3B82C4" : "transparent",
+                color: lang === "ko" ? "white" : "#5b7699",
+              }}
+            >
+              한국어
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              style={{
+                padding: "5px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 16,
+                cursor: "pointer",
+                background: lang === "en" ? "#3B82C4" : "transparent",
+                color: lang === "en" ? "white" : "#5b7699",
+              }}
+            >
+              EN
+            </button>
+          </div>
         </div>
 
         {/* 로그인 카드 */}
