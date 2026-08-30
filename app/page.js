@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useLanguage } from "../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
 export default function HomePage() {
+  const { lang, setLang, t } = useLanguage();
   return (
     <main
       style={{
@@ -27,14 +29,60 @@ export default function HomePage() {
         >
           <img
             src="/logo-main.png"
-            alt="로고"
+            alt="Logo"
             style={{ width: 56, height: 56, objectFit: "contain", marginBottom: 10 }}
           />
           <div style={{ fontSize: 20, fontWeight: 800, color: "#1b3a63" }}>
-            더블제이 스포츠 아카데미
+            {t("login.title")}
           </div>
           <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
-            회원관리 및 수업예약 시스템
+            {t("landing.subtitle")}
+          </div>
+        </div>
+
+        {/* 언어 전환 토글 */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          <div
+            style={{
+              display: "flex",
+              background: "white",
+              borderRadius: 20,
+              padding: 3,
+              boxShadow: "0 2px 8px rgba(59,130,196,0.12)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setLang("ko")}
+              style={{
+                padding: "5px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 16,
+                cursor: "pointer",
+                background: lang === "ko" ? "#3B82C4" : "transparent",
+                color: lang === "ko" ? "white" : "#5b7699",
+              }}
+            >
+              한국어
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              style={{
+                padding: "5px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 16,
+                cursor: "pointer",
+                background: lang === "en" ? "#3B82C4" : "transparent",
+                color: lang === "en" ? "white" : "#5b7699",
+              }}
+            >
+              EN
+            </button>
           </div>
         </div>
 
@@ -54,7 +102,7 @@ export default function HomePage() {
               textAlign: "center",
             }}
           >
-            아직 회원가입을 하지 않으셨다면 먼저 가입해주세요.
+            {t("landing.notSignedUp")}
           </p>
 
           <Link href="/signup" style={{ textDecoration: "none" }}>
@@ -72,7 +120,7 @@ export default function HomePage() {
                 cursor: "pointer",
               }}
             >
-              학부모 회원가입 (Kids)
+              {t("landing.parentSignup")}
             </button>
           </Link>
 
@@ -92,7 +140,7 @@ export default function HomePage() {
                 cursor: "pointer",
               }}
             >
-              일반 회원가입
+              {t("landing.adultSignup")}
             </button>
           </Link>
 
@@ -104,9 +152,9 @@ export default function HomePage() {
               color: "#8ea0b8",
             }}
           >
-            이미 계정이 있으신가요?{" "}
+            {t("landing.haveAccount")}{" "}
             <Link href="/login" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-              로그인
+              {t("landing.login")}
             </Link>
           </div>
         </div>

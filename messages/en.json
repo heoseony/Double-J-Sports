@@ -108,5 +108,13 @@
     "errNameEnRequired": "Please enter the English name. (required for invoicing)",
     "errLoginRequired": "Please log in.",
     "errGuardianNotFound": "Could not find guardian information."
+  },
+  "landing": {
+    "subtitle": "Membership & Class Booking System",
+    "notSignedUp": "Not signed up yet? Create an account first.",
+    "parentSignup": "Parent Sign Up",
+    "adultSignup": "Adult Sign Up",
+    "haveAccount": "Already have an account?",
+    "login": "Log In"
   }
 }

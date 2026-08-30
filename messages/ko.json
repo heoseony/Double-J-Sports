@@ -108,5 +108,13 @@
     "errNameEnRequired": "영문 이름을 입력해주세요. (인보이스 발급에 필요합니다)",
     "errLoginRequired": "로그인이 필요합니다.",
     "errGuardianNotFound": "학부모 정보를 찾을 수 없습니다."
+  },
+  "landing": {
+    "subtitle": "회원관리 및 수업예약 시스템",
+    "notSignedUp": "아직 회원가입을 하지 않으셨다면 먼저 가입해주세요.",
+    "parentSignup": "학부모 회원가입 (Kids)",
+    "adultSignup": "일반 회원가입",
+    "haveAccount": "이미 계정이 있으신가요?",
+    "login": "로그인"
   }
 }
