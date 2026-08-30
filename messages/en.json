@@ -111,9 +111,9 @@
   },
   "landing": {
     "subtitle": "Membership & Class Booking System",
-    "notSignedUp": "Not signed up yet? Create an account first.",
+    "notSignedUp": "Create an account to get started.",
     "parentSignup": "Parent Sign Up",
-    "adultSignup": "Adult Sign Up",
+    "adultSignup": "Player Sign Up",
     "haveAccount": "Already have an account?",
     "login": "Log In"
   }
