@@ -29,8 +29,8 @@ export default function AdultSignupPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!name.trim() || !email.trim() || !password) {
-      setErrorMsg("이름, 이메일, 비밀번호는 필수입니다.");
+    if (!name.trim() || !email.trim() || !password || !firstNameEn.trim() || !lastNameEn.trim()) {
+      setErrorMsg("이름, 영문 이름, 이메일, 비밀번호는 필수입니다.");
       return;
     }
     if (password.length < 6) {
@@ -177,7 +177,7 @@ export default function AdultSignupPage() {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>영문 이름 (인보이스용, 선택)</label>
+            <label style={labelStyle}>영문 이름 (인보이스용)</label>
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 type="text"
@@ -195,7 +195,7 @@ export default function AdultSignupPage() {
               />
             </div>
             <p style={{ fontSize: 12, color: "#8ea0b8", margin: "6px 0 0" }}>
-              인보이스(영수증)에 "{firstNameEn || "First"} {lastNameEn || "Last"}" 형식으로 표기됩니다.
+              인보이스(영수증)에 정확하게 표시되니 실제 영문 이름을 정확히 입력해주세요.
             </p>
 
             <label style={labelStyle}>이메일</label>
