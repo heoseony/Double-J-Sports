@@ -854,52 +854,54 @@ export default function DashboardPage() {
           padding: "18px 18px 8px",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            left: 18,
-            top: "50%",
-            transform: "translateY(-50%)",
-            display: "flex",
-            background: "white",
-            borderRadius: 16,
-            padding: 2,
-            boxShadow: "0 2px 8px rgba(59,130,196,0.12)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setLang("ko")}
+        {!isAdmin && !isCoach && (
+          <div
             style={{
-              padding: "3px 8px",
-              fontSize: 10,
-              fontWeight: 700,
-              border: "none",
-              borderRadius: 14,
-              cursor: "pointer",
-              background: lang === "ko" ? "#3B82C4" : "transparent",
-              color: lang === "ko" ? "white" : "#5b7699",
+              position: "absolute",
+              left: 18,
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              background: "white",
+              borderRadius: 16,
+              padding: 2,
+              boxShadow: "0 2px 8px rgba(59,130,196,0.12)",
             }}
           >
-            한국어
-          </button>
-          <button
-            type="button"
-            onClick={() => setLang("en")}
-            style={{
-              padding: "3px 8px",
-              fontSize: 10,
-              fontWeight: 700,
-              border: "none",
-              borderRadius: 14,
-              cursor: "pointer",
-              background: lang === "en" ? "#3B82C4" : "transparent",
-              color: lang === "en" ? "white" : "#5b7699",
-            }}
-          >
-            EN
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setLang("ko")}
+              style={{
+                padding: "3px 8px",
+                fontSize: 10,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 14,
+                cursor: "pointer",
+                background: lang === "ko" ? "#3B82C4" : "transparent",
+                color: lang === "ko" ? "white" : "#5b7699",
+              }}
+            >
+              한국어
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              style={{
+                padding: "3px 8px",
+                fontSize: 10,
+                fontWeight: 700,
+                border: "none",
+                borderRadius: 14,
+                cursor: "pointer",
+                background: lang === "en" ? "#3B82C4" : "transparent",
+                color: lang === "en" ? "white" : "#5b7699",
+              }}
+            >
+              EN
+            </button>
+          </div>
+        )}
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
           {t("login.title")}
