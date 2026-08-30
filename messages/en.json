@@ -239,7 +239,7 @@
     "errFillRequired": "Please select a plan and enter the depositor name.",
     "errPlanNotFound": "Selected plan not found.",
     "errSubmitFailedPrefix": "Application failed: ",
-    "title": "{name} · Membership Application",
+    "title": "{name} · Buy Membership",
     "submittedTitle": "✓ Application Received",
     "body1": "Please transfer ",
     "body2": " to the account below. The depositor name should match",

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "../../../../lib/supabaseClient";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { useLanguage } from "../../../../lib/i18n/LanguageContext";
+import { translatePlanName } from "../../../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
 const COUPON_AMOUNT = 20;
@@ -333,7 +334,7 @@ export default function SubscribePage() {
                 }}
               >
                 <div style={{ color: "#33455e" }}>
-                  {p.membership_plans?.name} ·{" "}
+                  {translatePlanName(p.membership_plans?.name, lang)} ·{" "}
                   <strong style={{ color: "#1b3a63" }}>{p.total_amount} EUR</strong>
                 </div>
                 <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
@@ -372,7 +373,7 @@ export default function SubscribePage() {
                 <option value="">{t("subscribe.selectPlaceholder")}</option>
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {t("subscribe.planOptionFormat", { name: p.name, sessions: p.sessions_per_month, price: p.price, currency: p.currency })}
+                    {t("subscribe.planOptionFormat", { name: translatePlanName(p.name, lang), sessions: p.sessions_per_month, price: p.price, currency: p.currency })}
                   </option>
                 ))}
               </select>
