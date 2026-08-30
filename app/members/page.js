@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import { getRegionBg, getRegionLabel, getProgramTextColor } from "../../lib/classColors";
 import LoadingScreen from "../components/LoadingScreen";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
@@ -26,6 +27,7 @@ function calcAge(birthDateStr) {
 
 export default function MembersPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
@@ -127,10 +129,10 @@ export default function MembersPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "18px 18px 4px" }}>
         <img src="/logo-main.png" alt="" style={{ width: 30, height: "auto" }} />
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
       </div>
-      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>선수 관리</div>
+      <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>{t("members.subtitle")}</div>
 
       <div style={{ padding: "0 18px" }}>
         {errorMsg && (
@@ -142,7 +144,7 @@ export default function MembersPage() {
         {members.length === 0 && !errorMsg && (
           <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
             <p style={{ margin: 0, fontSize: 14, color: "#8ea0b8" }}>
-              아직 등록된 선수가 없습니다. 아래 버튼으로 선수를 등록해주세요.
+              {t("members.noPlayers")}
             </p>
           </div>
         )}
@@ -195,11 +197,11 @@ export default function MembersPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: getProgramTextColor(m.program) }}>{m.name}</span>
                   {calcAge(m.birth_date) !== null && (
-                    <span style={{ fontSize: 12, color: "#8ea0b8" }}>(만 {calcAge(m.birth_date)}세)</span>
+                    <span style={{ fontSize: 12, color: "#8ea0b8" }}>{t("members.ageSuffix", { age: calcAge(m.birth_date) })}</span>
                   )}
                 </div>
                 <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
-                  {m.program === "kids" ? "Kids" : m.program || "프로그램 미정"}
+                  {m.program === "kids" ? "Kids" : m.program || t("members.programUnset")}
                   {m.region ? ` · ${getRegionLabel(m.region)}` : ""}
                 </div>
               </div>
@@ -246,7 +248,7 @@ export default function MembersPage() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {savingNameEnId === m.id ? "저장 중..." : "저장"}
+                    {savingNameEnId === m.id ? t("members.saving") : t("members.save")}
                   </button>
                   <button
                     type="button"
@@ -261,7 +263,7 @@ export default function MembersPage() {
                       cursor: "pointer",
                     }}
                   >
-                    취소
+                    {t("members.cancel")}
                   </button>
                 </div>
               ) : (
@@ -273,7 +275,7 @@ export default function MembersPage() {
                       color: m.name_en ? "#8ea0b8" : "#b3261e",
                     }}
                   >
-                    영문 이름: {m.name_en || "미입력 (인보이스 발급 전 등록 필요)"}
+                    {t("members.nameEnLabel")}{m.name_en || t("members.nameEnMissing")}
                   </span>
                   <button
                     type="button"
@@ -289,7 +291,7 @@ export default function MembersPage() {
                       cursor: "pointer",
                     }}
                   >
-                    수정
+                    {t("members.edit")}
                   </button>
                 </div>
               )}
@@ -315,7 +317,7 @@ export default function MembersPage() {
                     cursor: "pointer",
                   }}
                 >
-                  수업 예약
+                  {t("members.bookClass")}
                 </button>
               </Link>
               <Link href={`/members/${m.id}/subscribe`} style={{ flex: 1, textDecoration: "none" }}>
@@ -332,7 +334,7 @@ export default function MembersPage() {
                     cursor: "pointer",
                   }}
                 >
-                  회원권 신청
+                  {t("members.applyMembership")}
                 </button>
               </Link>
             </div>
@@ -353,13 +355,13 @@ export default function MembersPage() {
               cursor: "pointer",
             }}
           >
-            + 선수 등록
+            {t("members.addPlayer")}
           </button>
         </Link>
 
         <div style={{ textAlign: "center", padding: "16px 0", fontSize: 13 }}>
           <Link href="/dashboard" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 홈으로 돌아가기
+            {t("members.backToHome")}
           </Link>
         </div>
       </div>

@@ -45,5 +45,21 @@
     "gallery": "Gallery",
     "bookings": "Bookings",
     "more": "More"
+  },
+  "members": {
+    "subtitle": "Players",
+    "noPlayers": "No players registered yet. Add one using the button below.",
+    "ageSuffix": "(Age {age})",
+    "programUnset": "Program not set",
+    "nameEnLabel": "English name: ",
+    "nameEnMissing": "Not entered (required before invoicing)",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "bookClass": "Book a Class",
+    "applyMembership": "Apply for Membership",
+    "addPlayer": "+ Add Player",
+    "backToHome": "← Back to Home"
   }
 }

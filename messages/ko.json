@@ -45,5 +45,21 @@
     "gallery": "갤러리",
     "bookings": "예약내역",
     "more": "더보기"
+  },
+  "members": {
+    "subtitle": "선수 관리",
+    "noPlayers": "아직 등록된 선수가 없습니다. 아래 버튼으로 선수를 등록해주세요.",
+    "ageSuffix": "(만 {age}세)",
+    "programUnset": "프로그램 미정",
+    "nameEnLabel": "영문 이름: ",
+    "nameEnMissing": "미입력 (인보이스 발급 전 등록 필요)",
+    "edit": "수정",
+    "save": "저장",
+    "saving": "저장 중...",
+    "cancel": "취소",
+    "bookClass": "수업 예약",
+    "applyMembership": "회원권 신청",
+    "addPlayer": "+ 선수 등록",
+    "backToHome": "← 홈으로 돌아가기"
   }
 }
