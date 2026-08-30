@@ -8,7 +8,7 @@ import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 import { useLanguage } from "../../lib/i18n/LanguageContext";
-import { translateClassName, translateCoachName } from "../../lib/i18n/nameTranslations";
+import { translateClassName } from "../../lib/i18n/nameTranslations";
 
 const WEEKDAY_HEADERS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEKDAY_HEADERS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -759,14 +759,7 @@ function BookPageInner() {
         if (!s) return null;
         const coachInfo = coachesByClass[s.class_id];
         const coachText = coachInfo
-          ? [
-              translateCoachName(coachInfo.main, lang),
-              ...coachInfo.assistants.map((n) =>
-                lang === "en" ? translateCoachName(n, lang) : `${n} 코치님`
-              ),
-            ]
-              .filter(Boolean)
-              .join(", ") || "-"
+          ? [coachInfo.main, ...coachInfo.assistants].filter(Boolean).join(", ") || "-"
           : "-";
         return (
           <div
