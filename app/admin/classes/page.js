@@ -71,6 +71,8 @@ function AdminClassesPageInner() {
   const [generateMsg, setGenerateMsg] = useState("");
   const [coaches, setCoaches] = useState([]);
   const [coachProfiles, setCoachProfiles] = useState([]);
+  const [newMainCoachId, setNewMainCoachId] = useState("");
+  const [newAssistantCoachIds, setNewAssistantCoachIds] = useState([]);
   const [classCoachesByClass, setClassCoachesByClass] = useState({});
   const [addingCoachForClassId, setAddingCoachForClassId] = useState(null);
   const [addCoachProfileId, setAddCoachProfileId] = useState("");
@@ -556,21 +558,42 @@ function AdminClassesPageInner() {
       class_type: classType,
     }));
 
-    const { error } = await supabase.from("classes").insert(rows);
-
-    setSaving(false);
+    const { data: createdClasses, error } = await supabase
+      .from("classes")
+      .insert(rows)
+      .select("id");
 
     if (error) {
+      setSaving(false);
       setErrorMsg("생성 실패: " + error.message);
       return;
     }
 
+    if (newMainCoachId || newAssistantCoachIds.length > 0) {
+      const coachRows = [];
+      (createdClasses || []).forEach((c) => {
+        if (newMainCoachId) {
+          coachRows.push({ class_id: c.id, coach_profile_id: newMainCoachId, coach_role: "main" });
+        }
+        newAssistantCoachIds.forEach((coachId) => {
+          coachRows.push({ class_id: c.id, coach_profile_id: coachId, coach_role: "assistant" });
+        });
+      });
+      if (coachRows.length > 0) {
+        await supabase.from("class_coaches").insert(coachRows);
+      }
+    }
+
+    setSaving(false);
     setClassName("Kids");
     setLocation("");
     setRegion("frankfurt");
     setSelectedWeekdays(["1"]);
+    setNewMainCoachId("");
+    setNewAssistantCoachIds([]);
     await loadClasses();
     await loadMonthSessions(currentMonth);
+    await loadClassCoaches();
   }
 
   if (loading || !isAdmin) {
@@ -1029,6 +1052,52 @@ function AdminClassesPageInner() {
                     </button>
                   );
                 })}
+              </div>
+
+              <label>메인 코치</label>
+              <select
+                value={newMainCoachId}
+                onChange={(e) => setNewMainCoachId(e.target.value)}
+                style={{ width: "100%", padding: 14, fontSize: 16, border: "1px solid #ddd", borderRadius: 10, background: "#fafafa" }}
+              >
+                <option value="">선택 안 함</option>
+                {coachProfiles.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+
+              <label>보조 코치 (여러 명 선택 가능)</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                {coachProfiles
+                  .filter((c) => c.id !== newMainCoachId)
+                  .map((c) => {
+                    const checked = newAssistantCoachIds.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() =>
+                          setNewAssistantCoachIds((prev) =>
+                            checked ? prev.filter((v) => v !== c.id) : [...prev, c.id]
+                          )
+                        }
+                        style={{
+                          padding: "8px 12px",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          borderRadius: 999,
+                          border: checked ? "2px solid #3B82C4" : "1px solid #ddd",
+                          background: checked ? "#eaf4fc" : "#fafafa",
+                          color: checked ? "#3B82C4" : "#555",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
               </div>
 
               <label>시작 시간</label>
