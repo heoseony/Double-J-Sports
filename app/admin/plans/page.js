@@ -218,7 +218,7 @@ export default function AdminPlansPage() {
     );
   }
 
-  const programLabel = { kids: "Kids", women: "Women's", men: "Men's" };
+  const programLabel = { kids: "Kids", pro: "프로", general: "일반(취미)" };
 
   return (
     <main
@@ -292,8 +292,8 @@ export default function AdminPlansPage() {
               style={inputStyle}
             >
               <option value="kids">Kids</option>
-              <option value="women">Women's</option>
-              <option value="men">Men's</option>
+              <option value="pro">프로</option>
+              <option value="general">일반(취미)</option>
             </select>
 
             <label style={labelStyle}>월 이용 횟수</label>

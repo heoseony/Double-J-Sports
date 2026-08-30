@@ -20,8 +20,8 @@ function todayStr() {
 const PROGRAM_TABS = [
   { value: "all", label: "전체" },
   { value: "kids", label: "Kids" },
-  { value: "women", label: "Women's" },
-  { value: "men", label: "Men's" },
+  { value: "pro", label: "프로" },
+  { value: "general", label: "일반(취미)" },
   { value: "test", label: "테스트" },
 ];
 

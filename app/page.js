@@ -92,7 +92,7 @@ export default function HomePage() {
                 cursor: "pointer",
               }}
             >
-              성인 회원가입 (Women's / Men's)
+              일반 회원가입
             </button>
           </Link>
 

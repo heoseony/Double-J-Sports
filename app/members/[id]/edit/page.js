@@ -343,8 +343,8 @@ export default function MemberEditPage() {
           <label style={labelStyle}>프로그램</label>
           <select value={program} onChange={(e) => setProgram(e.target.value)} style={fieldStyle}>
             <option value="kids">Kids</option>
-            <option value="women">Women's</option>
-            <option value="men">Men's</option>
+            <option value="pro">프로</option>
+            <option value="general">일반(취미)</option>
           </select>
 
           <label style={labelStyle}>축구 경험 (선택)</label>

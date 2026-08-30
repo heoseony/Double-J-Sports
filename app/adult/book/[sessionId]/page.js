@@ -248,7 +248,7 @@ export default function AdultClassDetailPage() {
               </div>
 
               <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-                <InfoRow label="프로그램" value={cls.program === "women" ? "Women's" : "Men's"} />
+                <InfoRow label="프로그램" value={cls.program === "pro" ? "프로" : "일반(취미)"} />
                 <InfoRow label="신청 인원" value={`${applicantCount}명 신청`} />
                 <InfoRow label="예약 마감" value={`수업 시작 ${bookingCutoffHours}시간 전까지`} />
               </div>
@@ -333,7 +333,7 @@ export default function AdultClassDetailPage() {
                 }}
               >
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>{member.name}</span>
-                <span style={{ fontSize: 12, color: "#5b7699" }}>{cls.program === "women" ? "Women's" : "Men's"}</span>
+                <span style={{ fontSize: 12, color: "#5b7699" }}>{cls.program === "pro" ? "프로" : "일반(취미)"}</span>
               </div>
 
               <p style={{ fontSize: 14, color: "#33455e", marginTop: 20 }}>

@@ -967,9 +967,8 @@ function AdminClassesPageInner() {
                 style={{ width: "100%", padding: 14, fontSize: 16, border: "1px solid #ddd", borderRadius: 10, background: "#fafafa" }}
               >
                 <option value="kids">Kids</option>
-                <option value="women">Women's</option>
-                <option value="men">Men's</option>
-                <option value="pro">Pro</option>
+                <option value="pro">프로</option>
+                <option value="general">일반(취미)</option>
               </select>
 
               <label>수업 형태</label>
@@ -1101,9 +1100,8 @@ function AdminClassesPageInner() {
                       style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8 }}
                     >
                       <option value="kids">Kids</option>
-                      <option value="women">Women's</option>
-                      <option value="men">Men's</option>
-                      <option value="pro">Pro</option>
+                      <option value="pro">프로</option>
+                      <option value="general">일반(취미)</option>
                     </select>
 
                     <label style={{ fontSize: 12 }}>수업 형태</label>

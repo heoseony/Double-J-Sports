@@ -315,8 +315,8 @@ export default function NewMemberPage() {
             }}
           >
             <option value="kids">Kids</option>
-            <option value="women">Women's</option>
-            <option value="men">Men's</option>
+            <option value="pro">프로</option>
+            <option value="general">일반(취미)</option>
           </select>
 
           <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>축구 경험 (선택)</label>

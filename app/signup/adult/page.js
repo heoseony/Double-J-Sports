@@ -10,7 +10,7 @@ const BLUE = "#3B82C4";
 export default function AdultSignupPage() {
   const router = useRouter();
 
-  const [program, setProgram] = useState("women");
+  const [program, setProgram] = useState("general");
   const [name, setName] = useState("");
   const [firstNameEn, setFirstNameEn] = useState("");
   const [lastNameEn, setLastNameEn] = useState("");
@@ -145,7 +145,7 @@ export default function AdultSignupPage() {
             더블제이 스포츠 아카데미
           </div>
           <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
-            Women's / Men's 회원가입
+            일반 회원가입
           </div>
         </div>
 
@@ -164,8 +164,8 @@ export default function AdultSignupPage() {
               onChange={(e) => setProgram(e.target.value)}
               style={inputStyle}
             >
-              <option value="women">Women's</option>
-              <option value="men">Men's</option>
+              <option value="general">일반(취미)</option>
+              <option value="pro">프로</option>
             </select>
 
             <label style={labelStyle}>이름</label>
