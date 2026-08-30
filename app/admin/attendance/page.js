@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { nowInGermany } from "../../../lib/germanyTime";
+import { getRegionBg } from "../../../lib/classColors";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
 
@@ -87,7 +88,7 @@ export default function AdminAttendancePage() {
       const { data: sessionData, error } = await supabase
         .from("class_sessions")
         .select(
-          "id, class_id, session_date, start_time, end_time, classes(class_name, program)"
+          "id, class_id, session_date, start_time, end_time, classes(class_name, program, region)"
         )
         .gte("session_date", startStr)
         .lte("session_date", endStr)
@@ -234,6 +235,7 @@ export default function AdminAttendancePage() {
                     justifyContent: "space-between",
                     alignItems: "center",
                     gap: 10,
+                    background: getRegionBg(s.classes?.region),
                   }}
                 >
                   <div>

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+import { getRegionLabel } from "../../../lib/classColors";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
@@ -244,8 +245,19 @@ function AttendanceInner() {
             marginBottom: 16,
           }}
         >
-          <div style={{ fontSize: 15, fontWeight: 800 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
             {sessionInfo?.classes?.class_name}
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "2px 8px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.25)",
+              }}
+            >
+              {getRegionLabel(sessionInfo?.classes?.region)}
+            </span>
           </div>
           <div style={{ fontSize: 13, opacity: 0.9, marginTop: 4 }}>
             {sessionInfo?.session_date} · {sessionInfo?.start_time?.slice(0, 5)}~

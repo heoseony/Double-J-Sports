@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionBg, getRegionLabel, getProgramTextColor } from "../../lib/classColors";
+import { getRegionBg, getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../lib/classColors";
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
@@ -213,7 +213,7 @@ function WeekCalendarGrid({ weekSessions, selectedDate, onSelectDate }) {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      background: r === "dusseldorf" ? "#8b5fd6" : "#3B82C4",
+                      background: getRegionTextColor(r),
                     }}
                   />
                 ))}
@@ -271,7 +271,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
               opacity: s.is_cancelled ? 0.5 : 1,
               overflow: "hidden",
               cursor: role ? "pointer" : "default",
-              background: "white",
+              background: getRegionBg(s.classes?.region),
             }}
           >
             <div
@@ -299,8 +299,8 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
                     fontWeight: 700,
                     padding: "1px 6px",
                     borderRadius: 999,
-                    color: isDusseldorf ? "#8b5fd6" : "#3B82C4",
-                    background: isDusseldorf ? "#F2EEFC" : "#EAF4FC",
+                    color: getRegionTextColor(s.classes?.region),
+                    background: "white",
                   }}
                 >
                   {getRegionLabel(s.classes?.region || "frankfurt")}

@@ -299,6 +299,7 @@ export default function CoachHomePage() {
                     justifyContent: "space-between",
                     alignItems: "center",
                     gap: 10,
+                    background: getRegionBg(s.classInfo?.region),
                   }}
                 >
                   <div>
