@@ -107,7 +107,8 @@
     "errNameRequired": "선수 이름을 입력해주세요.",
     "errNameEnRequired": "영문 이름을 입력해주세요. (인보이스 발급에 필요합니다)",
     "errLoginRequired": "로그인이 필요합니다.",
-    "errGuardianNotFound": "학부모 정보를 찾을 수 없습니다."
+    "errGuardianNotFound": "학부모 정보를 찾을 수 없습니다.",
+    "nameEnHint": ""
   },
   "landing": {
     "subtitle": "회원관리 및 수업예약 시스템",

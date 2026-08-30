@@ -224,6 +224,11 @@ export default function NewMemberPage() {
           <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
             {t("memberNew.nameEnLabel")}
           </label>
+          {t("memberNew.nameEnHint") && (
+            <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 2 }}>
+              {t("memberNew.nameEnHint")}
+            </div>
+          )}
           <input
             type="text"
             value={nameEn}
