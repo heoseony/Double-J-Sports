@@ -8,6 +8,7 @@ import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 import { useLanguage } from "../../lib/i18n/LanguageContext";
+import { translateClassName, translateCoachName } from "../../lib/i18n/nameTranslations";
 
 const WEEKDAY_HEADERS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEKDAY_HEADERS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -626,7 +627,7 @@ function BookPageInner() {
             >
               <div style={{ fontSize: 15, fontWeight: 700 }}>
                 {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} ·{" "}
-                {s.classes.class_name}
+                {translateClassName(s.classes.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
                 {t("book.currentApplicants", { count: names.length })}
@@ -758,7 +759,12 @@ function BookPageInner() {
         if (!s) return null;
         const coachInfo = coachesByClass[s.class_id];
         const coachText = coachInfo
-          ? [coachInfo.main, ...coachInfo.assistants.map((n) => (lang === "en" ? n : `${n} 코치님`))]
+          ? [
+              translateCoachName(coachInfo.main, lang),
+              ...coachInfo.assistants.map((n) =>
+                lang === "en" ? translateCoachName(n, lang) : `${n} 코치님`
+              ),
+            ]
               .filter(Boolean)
               .join(", ") || "-"
           : "-";
@@ -787,7 +793,7 @@ function BookPageInner() {
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63", marginBottom: 4 }}>
-                {s.classes.class_name}
+                {translateClassName(s.classes.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: "#3B82C4", fontWeight: 700, marginBottom: 16 }}>
                 {s.session_date} · {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)}

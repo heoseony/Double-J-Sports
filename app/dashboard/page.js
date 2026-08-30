@@ -8,6 +8,7 @@ import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
 import { useLanguage } from "../../lib/i18n/LanguageContext";
+import { translateClassName } from "../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토"];
@@ -375,7 +376,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [loading, setLoading] = useState(true);
 
   const [displayName, setDisplayName] = useState("");
@@ -930,7 +931,7 @@ export default function DashboardPage() {
                       {b.session.start_time?.slice(0, 5)}
                     </div>
                     <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2 }}>
-                      {b.session.classInfo?.class_name}
+                      {translateClassName(b.session.classInfo?.class_name, lang)}
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
