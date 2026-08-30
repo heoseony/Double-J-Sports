@@ -252,10 +252,15 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
           ? [coachInfo.main, ...coachInfo.assistants.map((n) => `${n} 코치님`)].filter(Boolean).join(", ")
           : "";
 
+        const isMyClass =
+          role !== "coach" || !myClassIds || myClassIds.includes(s.class_id);
+        const clickable = role === "admin" || (role === "coach" && isMyClass);
+
         return (
           <div
             key={s.id}
             onClick={() => {
+              if (!clickable) return;
               if (role === "coach") {
                 router.push(`/coach/attendance?sessionId=${s.id}`);
               } else if (role === "admin") {
@@ -267,10 +272,10 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
               alignItems: "stretch",
               gap: 10,
               borderRadius: 12,
-              border: myClassIds && myClassIds.includes(s.class_id) ? "2px solid #e05252" : "1px solid #eef2f8",
+              border: "1px solid #eef2f8",
               opacity: s.is_cancelled ? 0.5 : 1,
               overflow: "hidden",
-              cursor: role ? "pointer" : "default",
+              cursor: clickable ? "pointer" : "default",
               background: getRegionBg(s.classes?.region),
             }}
           >
@@ -305,6 +310,20 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
                 >
                   {getRegionLabel(s.classes?.region || "frankfurt")}
                 </span>
+                {role === "coach" && isMyClass && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      color: "white",
+                      background: "#e05252",
+                      padding: "1px 6px",
+                      borderRadius: 4,
+                    }}
+                  >
+                    MY CLASS
+                  </span>
+                )}
                 {s.is_cancelled && (
                   <span
                     style={{
@@ -332,18 +351,20 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", paddingRight: 12 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: BLUE,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                출석체크 →
-              </span>
-            </div>
+            {clickable && (
+              <div style={{ display: "flex", alignItems: "center", paddingRight: 12 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: BLUE,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  출석체크 →
+                </span>
+              </div>
+            )}
           </div>
         );
       })}
@@ -547,7 +568,8 @@ export default function DashboardPage() {
         const { count: activeCount } = await supabase
           .from("members")
           .select("id", { count: "exact", head: true })
-          .eq("status", "active");
+          .eq("status", "active")
+          .or("is_test.is.null,is_test.eq.false");
         setTotalActiveMembers(activeCount || 0);
       }
 
@@ -1111,7 +1133,7 @@ export default function DashboardPage() {
 
           <div style={cardStyle}>
             <div style={cardTitleRow}>
-              <span style={cardTitle}>{selectedDashDate === toDateStr(nowInGermany()) ? "오늘의 수업" : `${selectedDashDate} 수업`}</span>
+              <span style={cardTitle}>오늘의 수업</span>
             </div>
             <TodayClassList
               sessions={thisWeekSessions}
@@ -1130,7 +1152,7 @@ export default function DashboardPage() {
           <>
             <div style={cardStyle}>
               <div style={cardTitleRow}>
-                <span style={cardTitle}>운영 현황 (오늘 기준)</span>
+                <span style={cardTitle}>운영 현황 ({formatShortDate(toDateStr(nowInGermany()))} 기준)</span>
               </div>
               <div
                 style={{
@@ -1140,7 +1162,7 @@ export default function DashboardPage() {
                 }}
               >
                 {[
-                  { label: "오늘 예약", value: adminStats.bookingsToday },
+                  { label: "아카데미 회원수", value: totalActiveMembers },
                   { label: "오늘 수업", value: adminStats.classesToday },
                   { label: "출석", value: adminStats.attended },
                   { label: "결석", value: adminStats.absent },
@@ -1178,7 +1200,7 @@ export default function DashboardPage() {
 
           <div style={cardStyle}>
             <div style={cardTitleRow}>
-              <span style={cardTitle}>{selectedDashDate === toDateStr(nowInGermany()) ? "오늘의 수업" : `${selectedDashDate} 수업`}</span>
+              <span style={cardTitle}>오늘의 수업</span>
             </div>
             <TodayClassList
               sessions={thisWeekSessions}
