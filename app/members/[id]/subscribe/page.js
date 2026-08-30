@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../../lib/supabaseClient";
 import LoadingScreen from "../../../components/LoadingScreen";
+import { useLanguage } from "../../../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 const COUPON_AMOUNT = 20;
@@ -13,6 +14,7 @@ export default function SubscribePage() {
   const router = useRouter();
   const params = useParams();
   const memberId = params.id;
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
@@ -70,7 +72,7 @@ export default function SubscribePage() {
         .single();
 
       if (memberError || !memberData) {
-        setErrorMsg("회원 정보를 찾을 수 없습니다.");
+        setErrorMsg(t("subscribe.errMemberNotFound"));
         setLoading(false);
         return;
       }
@@ -108,13 +110,13 @@ export default function SubscribePage() {
     setErrorMsg("");
 
     if (!planId || !depositorName.trim()) {
-      setErrorMsg("상품과 입금자명을 모두 입력해주세요.");
+      setErrorMsg(t("subscribe.errFillRequired"));
       return;
     }
 
     const plan = plans.find((p) => p.id === planId);
     if (!plan) {
-      setErrorMsg("선택한 상품을 찾을 수 없습니다.");
+      setErrorMsg(t("subscribe.errPlanNotFound"));
       return;
     }
 
@@ -143,7 +145,7 @@ export default function SubscribePage() {
 
     if (error) {
       setSubmitting(false);
-      setErrorMsg("신청 실패: " + error.message);
+      setErrorMsg(t("subscribe.errSubmitFailedPrefix") + error.message);
       return;
     }
 
@@ -248,7 +250,7 @@ export default function SubscribePage() {
           </svg>
         </Link>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          {member?.name} · 회원권 신청
+          {t("subscribe.title", { name: member?.name })}
         </div>
       </div>
 
@@ -275,17 +277,15 @@ export default function SubscribePage() {
                 gap: 6,
               }}
             >
-              ✓ 신청이 접수되었습니다
+              {t("subscribe.submittedTitle")}
             </div>
             <p style={{ fontSize: 14, margin: 0, lineHeight: 1.6, color: "#33455e" }}>
-              아래 계좌로 <strong style={{ color: "#1b3a63" }}>{submitted.total_amount} EUR</strong>를
-              입금해주세요. 입금자명은 신청하신{" "}
-              <strong style={{ color: "#1b3a63" }}>"{submitted.depositor_name}"</strong>과 동일해야 확인이
-              빠릅니다.
+              {t("subscribe.body1")}<strong style={{ color: "#1b3a63" }}>{submitted.total_amount} EUR</strong>{t("subscribe.body2")}{" "}
+              <strong style={{ color: "#1b3a63" }}>"{submitted.depositor_name}"</strong>{t("subscribe.body3")}
             </p>
             {Number(submitted.discount_amount) > 0 && (
               <p style={{ fontSize: 13, color: BLUE, marginTop: 8, marginBottom: 0, fontWeight: 700 }}>
-                쿠폰 {submitted.discount_amount} EUR 할인이 적용되었습니다.
+                {t("subscribe.couponAppliedMsg", { amount: submitted.discount_amount })}
               </p>
             )}
             <div
@@ -299,14 +299,13 @@ export default function SubscribePage() {
                 color: "#1b3a63",
               }}
             >
-              <div>은행: {settings?.bank_name || "-"}</div>
-              <div>예금주: {settings?.account_holder || "-"}</div>
+              <div>{t("subscribe.bankLabel")}{settings?.bank_name || "-"}</div>
+              <div>{t("subscribe.accountHolderLabel")}{settings?.account_holder || "-"}</div>
               <div>IBAN: {settings?.iban || "-"}</div>
               <div>BIC: {settings?.bic || "-"}</div>
             </div>
             <p style={{ fontSize: 12, color: "#8ea0b8", marginTop: 10, marginBottom: 0 }}>
-              입금 확인 후 관리자가 회원권을 활성화하며, 완료되면 Invoice가
-              발급됩니다.
+              {t("subscribe.invoiceNotice")}
             </p>
           </div>
         )}
@@ -322,7 +321,7 @@ export default function SubscribePage() {
             }}
           >
             <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
-              입금 확인 대기 중
+              {t("subscribe.pendingTitle")}
             </div>
             {pendingPayments.map((p, idx) => (
               <div
@@ -338,8 +337,8 @@ export default function SubscribePage() {
                   <strong style={{ color: "#1b3a63" }}>{p.total_amount} EUR</strong>
                 </div>
                 <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
-                  입금자명: {p.depositor_name} · 신청일:{" "}
-                  {new Date(p.requested_at).toLocaleDateString("ko-KR")}
+                  {t("subscribe.depositorLabelInline")}{p.depositor_name} · {t("subscribe.requestedLabelInline")}
+                  {new Date(p.requested_at).toLocaleDateString(lang === "en" ? "en-US" : "ko-KR")}
                 </div>
               </div>
             ))}
@@ -355,25 +354,25 @@ export default function SubscribePage() {
           }}
         >
           <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 14 }}>
-            새 회원권 신청
+            {t("subscribe.newSubscriptionTitle")}
           </div>
 
           {plans.length === 0 ? (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              현재 신청 가능한 회원권 상품이 없습니다.
+              {t("subscribe.noPlansAvailable")}
             </p>
           ) : (
             <form onSubmit={handleSubmit}>
-              <label style={labelStyle}>회원권 상품 선택</label>
+              <label style={labelStyle}>{t("subscribe.selectPlanLabel")}</label>
               <select
                 value={planId}
                 onChange={(e) => setPlanId(e.target.value)}
                 style={selectStyle}
               >
-                <option value="">-- 선택하세요 --</option>
+                <option value="">{t("subscribe.selectPlaceholder")}</option>
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.sessions_per_month}회 / {p.price} {p.currency})
+                    {t("subscribe.planOptionFormat", { name: p.name, sessions: p.sessions_per_month, price: p.price, currency: p.currency })}
                   </option>
                 ))}
               </select>
@@ -398,7 +397,7 @@ export default function SubscribePage() {
                     style={{ marginTop: 3, width: 18, height: 18 }}
                   />
                   <label htmlFor="useCoupon" style={{ fontSize: 13, color: "#1b3a63", cursor: "pointer" }}>
-                    <strong>친구추천 쿠폰 사용</strong> ({availableCoupon.amount} EUR 할인, 이번 결제에만 사용 가능)
+                    <strong>{t("subscribe.couponLabel")}</strong> {t("subscribe.couponDetail", { amount: availableCoupon.amount })}
                   </label>
                 </div>
               )}
@@ -414,12 +413,12 @@ export default function SubscribePage() {
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", color: "#5b7699" }}>
-                    <span>상품 가격</span>
+                    <span>{t("subscribe.planPriceLabel")}</span>
                     <span>{rawPrice} {selectedPlan.currency}</span>
                   </div>
                   {discount > 0 && (
                     <div style={{ display: "flex", justifyContent: "space-between", color: BLUE, marginTop: 4 }}>
-                      <span>쿠폰 할인</span>
+                      <span>{t("subscribe.couponDiscountLabel")}</span>
                       <span>- {discount} {selectedPlan.currency}</span>
                     </div>
                   )}
@@ -434,18 +433,18 @@ export default function SubscribePage() {
                       borderTop: "1px solid #e5eaf2",
                     }}
                   >
-                    <span>최종 결제금액</span>
+                    <span>{t("subscribe.finalPriceLabel")}</span>
                     <span>{finalPrice} {selectedPlan.currency}</span>
                   </div>
                 </div>
               )}
 
-              <label style={labelStyle}>입금자명</label>
+              <label style={labelStyle}>{t("subscribe.depositorNameLabel")}</label>
               <input
                 type="text"
                 value={depositorName}
                 onChange={(e) => setDepositorName(e.target.value)}
-                placeholder="실제 입금하실 분의 이름"
+                placeholder={t("subscribe.depositorNamePlaceholder")}
                 style={inputStyle}
               />
 
@@ -480,7 +479,7 @@ export default function SubscribePage() {
                   cursor: submitting ? "default" : "pointer",
                 }}
               >
-                {submitting ? "신청 중..." : "신청하기"}
+                {submitting ? t("subscribe.submitting") : t("subscribe.submit")}
               </button>
             </form>
           )}
@@ -488,7 +487,7 @@ export default function SubscribePage() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href="/members" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 선수 관리로 돌아가기
+            {t("subscribe.backToPlayers")}
           </Link>
         </div>
       </div>
