@@ -968,7 +968,7 @@ function AdminClassesPageInner() {
               >
                 <option value="kids">Kids</option>
                 <option value="pro">프로</option>
-                <option value="general">일반(취미)</option>
+                <option value="general">일반/취미</option>
               </select>
 
               <label>수업 형태</label>
@@ -1101,7 +1101,7 @@ function AdminClassesPageInner() {
                     >
                       <option value="kids">Kids</option>
                       <option value="pro">프로</option>
-                      <option value="general">일반(취미)</option>
+                      <option value="general">일반/취미</option>
                     </select>
 
                     <label style={{ fontSize: 12 }}>수업 형태</label>

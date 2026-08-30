@@ -164,7 +164,7 @@ export default function AdultSignupPage() {
               onChange={(e) => setProgram(e.target.value)}
               style={inputStyle}
             >
-              <option value="general">일반(취미)</option>
+              <option value="general">일반/취미</option>
               <option value="pro">프로</option>
             </select>
 

@@ -344,7 +344,7 @@ export default function MemberEditPage() {
           <select value={program} onChange={(e) => setProgram(e.target.value)} style={fieldStyle}>
             <option value="kids">Kids</option>
             <option value="pro">프로</option>
-            <option value="general">일반(취미)</option>
+            <option value="general">일반/취미</option>
           </select>
 
           <label style={labelStyle}>축구 경험 (선택)</label>
