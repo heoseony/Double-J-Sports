@@ -27,7 +27,7 @@ function calcAge(birthDateStr) {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
@@ -202,7 +202,7 @@ export default function MembersPage() {
                 </div>
                 <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 3 }}>
                   {m.program === "kids" ? "Kids" : m.program || t("members.programUnset")}
-                  {m.region ? ` · ${getRegionLabel(m.region)}` : ""}
+                  {m.region ? ` · ${getRegionLabel(m.region, lang)}` : ""}
                 </div>
               </div>
               <span style={{ fontSize: 18, color: "#c2ccd9" }}>›</span>
