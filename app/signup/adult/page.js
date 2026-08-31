@@ -54,7 +54,7 @@ export default function AdultSignupPage() {
 
     if (authError || !authData.user) {
       setSubmitting(false);
-      setErrorMsg("회원가입 실패: " + (authError?.message || "알 수 없는 오류"));
+      setErrorMsg(t("signupAdult.errSignupFailedPrefix") + (authError?.message || t("signupAdult.errUnknown")));
       return;
     }
 
@@ -66,7 +66,7 @@ export default function AdultSignupPage() {
 
     if (userError) {
       setSubmitting(false);
-      setErrorMsg("사용자 정보 저장 실패: " + userError.message);
+      setErrorMsg(t("signupAdult.errUserSavePrefix") + userError.message);
       return;
     }
 
@@ -84,7 +84,7 @@ export default function AdultSignupPage() {
     setSubmitting(false);
 
     if (memberError) {
-      setErrorMsg("회원 정보 저장 실패: " + memberError.message);
+      setErrorMsg(t("signupAdult.errMemberSavePrefix") + memberError.message);
       return;
     }
 

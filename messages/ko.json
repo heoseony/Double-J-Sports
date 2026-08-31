@@ -17,7 +17,10 @@
     "or": "또는",
     "googleLogin": "Google로 로그인",
     "noAccount": "아직 계정이 없으신가요?",
-    "signup": "회원가입"
+    "signup": "회원가입",
+    "subtitle": "아이들의 성장과 즐거운 축구, 함께합니다.",
+    "errLoginFailedPrefix": "로그인 실패: ",
+    "errGoogleLoginFailedPrefix": "Google 로그인 실패: "
   },
   "dashboard": {
     "greeting": "안녕하세요!",
@@ -84,7 +87,11 @@
     "login": "로그인",
     "errNameEmailPassword": "이름, 이메일, 비밀번호는 필수입니다.",
     "errPasswordLength": "비밀번호는 6자 이상이어야 합니다.",
-    "errTermsRequired": "필수 약관에 동의해주세요."
+    "errTermsRequired": "필수 약관에 동의해주세요.",
+    "errSignupFailedPrefix": "회원가입 실패: ",
+    "errUnknown": "알 수 없는 오류",
+    "errUserSavePrefix": "사용자 정보 저장 실패: ",
+    "errGuardianSavePrefix": "보호자 정보 저장 실패: "
   },
   "memberNew": {
     "title": "선수 등록",
@@ -148,7 +155,11 @@
     "login": "로그인",
     "errRequired": "이름, 영문 이름, 이메일, 비밀번호는 필수입니다.",
     "errPasswordLength": "비밀번호는 6자 이상이어야 합니다.",
-    "errTermsRequired": "필수 약관에 동의해주세요."
+    "errTermsRequired": "필수 약관에 동의해주세요.",
+    "errSignupFailedPrefix": "회원가입 실패: ",
+    "errUnknown": "알 수 없는 오류",
+    "errUserSavePrefix": "사용자 정보 저장 실패: ",
+    "errMemberSavePrefix": "회원 정보 저장 실패: "
   },
   "book": {
     "summary": "{name}님 수업 예약 · 잔여 {remaining}회",

@@ -17,7 +17,10 @@
     "or": "or",
     "googleLogin": "Continue with Google",
     "noAccount": "Don't have an account?",
-    "signup": "Sign up"
+    "signup": "Sign up",
+    "subtitle": "Growing kids, joyful soccer, together.",
+    "errLoginFailedPrefix": "Login failed: ",
+    "errGoogleLoginFailedPrefix": "Google login failed: "
   },
   "dashboard": {
     "greeting": "Hello!",
@@ -84,7 +87,11 @@
     "login": "Log In",
     "errNameEmailPassword": "Name, email, and password are required.",
     "errPasswordLength": "Password must be at least 6 characters.",
-    "errTermsRequired": "Please agree to the required terms."
+    "errTermsRequired": "Please agree to the required terms.",
+    "errSignupFailedPrefix": "Sign up failed: ",
+    "errUnknown": "Unknown error",
+    "errUserSavePrefix": "Failed to save user information: ",
+    "errGuardianSavePrefix": "Failed to save guardian information: "
   },
   "memberNew": {
     "title": "Add Player",
@@ -148,7 +155,11 @@
     "login": "Log In",
     "errRequired": "Name, English name, email, and password are required.",
     "errPasswordLength": "Password must be at least 6 characters.",
-    "errTermsRequired": "Please agree to the required terms."
+    "errTermsRequired": "Please agree to the required terms.",
+    "errSignupFailedPrefix": "Sign up failed: ",
+    "errUnknown": "Unknown error",
+    "errUserSavePrefix": "Failed to save user information: ",
+    "errMemberSavePrefix": "Failed to save member information: "
   },
   "book": {
     "summary": "Book a Class for {name} · {remaining} Sessions Remaining",

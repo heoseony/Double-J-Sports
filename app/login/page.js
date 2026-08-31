@@ -33,7 +33,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (error) {
-      setErrorMsg("로그인 실패: " + error.message);
+      setErrorMsg(t("login.errLoginFailedPrefix") + error.message);
       return;
     }
 
@@ -90,7 +90,7 @@ export default function LoginPage() {
 
     if (error) {
       setGoogleLoading(false);
-      setErrorMsg("Google 로그인 실패: " + error.message);
+      setErrorMsg(t("login.errGoogleLoginFailedPrefix") + error.message);
     }
     // 성공 시 Google 페이지로 리다이렉트되므로 별도 처리 불필요
   }
@@ -148,7 +148,7 @@ export default function LoginPage() {
             marginBottom: 28,
           }}
         >
-          아이들의 성장과 즐거운 축구, 함께합니다.
+          {t("login.subtitle")}
         </div>
 
         {/* 언어 전환 토글 */}

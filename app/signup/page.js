@@ -29,15 +29,15 @@ export default function SignupPage() {
     setErrorMsg("");
 
     if (!name.trim() || !email.trim() || !password) {
-      setErrorMsg("이름, 이메일, 비밀번호는 필수입니다.");
+      setErrorMsg(t("signup.errNameEmailPassword"));
       return;
     }
     if (password.length < 6) {
-      setErrorMsg("비밀번호는 6자 이상이어야 합니다.");
+      setErrorMsg(t("signup.errPasswordLength"));
       return;
     }
     if (!agreePrivacy || !agreeTerms) {
-      setErrorMsg("필수 약관에 동의해주세요.");
+      setErrorMsg(t("signup.errTermsRequired"));
       return;
     }
 
@@ -50,7 +50,7 @@ export default function SignupPage() {
 
     if (authError || !authData.user) {
       setSubmitting(false);
-      setErrorMsg("회원가입 실패: " + (authError?.message || "알 수 없는 오류"));
+      setErrorMsg(t("signup.errSignupFailedPrefix") + (authError?.message || t("signup.errUnknown")));
       return;
     }
 
@@ -62,7 +62,7 @@ export default function SignupPage() {
 
     if (userError) {
       setSubmitting(false);
-      setErrorMsg("사용자 정보 저장 실패: " + userError.message);
+      setErrorMsg(t("signup.errUserSavePrefix") + userError.message);
       return;
     }
 
@@ -76,7 +76,7 @@ export default function SignupPage() {
     setSubmitting(false);
 
     if (guardianError) {
-      setErrorMsg("보호자 정보 저장 실패: " + guardianError.message);
+      setErrorMsg(t("signup.errGuardianSavePrefix") + guardianError.message);
       return;
     }
 
