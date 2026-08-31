@@ -14,6 +14,7 @@ export default function AdultSignupPage() {
 
   const [program, setProgram] = useState("general");
   const [name, setName] = useState("");
+  const [gender, setGender] = useState("");
   const [firstNameEn, setFirstNameEn] = useState("");
   const [lastNameEn, setLastNameEn] = useState("");
   const [email, setEmail] = useState("");
@@ -75,6 +76,7 @@ export default function AdultSignupPage() {
       name: name.trim(),
       first_name_en: firstNameEn.trim() || null,
       last_name_en: lastNameEn.trim() || null,
+      gender: gender || null,
       status: "active",
       referred_by: referredBy.trim() || null,
     });
@@ -199,6 +201,44 @@ export default function AdultSignupPage() {
             <p style={{ fontSize: 12, color: "#8ea0b8", margin: "6px 0 0" }}>
               {t("signupAdult.nameEnHint")}
             </p>
+
+            <label style={labelStyle}>{t("memberEdit.genderLabel")}</label>
+            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+              <button
+                type="button"
+                onClick={() => setGender("남")}
+                style={{
+                  flex: 1,
+                  padding: "10px 0",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  border: gender === "남" ? "none" : "1px solid #e5eaf2",
+                  background: gender === "남" ? BLUE : "white",
+                  color: gender === "남" ? "white" : "#5b7699",
+                  cursor: "pointer",
+                }}
+              >
+                {t("memberEdit.genderMale")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGender("여")}
+                style={{
+                  flex: 1,
+                  padding: "10px 0",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  border: gender === "여" ? "none" : "1px solid #e5eaf2",
+                  background: gender === "여" ? BLUE : "white",
+                  color: gender === "여" ? "white" : "#5b7699",
+                  cursor: "pointer",
+                }}
+              >
+                {t("memberEdit.genderFemale")}
+              </button>
+            </div>
 
             <label style={labelStyle}>{t("signupAdult.emailLabel")}</label>
             <input
