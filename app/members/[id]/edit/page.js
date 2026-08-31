@@ -123,12 +123,12 @@ export default function MemberEditPage() {
       setErrorMsg(t("memberEdit.errNameRequired"));
       setSaving(false);
       return;
+    }
 
     if (!nameEn.trim()) {
       setErrorMsg(t("memberEdit.errNameEnRequired"));
       setSaving(false);
       return;
-    }
     }
 
     const { error } = await supabase
