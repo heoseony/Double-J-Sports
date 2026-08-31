@@ -373,7 +373,7 @@ export default function AdultReservationsPage() {
                         color: "#1b3a63",
                       }}
                     >
-                      상세보기
+                      {t("reservations.viewDetails")}
                     </span>
                   </Link>
 
@@ -393,7 +393,7 @@ export default function AdultReservationsPage() {
                         cursor: cancellingId === b.id ? "default" : "pointer",
                       }}
                     >
-                      {cancellingId === b.id ? "취소 중..." : "예약 취소"}
+                      {cancellingId === b.id ? t("classDetail.cancelling") : t("book.cancelBooking")}
                     </button>
                   )}
                 </div>
