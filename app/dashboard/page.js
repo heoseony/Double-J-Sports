@@ -934,7 +934,7 @@ export default function DashboardPage() {
           </div>
           <div style={{ fontSize: 19, fontWeight: 800, marginBottom: 6 }}>
             {isAdmin ? (
-              "정연웅 • 정연황"
+              "정연웅 • 정연황 감독님"
             ) : roleLabel === "학부모" ? (
               t("dashboard.parentGreeting", { name: displayName || email })
             ) : (
