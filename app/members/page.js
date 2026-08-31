@@ -45,7 +45,7 @@ export default function MembersPage() {
       .order("created_at", { ascending: true });
 
     if (memberError) {
-      setErrorMsg("선수 목록을 불러오지 못했습니다: " + memberError.message);
+      setErrorMsg(t("members.errLoadPrefix") + memberError.message);
       setLoading(false);
       return;
     }
@@ -72,7 +72,7 @@ export default function MembersPage() {
         .single();
 
       if (guardianError || !guardian) {
-        setErrorMsg("보호자 정보를 찾을 수 없습니다.");
+        setErrorMsg(t("members.errGuardianNotFound"));
         setLoading(false);
         return;
       }
@@ -107,7 +107,7 @@ export default function MembersPage() {
     setSavingNameEnId(null);
 
     if (error) {
-      setNameEnMsg("영문 이름 저장 실패: " + error.message);
+      setNameEnMsg(t("members.errNameEnSavePrefix") + error.message);
       return;
     }
 
@@ -222,7 +222,7 @@ export default function MembersPage() {
                     type="text"
                     value={nameEnDraft}
                     onChange={(e) => setNameEnDraft(e.target.value)}
-                    placeholder="예: Minsu Kim"
+                    placeholder={t("memberNew.nameEnPlaceholder")}
                     style={{
                       flex: 1,
                       padding: 9,

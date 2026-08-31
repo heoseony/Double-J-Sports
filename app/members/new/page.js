@@ -86,7 +86,7 @@ export default function NewMemberPage() {
       .single();
 
     if (error) {
-      setErrorMsg("등록 실패: " + error.message);
+      setErrorMsg(t("memberNew.errRegisterFailedPrefix") + error.message);
       setLoading(false);
       return;
     }

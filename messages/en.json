@@ -60,7 +60,10 @@
     "bookClass": "Book a Class",
     "applyMembership": "Buy Membership",
     "addPlayer": "+ Add Player",
-    "backToHome": "← Back to Home"
+    "backToHome": "← Back to Home",
+    "errLoadPrefix": "Failed to load players: ",
+    "errGuardianNotFound": "Guardian information not found.",
+    "errNameEnSavePrefix": "Failed to save English name: "
   },
   "signup": {
     "title": "Parent Sign Up",
@@ -108,7 +111,8 @@
     "errNameEnRequired": "Please enter the English name. (required for invoicing)",
     "errLoginRequired": "Please log in.",
     "errGuardianNotFound": "Could not find guardian information.",
-    "nameEnHint": "Used for invoices"
+    "nameEnHint": "Used for invoices",
+    "errRegisterFailedPrefix": "Registration failed: "
   },
   "landing": {
     "subtitle": "Membership & Class Booking System",
