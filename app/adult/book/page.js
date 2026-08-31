@@ -3,13 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionBg, getProgramTextColor } from "../../../lib/classColors";
+import { getRegionBg, getProgramTextColor, getRegionLabel } from "../../../lib/classColors";
 import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
+import { useLanguage } from "../../../lib/i18n/LanguageContext";
+import { translateClassName } from "../../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
-const WEEKDAY_HEADERS = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_HEADERS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_HEADERS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -25,6 +28,7 @@ function todayStr() {
 
 export default function AdultBookPage() {
   const router = useRouter();
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -63,7 +67,7 @@ export default function AdultBookPage() {
       .single();
 
     if (memberError || !memberData) {
-      setErrorMsg("회원 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("adultBook.errMemberNotFound"));
       setLoading(false);
       return;
     }
@@ -109,7 +113,7 @@ export default function AdultBookPage() {
       .order("start_time", { ascending: true });
 
     if (sessionError) {
-      setErrorMsg("수업 목록을 불러오지 못했습니다: " + sessionError.message);
+      setErrorMsg(t("book.errLoadSessionsPrefix") + sessionError.message);
       setLoading(false);
       return;
     }
@@ -195,8 +199,12 @@ export default function AdultBookPage() {
     return <LoadingScreen />;
   }
 
-  const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
+  const monthLabel =
+    lang === "en"
+      ? currentMonth.toLocaleDateString("en-US", { year: "numeric", month: "long" })
+      : `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
   const selectedSessions = sessionsByDate[selectedDate] || [];
+  const weekdayHeaders = lang === "en" ? WEEKDAY_HEADERS_EN : WEEKDAY_HEADERS_KO;
 
   return (
     <main
@@ -215,18 +223,18 @@ export default function AdultBookPage() {
           padding: "18px 18px 4px",
         }}
       >
-        <img src="/logo-main.png" alt="로고" style={{ width: 28, height: 28, objectFit: "contain" }} />
-        <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>더블제이 스포츠 아카데미</div>
+        <img src="/logo-main.png" alt="" style={{ width: 28, height: 28, objectFit: "contain" }} />
+        <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>{t("login.title")}</div>
       </div>
 
       <div style={{ padding: "0 18px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ fontSize: 13, color: "#8ea0b8" }}>
-            {member?.name}님 · 잔여 {Math.max(remaining, 0)}회
-            {!allClassesAllowed && " · 특정 수업만 예약 가능한 회원권"}
+            {t("adultBook.summary", { name: member?.name, remaining: Math.max(remaining, 0) })}
+            {!allClassesAllowed && t("book.limitedMembership")}
           </div>
           <Link href="/adult/reservations" style={{ fontSize: 12, fontWeight: 700, color: BLUE, textDecoration: "none" }}>
-            예약내역 →
+            {t("memberBook.viewReservations")}
           </Link>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -245,7 +253,7 @@ export default function AdultBookPage() {
               cursor: "pointer",
             }}
           >
-            프랑크푸르트
+            {getRegionLabel("frankfurt", lang)}
           </button>
           <button
             type="button"
@@ -262,7 +270,7 @@ export default function AdultBookPage() {
               cursor: "pointer",
             }}
           >
-            뒤셀도르프
+            {getRegionLabel("dusseldorf", lang)}
           </button>
         </div>
         </div>
@@ -301,7 +309,7 @@ export default function AdultBookPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, fontSize: 12, textAlign: "center", color: "#8ea0b8", marginBottom: 6 }}>
-            {WEEKDAY_HEADERS.map((w) => (
+            {weekdayHeaders.map((w) => (
               <div key={w}>{w}</div>
             ))}
           </div>
@@ -354,12 +362,12 @@ export default function AdultBookPage() {
           }}
         >
           <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
-            {selectedDate} 수업
+            {t("book.classesOnDate", { date: selectedDate })}
           </div>
 
           {selectedSessions.length === 0 && (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              이 날짜에는 예약 가능한 수업이 없습니다.
+              {t("book.noSessionsForDate")}
             </p>
           )}
 
@@ -379,10 +387,10 @@ export default function AdultBookPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: getProgramTextColor(s.classes?.program) }}>
-                        {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} · {s.classes.class_name}
+                        {s.start_time?.slice(0, 5)}~{s.end_time?.slice(0, 5)} · {translateClassName(s.classes.class_name, lang)}
                       </div>
                       <div style={{ fontSize: 13, color: "#8ea0b8", marginTop: 4 }}>
-                        현재 신청 {count}명
+                        {t("book.currentApplicants", { count })}
                       </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -397,7 +405,7 @@ export default function AdultBookPage() {
                             borderRadius: 999,
                           }}
                         >
-                          예약됨
+                          {t("book.booked")}
                         </span>
                       )}
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c7d2e0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -413,7 +421,7 @@ export default function AdultBookPage() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href="/dashboard" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 홈으로
+            {t("adultBook.backToHome")}
           </Link>
         </div>
       </div>

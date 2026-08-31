@@ -353,5 +353,10 @@
     "deleting": "Deleting...",
     "deletePlayer": "Delete Player",
     "backToPlayers": "← Back to Players"
+  },
+  "adultBook": {
+    "errMemberNotFound": "Member information not found.",
+    "summary": "{name} · {remaining} Sessions Remaining",
+    "backToHome": "← Home"
   }
 }
