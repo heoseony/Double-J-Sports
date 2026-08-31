@@ -12,6 +12,7 @@ import { translateClassName } from "../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
 const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABELS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function MenuIcon({ type, color }) {
   const props = {
@@ -1068,7 +1069,7 @@ export default function DashboardPage() {
                     {attendanceGridFor(c.id).map((cell, i) => (
                       <div key={i} style={{ textAlign: "center", flex: 1 }}>
                         <div style={{ fontSize: 10, color: "#aab9cc", marginBottom: 3 }}>
-                          {WEEKDAY_LABELS[i]}
+                          {(lang === "en" ? WEEKDAY_LABELS_EN : WEEKDAY_LABELS)[i]}
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 800, color: cell.color }}>
                           {cell.symbol}
