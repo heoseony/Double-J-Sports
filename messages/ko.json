@@ -368,5 +368,8 @@
     "bookingDeadlineValue": "수업 시작 {hours}시간 전까지",
     "alreadyBooked": "이미 예약된 수업입니다",
     "pastDeadline": "예약이 마감되었습니다"
+  },
+  "adultReservations": {
+    "title": "예약 내역"
   }
 }

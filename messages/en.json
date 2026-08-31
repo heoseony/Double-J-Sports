@@ -368,5 +368,8 @@
     "bookingDeadlineValue": "Up to {hours} hours before class start",
     "alreadyBooked": "You're already booked for this class",
     "pastDeadline": "Booking is closed"
+  },
+  "adultReservations": {
+    "title": "My Bookings"
   }
 }

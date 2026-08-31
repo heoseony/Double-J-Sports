@@ -6,39 +6,38 @@ import Link from "next/link";
 import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
+import { useLanguage } from "../../../lib/i18n/LanguageContext";
+import { translateClassName } from "../../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
-
-const TABS = [
-  { key: "upcoming", label: "예정" },
-  { key: "done", label: "완료" },
-  { key: "cancelled", label: "취소" },
-];
+const WEEKDAY_LABEL_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
 }
 
-function formatDateLabel(dateStr) {
+function formatDateLabel(dateStr, lang) {
   const d = new Date(dateStr + "T00:00:00");
-  return `${dateStr} (${WEEKDAY_LABEL[d.getDay()]})`;
+  const labels = lang === "en" ? WEEKDAY_LABEL_EN : WEEKDAY_LABEL_KO;
+  return `${dateStr} (${labels[d.getDay()]})`;
 }
 
-function dDayLabel(dateStr) {
+function dDayLabel(dateStr, lang) {
   const today = nowInGermany();
   today.setHours(0, 0, 0, 0);
   const target = new Date(dateStr + "T00:00:00");
   const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return "D-day";
+  if (diffDays === 0) return lang === "en" ? "Today" : "D-day";
   if (diffDays > 0) return `D-${diffDays}`;
   return `D+${Math.abs(diffDays)}`;
 }
 
 export default function AdultReservationsPage() {
   const router = useRouter();
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
@@ -69,7 +68,7 @@ export default function AdultReservationsPage() {
       .single();
 
     if (memberError || !memberData) {
-      setErrorMsg("회원 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("adultBook.errMemberNotFound"));
       setLoading(false);
       return;
     }
@@ -104,7 +103,7 @@ export default function AdultReservationsPage() {
       .order("class_sessions(session_date)", { ascending: false });
 
     if (bookingError) {
-      setErrorMsg("예약 내역을 불러오지 못했습니다: " + bookingError.message);
+      setErrorMsg(t("reservations.errLoadBookingsPrefix") + bookingError.message);
       setLoading(false);
       return;
     }
@@ -136,7 +135,7 @@ export default function AdultReservationsPage() {
 
     if (error) {
       setCancellingId(null);
-      setErrorMsg("취소 실패: " + error.message);
+      setErrorMsg(t("reservations.errCancelFailedPrefix") + error.message);
       return;
     }
 
@@ -187,7 +186,7 @@ export default function AdultReservationsPage() {
             {errorMsg}
           </div>
           <Link href="/adult/book" style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 13 }}>
-            ← 수업 목록으로
+            {t("reservations.backToClassList")}
           </Link>
         </div>
       </main>
@@ -220,6 +219,11 @@ export default function AdultReservationsPage() {
   };
 
   const currentList = listByTab[activeTab];
+  const TABS = [
+    { key: "upcoming", label: t("reservations.tabUpcoming") },
+    { key: "done", label: t("reservations.tabDone") },
+    { key: "cancelled", label: t("reservations.tabCancelled") },
+  ];
 
   return (
     <main
@@ -236,7 +240,7 @@ export default function AdultReservationsPage() {
           </svg>
         </Link>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          예약 내역
+          {t("adultReservations.title")}
         </div>
       </div>
 
@@ -280,9 +284,9 @@ export default function AdultReservationsPage() {
         >
           {currentList.length === 0 && (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              {activeTab === "upcoming" && "예정된 예약이 없습니다."}
-              {activeTab === "done" && "완료된 수업이 없습니다."}
-              {activeTab === "cancelled" && "취소된 예약이 없습니다."}
+              {activeTab === "upcoming" && t("reservations.emptyUpcoming")}
+              {activeTab === "done" && t("reservations.emptyDone")}
+              {activeTab === "cancelled" && t("reservations.emptyCancelled")}
             </p>
           )}
 
@@ -301,10 +305,10 @@ export default function AdultReservationsPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
-                      {cls?.class_name}
+                      {translateClassName(cls?.class_name, lang)}
                     </div>
                     <div style={{ fontSize: 13, color: "#33455e", marginTop: 4 }}>
-                      {formatDateLabel(s.session_date)} · {formatTime(s.start_time)}~{formatTime(s.end_time)}
+                      {formatDateLabel(s.session_date, lang)} · {formatTime(s.start_time)}~{formatTime(s.end_time)}
                     </div>
                   </div>
 
@@ -320,7 +324,7 @@ export default function AdultReservationsPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {dDayLabel(s.session_date)}
+                      {dDayLabel(s.session_date, lang)}
                     </span>
                   )}
                   {activeTab === "done" && (
@@ -335,7 +339,7 @@ export default function AdultReservationsPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      출석
+                      {t("reservations.attended")}
                     </span>
                   )}
                   {activeTab === "cancelled" && (
@@ -350,7 +354,7 @@ export default function AdultReservationsPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      취소됨
+                      {t("reservations.cancelledBadge")}
                     </span>
                   )}
                 </div>
@@ -400,7 +404,7 @@ export default function AdultReservationsPage() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href="/adult/book" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 수업 목록으로
+            {t("reservations.backToClassList")}
           </Link>
         </div>
       </div>
