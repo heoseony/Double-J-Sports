@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
+import { useLanguage } from "../../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
@@ -20,6 +21,7 @@ function NoticeDetailInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const noticeId = searchParams.get("id");
+  const { t } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -49,7 +51,7 @@ function NoticeDetailInner() {
       }
 
       if (!noticeId) {
-        setErrorMsg("공지사항 정보를 찾을 수 없습니다.");
+        setErrorMsg(t("notices.errNotFound"));
         setLoading(false);
         return;
       }
@@ -61,7 +63,7 @@ function NoticeDetailInner() {
         .single();
 
       if (error || !data) {
-        setErrorMsg("공지사항을 불러오지 못했습니다.");
+        setErrorMsg(t("notices.errLoad"));
         setLoading(false);
         return;
       }
@@ -116,7 +118,7 @@ function NoticeDetailInner() {
           </svg>
         </Link>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          공지사항
+          {t("notices.title")}
         </div>
       </div>
 
@@ -191,7 +193,7 @@ function NoticeDetailInner() {
 
         <div style={{ textAlign: "center", padding: "16px 18px", fontSize: 13 }}>
           <Link href="/notices" style={{ color: BLUE, fontWeight: 700, textDecoration: "none" }}>
-            ← 공지사항 목록으로
+            {t("notices.backToList")}
           </Link>
         </div>
       </div>

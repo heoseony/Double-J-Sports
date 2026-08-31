@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
+import { useLanguage } from "../../lib/i18n/LanguageContext";
 
 const BLUE = "#3B82C4";
 
@@ -18,6 +19,7 @@ function formatDate(dateStr) {
 
 export default function NoticesPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [notices, setNotices] = useState([]);
@@ -37,7 +39,7 @@ export default function NoticesPage() {
     if (!error) {
       setNotices(data || []);
     } else {
-      setErrorMsg("공지사항을 불러오지 못했습니다: " + error.message);
+      setErrorMsg(t("notices.errLoadPrefix") + error.message);
     }
   }
 
@@ -140,17 +142,17 @@ export default function NoticesPage() {
       >
         <img
           src="/logo-main.png"
-          alt="로고"
+          alt=""
           style={{ width: 28, height: 28, objectFit: "contain" }}
         />
         <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>
-          더블제이 스포츠 아카데미
+          {t("login.title")}
         </div>
       </div>
 
       <div style={{ padding: "0 18px" }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63", marginBottom: 14 }}>
-          공지사항
+          {t("notices.title")}
         </div>
 
         {isAdmin && (
@@ -275,7 +277,7 @@ export default function NoticesPage() {
             }}
           >
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>
-              아직 등록된 공지사항이 없습니다.
+              {t("notices.empty")}
             </p>
           </div>
         )}

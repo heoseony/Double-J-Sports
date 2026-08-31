@@ -371,5 +371,13 @@
   },
   "adultReservations": {
     "title": "My Bookings"
+  },
+  "notices": {
+    "title": "Notices",
+    "empty": "No notices yet.",
+    "errLoadPrefix": "Failed to load notices: ",
+    "errNotFound": "Notice information not found.",
+    "errLoad": "Failed to load notice.",
+    "backToList": "← Back to Notices"
   }
 }
