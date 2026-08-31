@@ -358,5 +358,15 @@
     "errMemberNotFound": "회원 정보를 찾을 수 없습니다.",
     "summary": "{name}님 · 잔여 {remaining}회",
     "backToHome": "← 홈으로"
+  },
+  "adultClassDetail": {
+    "program": "프로그램",
+    "programPro": "프로",
+    "programGeneral": "일반/취미",
+    "applicants": "신청 인원",
+    "bookingDeadline": "예약 마감",
+    "bookingDeadlineValue": "수업 시작 {hours}시간 전까지",
+    "alreadyBooked": "이미 예약된 수업입니다",
+    "pastDeadline": "예약이 마감되었습니다"
   }
 }

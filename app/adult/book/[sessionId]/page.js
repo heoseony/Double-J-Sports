@@ -6,24 +6,29 @@ import Link from "next/link";
 import { nowInGermany } from "../../../../lib/germanyTime";
 import { supabase } from "../../../../lib/supabaseClient";
 import LoadingScreen from "../../../components/LoadingScreen";
+import { useLanguage } from "../../../../lib/i18n/LanguageContext";
+import { translateClassName } from "../../../../lib/i18n/nameTranslations";
 
 const BLUE = "#3B82C4";
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_LABEL_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
 }
 
-function formatDateLabel(dateStr) {
+function formatDateLabel(dateStr, lang) {
   const d = new Date(dateStr + "T00:00:00");
-  return `${dateStr} (${WEEKDAY_LABEL[d.getDay()]})`;
+  const labels = lang === "en" ? WEEKDAY_LABEL_EN : WEEKDAY_LABEL_KO;
+  return `${dateStr} (${labels[d.getDay()]})`;
 }
 
 export default function AdultClassDetailPage() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.sessionId;
+  const { t, lang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState(null);
@@ -58,7 +63,7 @@ export default function AdultClassDetailPage() {
       .single();
 
     if (memberError || !memberData) {
-      setErrorMsg("회원 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("classDetail.errMemberNotFound"));
       setLoading(false);
       return;
     }
@@ -73,7 +78,7 @@ export default function AdultClassDetailPage() {
       .single();
 
     if (sessionError || !sessionData) {
-      setErrorMsg("수업 정보를 찾을 수 없습니다.");
+      setErrorMsg(t("classDetail.errSessionNotFound"));
       setLoading(false);
       return;
     }
@@ -142,7 +147,7 @@ export default function AdultClassDetailPage() {
 
     if (bookingError) {
       setBooking(false);
-      setErrorMsg("예약 실패: " + bookingError.message);
+      setErrorMsg(t("classDetail.errBookingFailedPrefix") + bookingError.message);
       return;
     }
 
@@ -191,7 +196,7 @@ export default function AdultClassDetailPage() {
             {errorMsg}
           </div>
           <Link href="/adult/book" style={{ color: BLUE, fontWeight: 700, textDecoration: "none", fontSize: 13 }}>
-            ← 수업 목록으로
+            {t("classDetail.backToClassList")}
           </Link>
         </div>
       </main>
@@ -219,9 +224,9 @@ export default function AdultClassDetailPage() {
           </svg>
         </Link>
         <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>
-          {step === "detail" && "수업 상세"}
-          {step === "confirm" && "예약 확인"}
-          {step === "done" && "예약 완료"}
+          {step === "detail" && t("classDetail.stepDetail")}
+          {step === "confirm" && t("classDetail.stepConfirm")}
+          {step === "done" && t("classDetail.stepDone")}
         </div>
       </div>
 
@@ -238,16 +243,16 @@ export default function AdultClassDetailPage() {
               }}
             >
               <div style={{ fontSize: 19, fontWeight: 800, color: "#1b3a63" }}>
-                {cls.class_name}
+                {translateClassName(cls.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: BLUE, fontWeight: 700, marginTop: 4 }}>
-                {formatDateLabel(session.session_date)} · {formatTime(session.start_time)}~{formatTime(session.end_time)}
+                {formatDateLabel(session.session_date, lang)} · {formatTime(session.start_time)}~{formatTime(session.end_time)}
               </div>
 
               <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-                <InfoRow label="프로그램" value={cls.program === "pro" ? "프로" : "일반/취미"} />
-                <InfoRow label="신청 인원" value={`${applicantCount}명 신청`} />
-                <InfoRow label="예약 마감" value={`수업 시작 ${bookingCutoffHours}시간 전까지`} />
+                <InfoRow label={t("adultClassDetail.program")} value={cls.program === "pro" ? t("adultClassDetail.programPro") : t("adultClassDetail.programGeneral")} />
+                <InfoRow label={t("adultClassDetail.applicants")} value={t("classDetail.capacityNoTotal", { count: applicantCount })} />
+                <InfoRow label={t("adultClassDetail.bookingDeadline")} value={t("adultClassDetail.bookingDeadlineValue", { hours: bookingCutoffHours })} />
               </div>
 
               <div
@@ -261,7 +266,7 @@ export default function AdultClassDetailPage() {
                   lineHeight: 1.6,
                 }}
               >
-                안내사항: 수업 시작 10분 전 도착해주세요. 개인 물통을 준비해주세요.
+                {t("classDetail.noticeText")}
               </div>
             </div>
 
@@ -288,12 +293,12 @@ export default function AdultClassDetailPage() {
               }}
             >
               {alreadyBooked
-                ? "이미 예약된 수업입니다"
+                ? t("adultClassDetail.alreadyBooked")
                 : isPastDeadline
-                ? "예약이 마감되었습니다"
+                ? t("adultClassDetail.pastDeadline")
                 : remaining <= 0
-                ? "잔여 횟수가 없습니다"
-                : "수업 예약하기"}
+                ? t("classDetail.noRemaining")
+                : t("classDetail.bookNow")}
             </button>
           </>
         )}
@@ -312,10 +317,10 @@ export default function AdultClassDetailPage() {
             >
               <div style={{ fontSize: 56, marginBottom: 10 }}>⚽</div>
               <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>
-                {cls.class_name}
+                {translateClassName(cls.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: BLUE, fontWeight: 700, marginTop: 4, marginBottom: 18 }}>
-                {formatDateLabel(session.session_date)} · {formatTime(session.start_time)}~{formatTime(session.end_time)}
+                {formatDateLabel(session.session_date, lang)} · {formatTime(session.start_time)}~{formatTime(session.end_time)}
               </div>
 
               <div
@@ -330,11 +335,11 @@ export default function AdultClassDetailPage() {
                 }}
               >
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63" }}>{member.name}</span>
-                <span style={{ fontSize: 12, color: "#5b7699" }}>{cls.program === "pro" ? "프로" : "일반/취미"}</span>
+                <span style={{ fontSize: 12, color: "#5b7699" }}>{cls.program === "pro" ? t("adultClassDetail.programPro") : t("adultClassDetail.programGeneral")}</span>
               </div>
 
               <p style={{ fontSize: 14, color: "#33455e", marginTop: 20 }}>
-                위 내용으로 예약하시겠습니까?
+                {t("classDetail.confirmQuestion")}
               </p>
             </div>
 
@@ -360,7 +365,7 @@ export default function AdultClassDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                취소
+                {t("classDetail.cancel")}
               </button>
               <button
                 type="button"
@@ -378,7 +383,7 @@ export default function AdultClassDetailPage() {
                   cursor: booking ? "default" : "pointer",
                 }}
               >
-                {booking ? "예약 중..." : "예약하기"}
+                {booking ? t("classDetail.booking") : t("classDetail.confirmBooking")}
               </button>
             </div>
           </>
@@ -422,13 +427,13 @@ export default function AdultClassDetailPage() {
               </div>
 
               <div style={{ fontSize: 18, fontWeight: 800, color: "#1b3a63", marginBottom: 6 }}>
-                수업 예약이 완료되었어요!
+                {t("classDetail.doneTitle")}
               </div>
               <div style={{ fontSize: 14, color: "#33455e" }}>
-                {cls.class_name}
+                {translateClassName(cls.class_name, lang)}
               </div>
               <div style={{ fontSize: 13, color: BLUE, fontWeight: 700, marginTop: 4 }}>
-                {formatDateLabel(session.session_date)} · {formatTime(session.start_time)}~{formatTime(session.end_time)}
+                {formatDateLabel(session.session_date, lang)} · {formatTime(session.start_time)}~{formatTime(session.end_time)}
               </div>
             </div>
 
@@ -448,7 +453,7 @@ export default function AdultClassDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                예약 내역 보기
+                {t("classDetail.viewBookings")}
               </button>
               <button
                 type="button"
@@ -465,7 +470,7 @@ export default function AdultClassDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                홈으로 이동
+                {t("classDetail.goHome")}
               </button>
             </div>
           </>

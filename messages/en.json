@@ -358,5 +358,15 @@
     "errMemberNotFound": "Member information not found.",
     "summary": "{name} · {remaining} Sessions Remaining",
     "backToHome": "← Home"
+  },
+  "adultClassDetail": {
+    "program": "Program",
+    "programPro": "Pro",
+    "programGeneral": "General/Recreational",
+    "applicants": "Registered",
+    "bookingDeadline": "Booking Deadline",
+    "bookingDeadlineValue": "Up to {hours} hours before class start",
+    "alreadyBooked": "You're already booked for this class",
+    "pastDeadline": "Booking is closed"
   }
 }
