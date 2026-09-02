@@ -50,6 +50,7 @@ export default function CoachHomePage() {
   const [sessions, setSessions] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [weekStart, setWeekStart] = useState(() => getMonday(nowInGermany()));
+  const [showCompleted, setShowCompleted] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -126,7 +127,33 @@ export default function CoachHomePage() {
         classInfo: classMap[s.class_id],
       }));
 
-      setSessions(withClassInfo);
+      const sessionIds = withClassInfo.map((s) => s.id);
+      let bookingCountBySession = {};
+      let bookingPendingBySession = {};
+      if (sessionIds.length > 0) {
+        const { data: bookingRows } = await supabase
+          .from("bookings")
+          .select("class_session_id, status")
+          .in("class_session_id", sessionIds)
+          .neq("status", "cancelled_prior");
+
+        (bookingRows || []).forEach((b) => {
+          bookingCountBySession[b.class_session_id] =
+            (bookingCountBySession[b.class_session_id] || 0) + 1;
+          if (b.status === "booked") {
+            bookingPendingBySession[b.class_session_id] = true;
+          }
+        });
+      }
+
+      const withCounts = withClassInfo.map((s) => ({
+        ...s,
+        applicantCount: bookingCountBySession[s.id] || 0,
+        isAttendanceDone:
+          (bookingCountBySession[s.id] || 0) > 0 && !bookingPendingBySession[s.id],
+      }));
+
+      setSessions(withCounts);
       setLoading(false);
     }
 
@@ -152,10 +179,15 @@ export default function CoachHomePage() {
 
   const weekEnd = addDays(weekStart, 6);
   const rangeLabel = `${toDateStr(weekStart)} ~ ${toDateStr(weekEnd)}`;
+  const todayStr = toDateStr(nowInGermany());
+
+  const visibleSessions = showCompleted
+    ? sessions
+    : sessions.filter((s) => !(s.session_date < todayStr && s.isAttendanceDone));
 
   // 날짜별로 묶어서 표시
   const sessionsByDate = {};
-  sessions.forEach((s) => {
+  visibleSessions.forEach((s) => {
     if (!sessionsByDate[s.session_date]) sessionsByDate[s.session_date] = [];
     sessionsByDate[s.session_date].push(s);
   });
@@ -241,6 +273,25 @@ export default function CoachHomePage() {
           <div style={{ textAlign: "center", fontSize: 12, color: "#8ea0b8", marginTop: 8 }}>
             {rangeLabel}
           </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={() => setShowCompleted((v) => !v)}
+            style={{
+              padding: "6px 12px",
+              fontSize: 12,
+              fontWeight: 700,
+              border: "1px solid #e5eaf2",
+              borderRadius: 999,
+              background: showCompleted ? "#e9f1fb" : "white",
+              color: showCompleted ? BLUE : "#5b7699",
+              cursor: "pointer",
+            }}
+          >
+            {showCompleted ? "완료된 수업 숨기기" : "완료된 수업 보기"}
+          </button>
         </div>
 
         {errorMsg && (
@@ -332,6 +383,14 @@ export default function CoachHomePage() {
                     </div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63", marginTop: 4 }}>
                       {s.classInfo?.class_name}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+                      신청 {s.applicantCount}명
+                      {s.isAttendanceDone && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#2e7d32", background: "#e8f5ec", padding: "1px 7px", borderRadius: 999 }}>
+                          완료
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", paddingRight: 14 }}>
