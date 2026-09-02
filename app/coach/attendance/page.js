@@ -46,6 +46,8 @@ function AttendanceInner() {
   const [remainingByMember, setRemainingByMember] = useState({});
   const [updatingId, setUpdatingId] = useState(null);
   const [editingBookingId, setEditingBookingId] = useState(null);
+  const [noteDrafts, setNoteDrafts] = useState({});
+  const [savingNoteId, setSavingNoteId] = useState(null);
 
   async function loadData() {
     setErrorMsg("");
@@ -144,7 +146,7 @@ function AttendanceInner() {
 
     const { data: bookingData, error } = await supabase
       .from("bookings")
-      .select("id, status, member_id, checked_by_name, members(name, profile_image_url)")
+      .select("id, status, member_id, checked_by_name, coach_note, members(name, profile_image_url)")
       .eq("class_session_id", sessionId)
       .neq("status", "cancelled_prior")
       .order("created_at", { ascending: true });
@@ -197,6 +199,15 @@ function AttendanceInner() {
     setEditingBookingId(null);
     await loadData();
     setUpdatingId(null);
+  }
+
+  async function handleSaveNote(bookingId, value) {
+    setSavingNoteId(bookingId);
+    await supabase
+      .from("bookings")
+      .update({ coach_note: value })
+      .eq("id", bookingId);
+    setSavingNoteId(null);
   }
 
   if (loading) {
@@ -509,6 +520,39 @@ function AttendanceInner() {
                     >
                       수정
                     </button>
+                  </div>
+                )}
+
+                {!showButtons && isDecided && (
+                  <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="이번 주 한 줄 메모 (선택)"
+                      value={
+                        noteDrafts[b.id] !== undefined ? noteDrafts[b.id] : b.coach_note || ""
+                      }
+                      onChange={(e) =>
+                        setNoteDrafts((prev) => ({ ...prev, [b.id]: e.target.value }))
+                      }
+                      onBlur={(e) => {
+                        if (e.target.value !== (b.coach_note || "")) {
+                          handleSaveNote(b.id, e.target.value);
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "8px 10px",
+                        fontSize: 12,
+                        border: "1px solid #e5eaf2",
+                        borderRadius: 8,
+                        color: "#33455e",
+                      }}
+                    />
+                    {savingNoteId === b.id && (
+                      <span style={{ fontSize: 11, color: "#8ea0b8", alignSelf: "center" }}>
+                        저장 중...
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
