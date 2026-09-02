@@ -48,6 +48,16 @@ function AttendanceInner() {
   const [editingBookingId, setEditingBookingId] = useState(null);
   const [noteDrafts, setNoteDrafts] = useState({});
   const [savingNoteId, setSavingNoteId] = useState(null);
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [candidateRemaining, setCandidateRemaining] = useState(null);
+  const [candidateHasMembership, setCandidateHasMembership] = useState(false);
+  const [addMemberError, setAddMemberError] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [forceConfirm, setForceConfirm] = useState(false);
 
   async function loadData() {
     setErrorMsg("");
@@ -208,6 +218,95 @@ function AttendanceInner() {
       .update({ coach_note: value })
       .eq("id", bookingId);
     setSavingNoteId(null);
+  }
+
+  async function handleSearchMembers(query) {
+    setSearchQuery(query);
+    setSelectedCandidate(null);
+    setAddMemberError("");
+    if (!query.trim() || !sessionInfo?.classes?.program) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    const alreadyBookedIds = new Set(bookings.map((b) => b.member_id));
+    const { data } = await supabase
+      .from("members")
+      .select("id, name, name_en, status")
+      .eq("program", sessionInfo.classes.program)
+      .eq("status", "active")
+      .ilike("name", `%${query.trim()}%`)
+      .limit(10);
+    setSearchResults((data || []).filter((m) => !alreadyBookedIds.has(m.id)));
+    setSearching(false);
+  }
+
+  async function handleSelectCandidate(member) {
+    setSelectedCandidate(member);
+    setForceConfirm(false);
+    setAddMemberError("");
+    const { data } = await supabase
+      .from("memberships")
+      .select("id, sessions_used, status, start_date, membership_plans(sessions_per_month)")
+      .eq("member_id", member.id)
+      .eq("status", "active")
+      .order("start_date", { ascending: false })
+      .limit(1);
+    const ms = (data || [])[0];
+    if (ms) {
+      const total = ms.membership_plans?.sessions_per_month || 0;
+      setCandidateHasMembership(true);
+      setCandidateRemaining(total - (ms.sessions_used || 0));
+    } else {
+      setCandidateHasMembership(false);
+      setCandidateRemaining(null);
+    }
+  }
+
+  async function handleConfirmAddMember() {
+    if (!selectedCandidate) return;
+    setAddingMember(true);
+    setAddMemberError("");
+
+    const { error: bookingError } = await supabase.from("bookings").insert({
+      class_session_id: sessionId,
+      member_id: selectedCandidate.id,
+      status: "booked",
+    });
+
+    if (bookingError) {
+      setAddMemberError("추가 실패: " + bookingError.message);
+      setAddingMember(false);
+      return;
+    }
+
+    if (candidateHasMembership) {
+      const { data: currentMembership } = await supabase
+        .from("memberships")
+        .select("id, sessions_used")
+        .eq("member_id", selectedCandidate.id)
+        .eq("status", "active")
+        .order("start_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (currentMembership) {
+        await supabase
+          .from("memberships")
+          .update({ sessions_used: (currentMembership.sessions_used || 0) + 1 })
+          .eq("id", currentMembership.id);
+      }
+    }
+
+    setShowAddPanel(false);
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedCandidate(null);
+    setCandidateRemaining(null);
+    setCandidateHasMembership(false);
+    setForceConfirm(false);
+    setAddingMember(false);
+    await loadData();
   }
 
   if (loading) {
@@ -558,6 +657,200 @@ function AttendanceInner() {
               </div>
             );
           })}
+        </div>
+
+        {/* 회원 수동 추가 */}
+        <div style={{ marginTop: 16 }}>
+          {!showAddPanel ? (
+            <button
+              type="button"
+              onClick={() => setShowAddPanel(true)}
+              style={{
+                width: "100%",
+                padding: 14,
+                fontSize: 14,
+                fontWeight: 700,
+                border: "1px dashed #c7d2e0",
+                borderRadius: 12,
+                background: "white",
+                color: BLUE,
+                cursor: "pointer",
+              }}
+            >
+              + 회원 추가
+            </button>
+          ) : (
+            <div
+              style={{
+                background: "white",
+                borderRadius: 16,
+                padding: 16,
+                boxShadow: "0 2px 10px rgba(30,60,110,0.06)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 10,
+                }}
+              >
+                <span style={{ fontSize: 14, fontWeight: 800, color: "#1b3a63" }}>
+                  회원 추가
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddPanel(false);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                    setSelectedCandidate(null);
+                    setAddMemberError("");
+                  }}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    color: "#8ea0b8",
+                    cursor: "pointer",
+                    fontSize: 13,
+                  }}
+                >
+                  닫기
+                </button>
+              </div>
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchMembers(e.target.value)}
+                placeholder="선수 이름 검색"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 10,
+                  marginBottom: 10,
+                }}
+              />
+
+              {searching && (
+                <p style={{ fontSize: 12, color: "#8ea0b8" }}>검색 중...</p>
+              )}
+
+              {!selectedCandidate && searchResults.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    marginBottom: 10,
+                  }}
+                >
+                  {searchResults.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => handleSelectCandidate(m)}
+                      style={{
+                        textAlign: "left",
+                        padding: "10px 12px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#1b3a63",
+                        border: "1px solid #eef2f8",
+                        borderRadius: 10,
+                        background: "white",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {!selectedCandidate &&
+                searchQuery.trim() &&
+                !searching &&
+                searchResults.length === 0 && (
+                  <p style={{ fontSize: 12, color: "#8ea0b8", marginBottom: 10 }}>
+                    검색 결과가 없습니다.
+                  </p>
+                )}
+
+              {selectedCandidate && (
+                <div style={{ border: "1px solid #eef2f8", borderRadius: 10, padding: 12 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1b3a63", marginBottom: 6 }}>
+                    {selectedCandidate.name}
+                  </div>
+
+                  {candidateHasMembership ? (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: candidateRemaining > 0 ? BLUE : "#b3261e",
+                        marginBottom: 10,
+                      }}
+                    >
+                      잔여 {candidateRemaining}회
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#b3261e", marginBottom: 10 }}>
+                      활성 회원권 없음 (차감 없이 명단에만 추가됩니다)
+                    </div>
+                  )}
+
+                  {addMemberError && (
+                    <div style={{ fontSize: 12, color: "#b3261e", marginBottom: 10 }}>
+                      {addMemberError}
+                    </div>
+                  )}
+
+                  {candidateHasMembership && candidateRemaining <= 0 && !forceConfirm ? (
+                    <button
+                      type="button"
+                      onClick={() => setForceConfirm(true)}
+                      style={{
+                        width: "100%",
+                        padding: 12,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: "none",
+                        borderRadius: 10,
+                        background: "#fdecec",
+                        color: "#b3261e",
+                        cursor: "pointer",
+                      }}
+                    >
+                      잔여 횟수 없음 · 그래도 추가하기
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={addingMember}
+                      onClick={handleConfirmAddMember}
+                      style={{
+                        width: "100%",
+                        padding: 12,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: "none",
+                        borderRadius: 10,
+                        background: BLUE,
+                        color: "white",
+                        cursor: addingMember ? "default" : "pointer",
+                      }}
+                    >
+                      {addingMember ? "추가 중..." : "명단에 추가"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </main>
