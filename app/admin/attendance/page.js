@@ -155,8 +155,7 @@ export default function AdminAttendancePage() {
       const withCounts = withCoach.map((s) => ({
         ...s,
         applicantCount: bookingCountBySession[s.id] || 0,
-        isAttendanceDone:
-          (bookingCountBySession[s.id] || 0) > 0 && !bookingPendingBySession[s.id],
+        isAttendanceDone: !bookingPendingBySession[s.id],
       }));
 
       setSessions(withCounts);
@@ -325,7 +324,7 @@ export default function AdminAttendancePage() {
                     </div>
                     <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
                       신청 {s.applicantCount}명
-                      {s.isAttendanceDone && (
+                      {s.isAttendanceDone && s.applicantCount > 0 && (
                         <span style={{ fontSize: 10, fontWeight: 700, color: "#2e7d32", background: "#e8f5ec", padding: "1px 7px", borderRadius: 999 }}>
                           완료
                         </span>
