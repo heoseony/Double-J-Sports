@@ -58,6 +58,9 @@ function AttendanceInner() {
   const [addMemberError, setAddMemberError] = useState("");
   const [addingMember, setAddingMember] = useState(false);
   const [forceConfirm, setForceConfirm] = useState(false);
+  const [showTrialForm, setShowTrialForm] = useState(false);
+  const [trialName, setTrialName] = useState("");
+  const [creatingTrial, setCreatingTrial] = useState(false);
 
   async function loadData() {
     setErrorMsg("");
@@ -261,6 +264,36 @@ function AttendanceInner() {
       setCandidateHasMembership(false);
       setCandidateRemaining(null);
     }
+  }
+
+  async function handleCreateTrialMember() {
+    if (!trialName.trim()) return;
+    setCreatingTrial(true);
+    setAddMemberError("");
+
+    const { data: newMember, error } = await supabase
+      .from("members")
+      .insert({
+        name: trialName.trim(),
+        program: sessionInfo?.classes?.program || "kids",
+        region: sessionInfo?.classes?.region || "frankfurt",
+        status: "trial",
+      })
+      .select("id, name")
+      .single();
+
+    if (error) {
+      setAddMemberError("체험 회원 등록 실패: " + error.message);
+      setCreatingTrial(false);
+      return;
+    }
+
+    setShowTrialForm(false);
+    setTrialName("");
+    setCreatingTrial(false);
+    setSearchResults([]);
+    setSearchQuery("");
+    await handleSelectCandidate(newMember);
   }
 
   async function handleConfirmAddMember() {
@@ -779,6 +812,87 @@ function AttendanceInner() {
                     검색 결과가 없습니다.
                   </p>
                 )}
+
+              {!selectedCandidate && !showTrialForm && (
+                <button
+                  type="button"
+                  onClick={() => setShowTrialForm(true)}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    color: BLUE,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    padding: 0,
+                    marginBottom: 10,
+                  }}
+                >
+                  찾는 이름이 없나요? 체험 회원으로 새로 등록
+                </button>
+              )}
+
+              {!selectedCandidate && showTrialForm && (
+                <div style={{ border: "1px solid #eef2f8", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#1b3a63", marginBottom: 8 }}>
+                    체험 회원 등록
+                  </div>
+                  <input
+                    type="text"
+                    value={trialName}
+                    onChange={(e) => setTrialName(e.target.value)}
+                    placeholder="이름"
+                    style={{
+                      width: "100%",
+                      padding: "9px 12px",
+                      fontSize: 13,
+                      border: "1px solid #e5eaf2",
+                      borderRadius: 8,
+                      marginBottom: 8,
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowTrialForm(false);
+                        setTrialName("");
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: 10,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "1px solid #e5eaf2",
+                        borderRadius: 8,
+                        background: "white",
+                        color: "#5b7699",
+                        cursor: "pointer",
+                      }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      disabled={creatingTrial || !trialName.trim()}
+                      onClick={handleCreateTrialMember}
+                      style={{
+                        flex: 2,
+                        padding: 10,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "none",
+                        borderRadius: 8,
+                        background: BLUE,
+                        color: "white",
+                        cursor: creatingTrial ? "default" : "pointer",
+                      }}
+                    >
+                      {creatingTrial ? "등록 중..." : "체험 회원 등록"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {selectedCandidate && (
                 <div style={{ border: "1px solid #eef2f8", borderRadius: 10, padding: 12 }}>
