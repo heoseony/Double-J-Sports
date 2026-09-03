@@ -131,6 +131,82 @@ async function normalizeImageFile(file) {
   return new File([finalBlob], newName, { type: "image/jpeg" });
 }
 
+// 영상 파일에서 첫 프레임을 캡처해 JPEG 썸네일(Blob)로 만든다.
+// <video> 태그가 기기/브라우저마다 첫 프레임을 안정적으로 안 그려주는 문제(특히
+// 홈화면 추가 앱, 일부 모바일 브라우저) 때문에, 아예 실제 이미지 파일로 만들어서
+// 썸네일용으로 별도 저장하는 방식으로 우회한다.
+// 프로미스가 지정 시간 안에 끝나지 않으면 타임아웃 에러로 실패 처리한다.
+// 느린 모바일 네트워크에서 업로드가 응답 없이 무한정 멈춰있는 문제를 막기 위함.
+function withTimeout(promise, ms, timeoutMessage) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(timeoutMessage || "요청 시간이 초과되었습니다."));
+    }, ms);
+    promise
+      .then((result) => {
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+function generateVideoPoster(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    const objectUrl = URL.createObjectURL(file);
+    video.src = objectUrl;
+
+    function cleanup() {
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    function captureFrame() {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            cleanup();
+            if (!blob) {
+              reject(new Error("썸네일 캔버스 변환 실패"));
+              return;
+            }
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.8
+        );
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
+    }
+
+    video.onloadeddata = () => {
+      try {
+        video.currentTime = Math.min(0.1, (video.duration || 1) / 2);
+      } catch (err) {
+        captureFrame();
+      }
+    };
+    video.onseeked = captureFrame;
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("영상을 읽을 수 없습니다."));
+    };
+  });
+}
+
 const WATERMARK_ENABLED = false; // 워터마크 임시 비활성화. 다시 켜려면 true로 변경.
 
 async function addWatermark(file) {
@@ -711,6 +787,7 @@ export default function PhotosPage() {
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [converting, setConverting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -864,6 +941,7 @@ export default function PhotosPage() {
     setCaption("");
     setUploadCategoryId("");
     setShowForm(false);
+    setUploadProgress({ current: 0, total: 0 });
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -897,8 +975,10 @@ export default function PhotosPage() {
     }
 
     const mediaRows = [];
+    setUploadProgress({ current: 0, total: selectedFiles.length });
 
     for (let i = 0; i < selectedFiles.length; i++) {
+      setUploadProgress({ current: i + 1, total: selectedFiles.length });
       const file = selectedFiles[i];
       const mediaType = file.type.startsWith("video") ? "video" : "image";
 
@@ -914,12 +994,20 @@ export default function PhotosPage() {
       const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
       const path = `${postId}-${i}-${safeName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("photos")
-        .upload(path, fileToUpload, {
-          contentType: fileToUpload.type || "application/octet-stream",
-          upsert: false,
-        });
+      let uploadError = null;
+      try {
+        const result = await withTimeout(
+          supabase.storage.from("photos").upload(path, fileToUpload, {
+            contentType: fileToUpload.type || "application/octet-stream",
+            upsert: false,
+          }),
+          30000,
+          "업로드 시간 초과 (네트워크가 느리거나 끊겼을 수 있어요)"
+        );
+        uploadError = result.error;
+      } catch (timeoutErr) {
+        uploadError = timeoutErr;
+      }
 
       if (uploadError) {
         setErrorMsg(`업로드 실패 (${file.name}): ` + uploadError.message);
@@ -928,10 +1016,34 @@ export default function PhotosPage() {
 
       const { data: urlData } = supabase.storage.from("photos").getPublicUrl(path);
 
+      let posterUrl = null;
+      if (mediaType === "video") {
+        try {
+          const posterBlob = await generateVideoPoster(file);
+          const posterPath = `${postId}-${i}-poster.jpg`;
+          const { error: posterUploadError } = await supabase.storage
+            .from("photos")
+            .upload(posterPath, posterBlob, {
+              contentType: "image/jpeg",
+              upsert: false,
+            });
+          if (!posterUploadError) {
+            const { data: posterUrlData } = supabase.storage
+              .from("photos")
+              .getPublicUrl(posterPath);
+            posterUrl = posterUrlData.publicUrl;
+          }
+        } catch (posterError) {
+          // 썸네일 생성 실패해도 영상 업로드 자체는 그대로 진행 (기존 <video> 방식으로 대체 표시됨)
+          posterUrl = null;
+        }
+      }
+
       mediaRows.push({
         post_id: postId,
         media_url: urlData.publicUrl,
         media_type: mediaType,
+        poster_url: posterUrl,
         order_index: i,
       });
     }
@@ -1214,7 +1326,9 @@ export default function PhotosPage() {
                     cursor: "pointer",
                   }}
                 >
-                  {uploading ? "업로드 중..." : "게시하기"}
+                  {uploading
+                    ? `업로드 중... (${uploadProgress.current}/${uploadProgress.total})`
+                    : "게시하기"}
                 </button>
                 <button
                   type="button"
