@@ -899,16 +899,29 @@ export default function PhotosPage() {
     };
   }, [router]);
 
+  const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024; // Supabase 기본 업로드 제한(50MB) 기준
+
   async function handleFileChange(e) {
     const rawFiles = Array.from(e.target.files || []);
     if (rawFiles.length === 0) return;
+
+    // 50MB 넘는 파일은 업로드 시도 자체를 하지 않고 바로 제외 (타임아웃까지 기다릴 필요 없이 즉시 안내)
+    const oversizedNames = [];
+    const sizeOkFiles = [];
+    for (const f of rawFiles) {
+      if (f.size > MAX_UPLOAD_SIZE_BYTES) {
+        oversizedNames.push(`${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`);
+      } else {
+        sizeOkFiles.push(f);
+      }
+    }
 
     setConverting(true);
     setErrorMsg("");
 
     const converted = [];
     const failedNames = [];
-    for (const f of rawFiles) {
+    for (const f of sizeOkFiles) {
       try {
         converted.push(await normalizeImageFile(f));
       } catch (err) {
@@ -927,10 +940,19 @@ export default function PhotosPage() {
       }))
     );
 
+    const messages = [];
+    if (oversizedNames.length > 0) {
+      messages.push(
+        `다음 파일은 50MB를 초과해 제외되었습니다: ${oversizedNames.join(", ")} (동영상은 압축하거나 짧게 잘라서 다시 시도해주세요)`
+      );
+    }
     if (failedNames.length > 0) {
-      setErrorMsg(
+      messages.push(
         `다음 파일은 변환에 실패해 제외되었습니다: ${failedNames.join(", ")} (다른 사진으로 다시 시도해주세요)`
       );
+    }
+    if (messages.length > 0) {
+      setErrorMsg(messages.join(" / "));
     }
   }
 
