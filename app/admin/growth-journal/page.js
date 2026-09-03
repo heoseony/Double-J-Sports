@@ -174,7 +174,7 @@ export default function GrowthJournalAdminPage() {
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.role !== "admin") {
+    if (!profile || (profile.role !== "admin" && profile.role !== "coach")) {
       router.push("/dashboard");
       return;
     }

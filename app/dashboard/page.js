@@ -1212,6 +1212,44 @@ export default function DashboardPage() {
               coachNamesByClass={coachNamesByClass}
             />
           </div>
+
+          <Link href="/admin/growth-journal" style={{ textDecoration: "none" }}>
+            <div style={cardStyle}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      background: "#eef0fb",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <MenuIcon type="notebook" color="#5b5fc7" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#1b3a63" }}>
+                      월간 성장일지
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8a97a8", marginTop: 1 }}>
+                      이번 달 작성 현황 확인하기
+                    </div>
+                  </div>
+                </div>
+                <span style={{ color: "#8a97a8", fontSize: 18 }}>›</span>
+              </div>
+            </div>
+          </Link>
         </div>
       )}
 
