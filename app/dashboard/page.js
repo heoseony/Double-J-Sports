@@ -95,6 +95,16 @@ function MenuIcon({ type, color }) {
       </svg>
     );
   }
+  if (type === "notebook") {
+    return (
+      <svg {...props}>
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        <line x1="9" y1="7" x2="15" y2="7" />
+        <line x1="9" y1="11" x2="15" y2="11" />
+      </svg>
+    );
+  }
   return null;
 }
 
@@ -835,6 +845,7 @@ export default function DashboardPage() {
     { label: "상품 관리", href: "/admin/plans", icon: "tag", bg: "#fde9f0", color: "#d6336c" },
     { label: "공지사항", href: "/notices", icon: "megaphone", bg: "#fef6e0", color: "#d6a02e" },
     { label: "갤러리", href: "/photos", icon: "image", bg: "#e6f7f7", color: "#2ea8a0" },
+    { label: "월간 성장일지", href: "/admin/growth-journal", icon: "notebook", bg: "#eef0fb", color: "#5b5fc7" },
   ];
 
   return (

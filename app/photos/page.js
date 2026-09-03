@@ -85,13 +85,34 @@ function loadImageElement(src) {
   });
 }
 
-async function normalizeImageFile(file) {
-  if (!file.type.startsWith("image")) return file;
+// 파일 이름/MIME이 기기마다 다르게 보고되는 문제 때문에(특히 일부 갤럭시 기종),
+// 확장자/타입 대신 파일의 실제 바이너리 시그니처(ftyp box)를 읽어서 HEIC/HEIF 여부를
+// 판별한다. 이게 기기 상관없이 제일 확실한 방법.
+async function isHeicByContent(file) {
+  try {
+    const buf = await file.slice(0, 12).arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    // bytes[4..7] === "ftyp"
+    const ftyp = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]);
+    if (ftyp !== "ftyp") return false;
+    const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+    return ["heic", "heix", "hevc", "hevx", "heim", "heis", "hevm", "hevs", "mif1", "msf1"].includes(
+      brand
+    );
+  } catch (e) {
+    return false;
+  }
+}
 
-  const isHeic =
+async function normalizeImageFile(file) {
+  if (!file.type.startsWith("image") && file.type !== "") return file;
+
+  const looksHeicByName =
     file.type === "image/heic" ||
     file.type === "image/heif" ||
     /\.(heic|heif)$/i.test(file.name);
+
+  const isHeic = looksHeicByName || (await isHeicByContent(file));
 
   if (!isHeic) return file;
 
@@ -102,7 +123,10 @@ async function normalizeImageFile(file) {
     quality: 0.9,
   });
   const finalBlob = Array.isArray(converted) ? converted[0] : converted;
-  const newName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
+  if (!finalBlob || finalBlob.size === 0) {
+    throw new Error("HEIC 변환 결과가 비어있습니다.");
+  }
+  const newName = file.name.replace(/\.(heic|heif)$/i, ".jpg") || "converted.jpg";
 
   return new File([finalBlob], newName, { type: "image/jpeg" });
 }
@@ -364,6 +388,7 @@ function navBtnStyle(side) {
 function Lightbox({
   mediaList,
   index,
+  t,
   title,
   caption,
   authorLabel,
@@ -804,11 +829,14 @@ export default function PhotosPage() {
     setErrorMsg("");
 
     const converted = [];
+    const failedNames = [];
     for (const f of rawFiles) {
       try {
         converted.push(await normalizeImageFile(f));
       } catch (err) {
-        converted.push(f);
+        // 변환 실패한 파일(주로 HEIC)은 화면에 안 뜨는 깨진 파일로 올라가는 걸
+        // 막기 위해 목록에서 제외하고, 사용자에게 알려준다.
+        failedNames.push(f.name);
       }
     }
 
@@ -820,6 +848,12 @@ export default function PhotosPage() {
         isVideo: f.type.startsWith("video"),
       }))
     );
+
+    if (failedNames.length > 0) {
+      setErrorMsg(
+        `다음 파일은 변환에 실패해 제외되었습니다: ${failedNames.join(", ")} (다른 사진으로 다시 시도해주세요)`
+      );
+    }
   }
 
   function resetForm() {
@@ -1406,6 +1440,7 @@ export default function PhotosPage() {
         <Lightbox
           mediaList={lightboxMediaList}
           index={lightboxIndex}
+          t={t}
           title={lightboxPost.title}
           caption={lightboxPost.caption}
           authorLabel={lightboxPost.author?.name || t("gallery.unknownAuthor")}
