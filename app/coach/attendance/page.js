@@ -214,6 +214,24 @@ function AttendanceInner() {
     setUpdatingId(null);
   }
 
+  // "booked" 상태로 남아있는 예약 전체를 한 번에 "attended"로 처리.
+  // 이미 attended/absent/cancelled_same_day로 처리된 건은 건드리지 않는다.
+  async function handleMarkAllAttended() {
+    const stillBookedIds = bookings
+      .filter((b) => b.status === "booked")
+      .map((b) => b.id);
+
+    if (stillBookedIds.length === 0) return;
+
+    setUpdatingId("all");
+    await supabase
+      .from("bookings")
+      .update({ status: "attended", checked_by_name: confirmerName })
+      .in("id", stillBookedIds);
+    await loadData();
+    setUpdatingId(null);
+  }
+
   async function handleSaveNote(bookingId, value) {
     setSavingNoteId(bookingId);
     await supabase
@@ -431,6 +449,32 @@ function AttendanceInner() {
             <span>전체 {totalCount}명</span>
           </div>
         </div>
+
+        {/* 전원 출석 버튼: 아직 "booked" 상태로 남아있는 인원이 있을 때만 노출 */}
+        {bookings.some((b) => b.status === "booked") && (
+          <button
+            type="button"
+            disabled={updatingId === "all"}
+            onClick={handleMarkAllAttended}
+            style={{
+              width: "100%",
+              padding: "12px 0",
+              borderRadius: 12,
+              border: "none",
+              background: BLUE,
+              color: "white",
+              fontSize: 14,
+              fontWeight: 800,
+              marginBottom: 12,
+              cursor: updatingId === "all" ? "default" : "pointer",
+              opacity: updatingId === "all" ? 0.6 : 1,
+            }}
+          >
+            {updatingId === "all"
+              ? "처리 중..."
+              : `전원 출석 처리 (총 ${totalCount}명)`}
+          </button>
+        )}
 
         {/* 참가자 목록 */}
         <div
