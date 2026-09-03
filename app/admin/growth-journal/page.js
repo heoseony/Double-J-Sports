@@ -226,6 +226,24 @@ export default function GrowthJournalAdminPage() {
       bookings = bookingData || [];
     }
 
+    // 회원권에서 월 총 횟수(sessions_per_month)를 가져온다.
+    // 진행 중인(active) 회원권이 여러 개면 가장 최근 시작한 것을 사용.
+    const quotaByMember = {};
+    if (memberIds.length > 0) {
+      const { data: membershipRows } = await supabase
+        .from("memberships")
+        .select("member_id, status, start_date, membership_plans(sessions_per_month)")
+        .in("member_id", memberIds)
+        .eq("status", "active")
+        .order("start_date", { ascending: false });
+      (membershipRows || []).forEach((row) => {
+        // start_date 내림차순 정렬이라 먼저 들어오는 것이 최신 회원권 → 이미 있으면 덮어쓰지 않음
+        if (quotaByMember[row.member_id] === undefined) {
+          quotaByMember[row.member_id] = row.membership_plans?.sessions_per_month ?? null;
+        }
+      });
+    }
+
     const byMember = {};
     memberIds.forEach((id) => {
       byMember[id] = { attended: 0, total: 0, classNames: new Set() };
@@ -248,7 +266,9 @@ export default function GrowthJournalAdminPage() {
       journal: journalByMember[m.id] || null,
       classNames: Array.from(byMember[m.id]?.classNames || []),
       attended: byMember[m.id]?.attended || 0,
-      total: byMember[m.id]?.total || 0,
+      // 회원권에 월 총 횟수가 있으면 그걸 분모로, 없으면(회원권 정보 없는 예외 케이스)
+      // 이번 달 체크된 수업 수로 대체
+      total: quotaByMember[m.id] ?? byMember[m.id]?.total ?? 0,
     }));
 
     setRows(combined);
@@ -501,66 +521,67 @@ export default function GrowthJournalAdminPage() {
           ))}
         </div>
 
-        {/* 발행 액션 */}
-        {visibleDraftRows.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "white",
-              borderRadius: 14,
-              padding: "12px 14px",
-              marginBottom: 12,
-            }}
-          >
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1b3a63" }}>
-              <input
-                type="checkbox"
-                checked={selectedIds.size === visibleDraftRows.length && visibleDraftRows.length > 0}
-                onChange={toggleSelectAllDrafts}
-              />
-              전체 선택 ({selectedIds.size}/{visibleDraftRows.length})
-            </label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                disabled={selectedIds.size === 0 || publishing}
-                onClick={handlePublishSelected}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 10,
-                  border: `1px solid ${BLUE}`,
-                  background: "white",
-                  color: BLUE,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: selectedIds.size === 0 || publishing ? "default" : "pointer",
-                  opacity: selectedIds.size === 0 ? 0.5 : 1,
-                }}
-              >
-                선택 발행
-              </button>
-              <button
-                type="button"
-                disabled={publishing}
-                onClick={handlePublishAllDrafts}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 10,
-                  border: "none",
-                  background: BLUE,
-                  color: "white",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: publishing ? "default" : "pointer",
-                }}
-              >
-                전체 발행
-              </button>
-            </div>
+        {/* 발행 액션 — 임시저장된 게 없어도 항상 보이되, 그 경우 비활성화 */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "white",
+            borderRadius: 14,
+            padding: "12px 14px",
+            marginBottom: 12,
+            opacity: visibleDraftRows.length === 0 ? 0.5 : 1,
+          }}
+        >
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1b3a63" }}>
+            <input
+              type="checkbox"
+              disabled={visibleDraftRows.length === 0}
+              checked={selectedIds.size === visibleDraftRows.length && visibleDraftRows.length > 0}
+              onChange={toggleSelectAllDrafts}
+            />
+            전체 선택 ({selectedIds.size}/{visibleDraftRows.length})
+          </label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              disabled={selectedIds.size === 0 || publishing}
+              onClick={handlePublishSelected}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 10,
+                border: `1px solid ${BLUE}`,
+                background: "white",
+                color: BLUE,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: selectedIds.size === 0 || publishing ? "default" : "pointer",
+                opacity: selectedIds.size === 0 ? 0.5 : 1,
+              }}
+            >
+              선택 발행
+            </button>
+            <button
+              type="button"
+              disabled={visibleDraftRows.length === 0 || publishing}
+              onClick={handlePublishAllDrafts}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 10,
+                border: "none",
+                background: BLUE,
+                color: "white",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: visibleDraftRows.length === 0 || publishing ? "default" : "pointer",
+                opacity: visibleDraftRows.length === 0 ? 0.5 : 1,
+              }}
+            >
+              전체 발행
+            </button>
           </div>
-        )}
+        </div>
 
         {/* 회원 목록 (테이블형) */}
         <div style={{ background: "white", borderRadius: 16, overflow: "hidden", marginBottom: 24 }}>
@@ -578,66 +599,113 @@ export default function GrowthJournalAdminPage() {
               <div
                 key={member.id}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
                   padding: "12px 14px",
                   borderBottom: idx === visibleRows.length - 1 ? "none" : "1px solid #f0f4f8",
                 }}
               >
-                {isDraft ? (
-                  <input type="checkbox" checked={selectedIds.has(journal.id)} onChange={() => toggleSelect(journal.id)} />
-                ) : (
-                  <div style={{ width: 16, flexShrink: 0 }} />
-                )}
+                {/* 첫 줄: 체크박스 + 사진 + 이름/반 + 상태배지 + 작업버튼 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {isDraft ? (
+                    <input type="checkbox" checked={selectedIds.has(journal.id)} onChange={() => toggleSelect(journal.id)} />
+                  ) : (
+                    <div style={{ width: 16, flexShrink: 0 }} />
+                  )}
 
-                {member.profile_image_url ? (
-                  <img
-                    src={member.profile_image_url}
-                    alt={member.name}
-                    style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                  />
-                ) : (
-                  <div
+                  {member.profile_image_url ? (
+                    <img
+                      src={member.profile_image_url}
+                      alt={member.name}
+                      style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: "50%",
+                        background: "#eaf3fb",
+                        color: BLUE,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 14,
+                        fontWeight: 800,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {member.name?.[0] || "?"}
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#1b3a63",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {member.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#9aa7b8",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {classNames.join(" / ") || "배정된 반 없음"}
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/coach/growth-journal?memberId=${member.id}&yearMonth=${selectedMonth}`}
                     style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: "50%",
-                      background: "#eaf3fb",
-                      color: BLUE,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 14,
-                      fontWeight: 800,
                       flexShrink: 0,
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${BLUE}`,
+                      background: journal ? "white" : BLUE,
+                      color: journal ? BLUE : "white",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      textAlign: "center",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {member.name?.[0] || "?"}
-                  </div>
-                )}
-
-                <div style={{ flex: 1.4, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{member.name}</div>
-                  <div style={{ fontSize: 11, color: "#9aa7b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {classNames.join(" / ") || "배정된 반 없음"}
-                  </div>
+                    {journal ? "보기" : "작성하기"}
+                  </Link>
                 </div>
 
-                <div style={{ flex: 0.7, fontSize: 11, color: "#4a5c73", textAlign: "center" }}>
-                  {getRegionLabel(member.region) || "-"}
-                </div>
-
-                <div style={{ flex: 0.7, fontSize: 12, fontWeight: 700, color: "#1b3a63", textAlign: "center" }}>
-                  {attended}/{total}회
-                </div>
-
-                <div style={{ flex: 0.9, textAlign: "center" }}>
+                {/* 둘째 줄: 지역 · 출석 · 상태 · 마감일/최종수정일 — 좁으면 자동 줄바꿈 */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: 8,
+                    marginTop: 8,
+                    paddingLeft: 26,
+                    fontSize: 11,
+                    color: "#8a97a8",
+                  }}
+                >
+                  <span>{getRegionLabel(member.region) || "지역 미상"}</span>
+                  <span>·</span>
+                  <span style={{ fontWeight: 700, color: "#4a5c73" }}>
+                    출석 {attended}/{total}회
+                  </span>
+                  <span>·</span>
                   <span
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      padding: "3px 9px",
+                      padding: "2px 8px",
                       borderRadius: 999,
                       background: info.bg,
                       color: info.color,
@@ -646,41 +714,15 @@ export default function GrowthJournalAdminPage() {
                     {info.label}
                   </span>
                   {!journal && lastDay && (
-                    <div style={{ fontSize: 10, color: "#b3261e", fontWeight: 700, marginTop: 3 }}>
-                      {deadlineLabel(lastDay)}
-                    </div>
+                    <span style={{ color: "#b3261e", fontWeight: 700 }}>{deadlineLabel(lastDay)}</span>
                   )}
-                </div>
-
-                <div style={{ flex: 1, fontSize: 10, color: "#9aa7b8", textAlign: "center" }}>
-                  {lastModified ? (
+                  {lastModified && (
                     <>
-                      {lastModified}
-                      <br />
-                      (독일시간)
+                      <span>·</span>
+                      <span>최종수정 {lastModified} (독일시간)</span>
                     </>
-                  ) : (
-                    "-"
                   )}
                 </div>
-
-                <Link
-                  href={`/coach/growth-journal?memberId=${member.id}&yearMonth=${selectedMonth}`}
-                  style={{
-                    flexShrink: 0,
-                    padding: "8px 12px",
-                    borderRadius: 10,
-                    border: `1px solid ${BLUE}`,
-                    background: journal ? "white" : BLUE,
-                    color: journal ? BLUE : "white",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textAlign: "center",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {journal ? "보기" : "작성하기"}
-                </Link>
               </div>
             );
           })}
