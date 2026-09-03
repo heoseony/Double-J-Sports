@@ -355,11 +355,14 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 4 }}>
                 {info ? `${info.program ? "[" + info.program + "] " : ""}${info.class_name}` : "수업 정보 없음"}
               </div>
-              <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 2 }}>
-                {coachText && <span>{coachText}</span>}
-                {coachText && info?.location && " · "}
+              {coachText && (
+                <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 2 }}>
+                  {coachText}
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 1 }}>
                 {info?.location && <span>{info.location}</span>}
-                {(coachText || info?.location) && " · "}
+                {info?.location && " · "}
                 {count}명
               </div>
             </div>
