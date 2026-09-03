@@ -935,16 +935,26 @@ export default function PhotosPage() {
       });
     }
 
-    if (mediaRows.length > 0) {
-      const { error: mediaInsertError } = await supabase
-        .from("photo_post_media")
-        .insert(mediaRows);
+    if (mediaRows.length === 0) {
+      // 파일이 하나도 정상 업로드되지 않았으면, 이미 만들어둔 게시물(photo_posts) 행을
+      // 그대로 두면 사진 없는 껍데기 게시물이 갤러리에 남는다. 자동으로 롤백(삭제)한다.
+      await supabase.from("photo_posts").delete().eq("id", postId);
+      setUploading(false);
+      setErrorMsg("사진/영상 업로드에 실패해 게시물이 생성되지 않았습니다. 다시 시도해주세요.");
+      return;
+    }
 
-      if (mediaInsertError) {
-        setUploading(false);
-        setErrorMsg("사진 정보 저장 실패: " + mediaInsertError.message);
-        return;
-      }
+    const { error: mediaInsertError } = await supabase
+      .from("photo_post_media")
+      .insert(mediaRows);
+
+    if (mediaInsertError) {
+      // 사진 정보 저장까지 실패하면 스토리지에는 파일이 남아있어도 게시물 자체는
+      // 무의미해지므로 마찬가지로 롤백한다.
+      await supabase.from("photo_posts").delete().eq("id", postId);
+      setUploading(false);
+      setErrorMsg("사진 정보 저장 실패: " + mediaInsertError.message);
+      return;
     }
 
     setUploading(false);
