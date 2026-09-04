@@ -249,13 +249,21 @@ function MediaThumb({ m }) {
   if (m.media_type === "video") {
     return (
       <>
-        <video
-          src={m.media_url}
-          muted
-          playsInline
-          preload="metadata"
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
+        {m.poster_url ? (
+          <img
+            src={m.poster_url}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        ) : (
+          <video
+            src={m.media_url}
+            muted
+            playsInline
+            preload="metadata"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        )}
         <div
           style={{
             position: "absolute",
@@ -821,7 +829,7 @@ export default function PhotosPage() {
     const { data, error } = await supabase
       .from("photo_posts")
       .select(
-        "id, title, caption, uploaded_by, created_at, category_id, gallery_categories(id, name), photo_post_media(id, media_url, media_type, order_index), author:users!uploaded_by(name, role)"
+        "id, title, caption, uploaded_by, created_at, category_id, gallery_categories(id, name), photo_post_media(id, media_url, media_type, poster_url, order_index), author:users!uploaded_by(name, role)"
       )
       .order("created_at", { ascending: false });
 
