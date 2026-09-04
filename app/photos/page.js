@@ -104,6 +104,51 @@ async function isHeicByContent(file) {
   }
 }
 
+// 이미 업로드된 영상 URL로부터 첫 프레임을 캡처한다 (기존 영상 썸네일 소급 생성용).
+function generateVideoPosterFromUrl(url) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+
+    function captureFrame() {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("썸네일 캔버스 변환 실패"));
+              return;
+            }
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.8
+        );
+      } catch (err) {
+        reject(err);
+      }
+    }
+
+    video.onloadeddata = () => {
+      try {
+        video.currentTime = Math.min(0.1, (video.duration || 1) / 2);
+      } catch (err) {
+        captureFrame();
+      }
+    };
+    video.onseeked = captureFrame;
+    video.onerror = () => reject(new Error("영상을 읽을 수 없습니다."));
+  });
+}
+
 async function normalizeImageFile(file) {
   if (!file.type.startsWith("image") && file.type !== "") return file;
 
@@ -796,6 +841,9 @@ export default function PhotosPage() {
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState({ current: 0, total: 0 });
+  const [backfillMsg, setBackfillMsg] = useState("");
   const [converting, setConverting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -962,6 +1010,70 @@ export default function PhotosPage() {
     if (messages.length > 0) {
       setErrorMsg(messages.join(" / "));
     }
+  }
+
+  // 예전에 올라간, poster_url이 없는 영상들을 찾아서 첫 프레임 썸네일을 소급 생성한다.
+  async function handleBackfillPosters() {
+    setBackfilling(true);
+    setBackfillMsg("");
+
+    const { data: targets, error: fetchError } = await supabase
+      .from("photo_post_media")
+      .select("id, media_url")
+      .eq("media_type", "video")
+      .is("poster_url", null);
+
+    if (fetchError) {
+      setBackfillMsg("대상 조회 실패: " + fetchError.message);
+      setBackfilling(false);
+      return;
+    }
+
+    if (!targets || targets.length === 0) {
+      setBackfillMsg("썸네일이 없는 예전 영상이 없습니다. 이미 다 처리되어 있어요.");
+      setBackfilling(false);
+      return;
+    }
+
+    setBackfillProgress({ current: 0, total: targets.length });
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < targets.length; i++) {
+      setBackfillProgress({ current: i + 1, total: targets.length });
+      const row = targets[i];
+      try {
+        const posterBlob = await generateVideoPosterFromUrl(row.media_url);
+        const posterPath = `backfill-${row.id}-poster.jpg`;
+        const { error: uploadErr } = await supabase.storage
+          .from("photos")
+          .upload(posterPath, posterBlob, { contentType: "image/jpeg", upsert: true });
+
+        if (uploadErr) {
+          failCount += 1;
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage.from("photos").getPublicUrl(posterPath);
+
+        const { error: updateErr } = await supabase
+          .from("photo_post_media")
+          .update({ poster_url: urlData.publicUrl })
+          .eq("id", row.id);
+
+        if (updateErr) {
+          failCount += 1;
+        } else {
+          successCount += 1;
+        }
+      } catch (err) {
+        failCount += 1;
+      }
+    }
+
+    setBackfilling(false);
+    setBackfillMsg(`완료: 성공 ${successCount}건, 실패 ${failCount}건`);
+    await loadPosts();
   }
 
   function resetForm() {
@@ -1216,6 +1328,35 @@ export default function PhotosPage() {
         </div>
       </div>
       <div style={{ fontSize: 14, color: "#8ea0b8", marginBottom: 28, textAlign: "center" }}>{t("gallery.subtitle")}</div>
+
+      {isAdmin && (
+        <div className="card" style={{ marginBottom: 20, padding: 14 }}>
+          <button
+            type="button"
+            disabled={backfilling}
+            onClick={handleBackfillPosters}
+            style={{
+              width: "100%",
+              padding: 12,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#3B82C4",
+              background: "white",
+              border: "1px solid #3B82C4",
+              borderRadius: 10,
+              cursor: backfilling ? "default" : "pointer",
+              opacity: backfilling ? 0.6 : 1,
+            }}
+          >
+            {backfilling
+              ? `기존 영상 썸네일 생성 중... (${backfillProgress.current}/${backfillProgress.total})`
+              : "기존 영상 썸네일 일괄 생성"}
+          </button>
+          {backfillMsg && (
+            <div style={{ fontSize: 12, color: "#4a5c73", marginTop: 8 }}>{backfillMsg}</div>
+          )}
+        </div>
+      )}
 
       {canUpload && (
         <div className="card" style={{ marginBottom: 20 }}>
