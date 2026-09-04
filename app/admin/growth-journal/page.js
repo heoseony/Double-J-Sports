@@ -184,11 +184,13 @@ export default function GrowthJournalAdminPage() {
 
     const { data: allMembers } = await supabase
       .from("members")
-      .select("id, name, birth_date, profile_image_url, is_test, region")
+      .select("id, name, birth_date, profile_image_url, is_test, region, status")
       .eq("program", "kids")
       .order("name");
 
-    const members = (allMembers || []).filter((m) => !m.is_test);
+    // 체험(trial) 회원은 성장일지 대상에서 제외. 실제 정회원으로 전환(status가 active 등으로
+    // 변경)되면 그 시점부터 자동으로 명단에 포함된다.
+    const members = (allMembers || []).filter((m) => !m.is_test && m.status !== "trial");
     const memberIds = members.map((m) => m.id);
 
     let journals = [];
