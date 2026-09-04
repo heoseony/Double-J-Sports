@@ -758,7 +758,7 @@ function Lightbox({
                 type="button"
                 onClick={onSaveEdit}
                 style={{
-                  background: "#0b3d2e",
+                  background: "#3B82C4",
                   color: "white",
                   border: "none",
                   borderRadius: 8,
@@ -1083,6 +1083,7 @@ export default function PhotosPage() {
     setBackfillProgress({ current: 0, total: targets.length });
     let successCount = 0;
     let failCount = 0;
+    const errorSamples = [];
 
     for (let i = 0; i < targets.length; i++) {
       setBackfillProgress({ current: i + 1, total: targets.length });
@@ -1100,6 +1101,7 @@ export default function PhotosPage() {
 
         if (uploadErr) {
           failCount += 1;
+          if (errorSamples.length < 3) errorSamples.push(`업로드 실패: ${uploadErr.message}`);
           continue;
         }
 
@@ -1112,16 +1114,19 @@ export default function PhotosPage() {
 
         if (updateErr) {
           failCount += 1;
+          if (errorSamples.length < 3) errorSamples.push(`DB저장 실패: ${updateErr.message}`);
         } else {
           successCount += 1;
         }
       } catch (err) {
         failCount += 1;
+        if (errorSamples.length < 3) errorSamples.push(`캡처 실패: ${err.message || String(err)}`);
       }
     }
 
     setBackfilling(false);
-    setBackfillMsg(`완료: 성공 ${successCount}건, 실패 ${failCount}건`);
+    const summary = `완료: 성공 ${successCount}건, 실패 ${failCount}건`;
+    setBackfillMsg(errorSamples.length > 0 ? `${summary} / 에러 예시: ${errorSamples.join(" | ")}` : summary);
     await loadPosts();
   }
 
