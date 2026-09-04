@@ -1043,7 +1043,11 @@ export default function PhotosPage() {
       setBackfillProgress({ current: i + 1, total: targets.length });
       const row = targets[i];
       try {
-        const posterBlob = await generateVideoPosterFromUrl(row.media_url);
+        const posterBlob = await withTimeout(
+          generateVideoPosterFromUrl(row.media_url),
+          20000,
+          "포스터 생성 시간 초과"
+        );
         const posterPath = `backfill-${row.id}-poster.jpg`;
         const { error: uploadErr } = await supabase.storage
           .from("photos")
