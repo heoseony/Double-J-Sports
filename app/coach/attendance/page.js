@@ -895,6 +895,13 @@ function AttendanceInner() {
                       marginBottom: 8,
                     }}
                   />
+
+                  {addMemberError && (
+                    <div style={{ fontSize: 12, color: "#b3261e", marginBottom: 8 }}>
+                      {addMemberError}
+                    </div>
+                  )}
+
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       type="button"
