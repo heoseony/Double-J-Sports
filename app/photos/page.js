@@ -1091,7 +1091,7 @@ export default function PhotosPage() {
       try {
         const posterBlob = await withTimeout(
           generateVideoPosterFromUrl(row.media_url),
-          20000,
+          60000,
           "포스터 생성 시간 초과"
         );
         const posterPath = `backfill-${row.id}-poster.jpg`;
