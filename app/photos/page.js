@@ -105,14 +105,27 @@ async function isHeicByContent(file) {
 }
 
 // 이미 업로드된 영상 URL로부터 첫 프레임을 캡처한다 (기존 영상 썸네일 소급 생성용).
-function generateVideoPosterFromUrl(url) {
+async function generateVideoPosterFromUrl(url) {
+  // 영상 URL을 직접 <video>에 연결하면 브라우저가 "교차 출처라 캔버스에서 못 꺼냄"으로
+  // 막는 경우(tainted canvas)가 있어서, 먼저 파일을 통째로 내려받아 blob으로 만든 뒤
+  // 그 blob으로 캡처한다 (같은 출처 취급되어 캔버스 제한에 안 걸림).
+  const response = await fetch(url, { mode: "cors" });
+  if (!response.ok) {
+    throw new Error("영상 파일을 내려받지 못했습니다.");
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
-    video.crossOrigin = "anonymous";
     video.preload = "metadata";
     video.muted = true;
     video.playsInline = true;
-    video.src = url;
+    video.src = objectUrl;
+
+    function cleanup() {
+      URL.revokeObjectURL(objectUrl);
+    }
 
     function captureFrame() {
       try {
@@ -122,17 +135,19 @@ function generateVideoPosterFromUrl(url) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(
-          (blob) => {
-            if (!blob) {
+          (posterBlob) => {
+            cleanup();
+            if (!posterBlob) {
               reject(new Error("썸네일 캔버스 변환 실패"));
               return;
             }
-            resolve(blob);
+            resolve(posterBlob);
           },
           "image/jpeg",
           0.8
         );
       } catch (err) {
+        cleanup();
         reject(err);
       }
     }
@@ -145,7 +160,10 @@ function generateVideoPosterFromUrl(url) {
       }
     };
     video.onseeked = captureFrame;
-    video.onerror = () => reject(new Error("영상을 읽을 수 없습니다."));
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("영상을 읽을 수 없습니다."));
+    };
   });
 }
 
@@ -528,8 +546,11 @@ function Lightbox({
   isEditing,
   editTitleValue,
   editValue,
+  editCategoryId,
+  categories,
   onChangeEditTitle,
   onChangeEditValue,
+  onChangeEditCategory,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
@@ -709,6 +730,29 @@ function Lightbox({
                 resize: "none",
               }}
             />
+            <select
+              value={editCategoryId || ""}
+              onChange={(e) => onChangeEditCategory(e.target.value)}
+              style={{
+                width: "100%",
+                borderRadius: 8,
+                border: "1px solid #555",
+                background: "rgba(255,255,255,0.08)",
+                color: "white",
+                padding: 8,
+                fontSize: 14,
+                marginTop: 8,
+              }}
+            >
+              <option value="" style={{ color: "black" }}>
+                카테고리 없음
+              </option>
+              {(categories || []).map((c) => (
+                <option key={c.id} value={c.id} style={{ color: "black" }}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button
                 type="button"
@@ -851,6 +895,7 @@ export default function PhotosPage() {
   const [editingPostId, setEditingPostId] = useState(null);
   const [editTitleValue, setEditTitleValue] = useState("");
   const [editCaptionValue, setEditCaptionValue] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
 
   const loadRequestIdRef = useRef(0);
 
@@ -1235,18 +1280,24 @@ export default function PhotosPage() {
     setEditingPostId(post.id);
     setEditTitleValue(post.title || "");
     setEditCaptionValue(post.caption || "");
+    setEditCategoryId(post.category_id || "");
   }
 
   function cancelEditCaption() {
     setEditingPostId(null);
     setEditTitleValue("");
     setEditCaptionValue("");
+    setEditCategoryId("");
   }
 
   async function saveEditCaption(postId) {
     const { error } = await supabase
       .from("photo_posts")
-      .update({ title: editTitleValue || null, caption: editCaptionValue || null })
+      .update({
+        title: editTitleValue || null,
+        caption: editCaptionValue || null,
+        category_id: editCategoryId || null,
+      })
       .eq("id", postId);
 
     if (error) {
@@ -1750,6 +1801,9 @@ export default function PhotosPage() {
           isEditing={editingPostId === lightboxPost.id}
           editTitleValue={editTitleValue}
           editValue={editCaptionValue}
+          editCategoryId={editCategoryId}
+          categories={categories}
+          onChangeEditCategory={setEditCategoryId}
           onChangeEditTitle={setEditTitleValue}
           onChangeEditValue={setEditCaptionValue}
           onStartEdit={() => startEditCaption(lightboxPost)}
