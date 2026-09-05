@@ -233,6 +233,9 @@ export default function AdminMembersPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminUserId, setAdminUserId] = useState(null);
   const [couponModalMember, setCouponModalMember] = useState(null);
+  const [deleteConfirmMember, setDeleteConfirmMember] = useState(null);
+  const [deletingMember, setDeletingMember] = useState(false);
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState("");
   const [issuingCoupon, setIssuingCoupon] = useState(false);
   const [couponSuccessMsg, setCouponSuccessMsg] = useState("");
 
@@ -458,6 +461,42 @@ export default function AdminMembersPage() {
     setAdjustReason("");
     setAdjustMsg("조정이 완료되었습니다.");
     await loadMemberships(memberId);
+  }
+
+  function openDeleteConfirm(member) {
+    setDeleteErrorMsg("");
+    setDeleteConfirmMember(member);
+  }
+
+  function closeDeleteConfirm() {
+    setDeleteConfirmMember(null);
+    setDeleteErrorMsg("");
+  }
+
+  async function handleDeleteMember() {
+    if (!deleteConfirmMember) return;
+    setDeletingMember(true);
+    setDeleteErrorMsg("");
+
+    const { error } = await supabase
+      .from("members")
+      .delete()
+      .eq("id", deleteConfirmMember.id);
+
+    if (error) {
+      // 예약/결제 기록 등 연결된 데이터가 있어서 삭제가 막히는 경우가 흔함 (FK 제약)
+      setDeleteErrorMsg(
+        "삭제 실패: " +
+          error.message +
+          " (연결된 예약/결제 기록이 있으면 삭제가 제한될 수 있어요)"
+      );
+      setDeletingMember(false);
+      return;
+    }
+
+    setDeletingMember(false);
+    setDeleteConfirmMember(null);
+    await loadMembers();
   }
 
   function openCouponModal(member) {
@@ -972,6 +1011,25 @@ export default function AdminMembersPage() {
                     </div>
 
                     <MemberBookingHistory memberId={m.id} />
+
+                    <button
+                      type="button"
+                      onClick={() => openDeleteConfirm(m)}
+                      style={{
+                        width: "100%",
+                        marginTop: 14,
+                        padding: "10px 0",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "1px solid #f3c6c6",
+                        borderRadius: 10,
+                        background: "#fdecec",
+                        color: "#b3261e",
+                        cursor: "pointer",
+                      }}
+                    >
+                      회원 삭제
+                    </button>
                   </div>
                 )}
               </div>
@@ -1048,6 +1106,83 @@ export default function AdminMembersPage() {
                 }}
               >
                 {issuingCoupon ? "발급 중..." : "발급하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmMember && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,35,60,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+          onClick={closeDeleteConfirm}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: 20,
+              width: "100%",
+              maxWidth: 380,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#1b3a63", marginBottom: 8 }}>
+              정말 삭제하시겠습니까?
+            </div>
+            <p style={{ fontSize: 14, color: "#33455e", marginTop: 0 }}>
+              <strong>{deleteConfirmMember.name}</strong>님을 회원 목록에서 완전히 삭제합니다.
+              이 작업은 되돌릴 수 없습니다.
+            </p>
+
+            {deleteErrorMsg && (
+              <div style={{ fontSize: 12, color: "#b3261e", marginTop: 8 }}>{deleteErrorMsg}</div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={closeDeleteConfirm}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 10,
+                  background: "white",
+                  color: "#5b7699",
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={deletingMember}
+                onClick={handleDeleteMember}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 10,
+                  background: deletingMember ? "#e79a9a" : "#b3261e",
+                  color: "white",
+                  cursor: deletingMember ? "default" : "pointer",
+                }}
+              >
+                {deletingMember ? "삭제 중..." : "삭제"}
               </button>
             </div>
           </div>
