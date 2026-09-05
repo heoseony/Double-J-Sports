@@ -17,6 +17,23 @@ function todayStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// 결제 승인 시점 기준으로 이 회원권이 적용될 "대상 월"을 계산한다.
+// 매월 25일부터는 다음 달 결제로 간주 (아카데미가 25일부터 다음달 결제 안내를 시작하기 때문).
+function getTargetMonthStr() {
+  const d = nowInGermany();
+  let year = d.getFullYear();
+  let month = d.getMonth(); // 0-indexed
+  if (d.getDate() >= 25) {
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+  const mm = String(month + 1).padStart(2, "0");
+  return `${year}-${mm}-01`;
+}
+
 function defaultDescription() {
   const monthLabel = nowInGermany().toLocaleDateString("en-US", {
     month: "short",
@@ -381,12 +398,17 @@ export default function AdminPaymentsPage() {
       return;
     }
 
-    // 기존 active 회원권이 있으면 먼저 만료 처리 (중복 방지)
+    const targetMonth = getTargetMonthStr();
+
+    // 같은 대상 월(target_month)의 기존 active 회원권이 있으면 만료 처리 (중복결제 정정용).
+    // 다른 월(예: 이번달이 남아있는데 다음달을 미리 결제) 회원권은 건드리지 않는다 —
+    // 이번달 회원권은 이번달이 끝날 때까지 그대로 유효해야 하기 때문.
     await supabase
       .from("memberships")
       .update({ status: "expired" })
       .eq("member_id", payment.member_id)
-      .eq("status", "active");
+      .eq("status", "active")
+      .eq("target_month", targetMonth);
 
     const { error: membershipError } = await supabase
       .from("memberships")
@@ -394,6 +416,7 @@ export default function AdminPaymentsPage() {
         member_id: payment.member_id,
         plan_id: payment.plan_id,
         start_date: todayStr(),
+        target_month: targetMonth,
         status: "active",
         sessions_used: 0,
       });
