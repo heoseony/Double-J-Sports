@@ -93,7 +93,7 @@ export default function ReservationsPage() {
     const { data: bookingData, error: bookingError } = await supabase
       .from("bookings")
       .select(
-        "id, status, class_session_id, class_sessions(id, session_date, class_id, classes(class_name, start_time, end_time, location))"
+        "id, status, class_session_id, class_sessions(id, session_date, start_time, end_time, class_id, classes(class_name, start_time, end_time, location))"
       )
       .eq("member_id", memberId)
       .order("class_sessions(session_date)", { ascending: false });
@@ -367,7 +367,7 @@ export default function ReservationsPage() {
                       {translateClassName(cls?.class_name, lang)}
                     </div>
                     <div style={{ fontSize: 13, color: "#33455e", marginTop: 4 }}>
-                      {formatDateLabel(sessionDate, lang)} · {formatTime(cls?.start_time)}~{formatTime(cls?.end_time)}
+                      {formatDateLabel(sessionDate, lang)} · {formatTime(b.class_sessions?.start_time || cls?.start_time)}~{formatTime(b.class_sessions?.end_time || cls?.end_time)}
                     </div>
                     {cls?.location && (
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
