@@ -227,6 +227,29 @@ function MemberBookingHistory({ memberId }) {
   );
 }
 
+function CollapsibleSection({ title, defaultOpen, children }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>{title}</span>
+        <span style={{ color: "#8ea0b8" }}>
+          <ChevronDown open={open} />
+        </span>
+      </div>
+      {open && <div style={{ marginTop: 8 }}>{children}</div>}
+    </div>
+  );
+}
+
 export default function AdminMembersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -781,9 +804,7 @@ export default function AdminMembersPage() {
                         padding: 14,
                       }}
                     >
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
-                        영문 이름 (인보이스용)
-                      </div>
+                      <CollapsibleSection title="영문 이름 (인보이스용)">
                       <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
                         <input
                           type="text"
@@ -828,29 +849,9 @@ export default function AdminMembersPage() {
                           {nameEnMsg}
                         </div>
                       )}
+                      </CollapsibleSection>
 
-                      <label
-                        style={{
-                          marginTop: 16,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          fontSize: 13,
-                          color: "#5b7699",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!!m.is_test}
-                          onChange={() => handleToggleTest(m)}
-                        />
-                        테스트 계정으로 표시
-                      </label>
-
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 16 }}>
-                        회원권 배정 (현장 결제 등 수동 배정)
-                      </div>
+                      <CollapsibleSection title="회원권 배정 (현장 결제 등 수동 배정)">
                       <div style={{ marginTop: 8 }}>
                         <select
                           value={assignPlanId[m.id] || ""}
@@ -903,11 +904,9 @@ export default function AdminMembersPage() {
                           {assignMsg}
                         </div>
                       )}
+                      </CollapsibleSection>
 
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginTop: 16 }}>
-                        회원권 목록
-                      </div>
-
+                      <CollapsibleSection title="회원권 목록" defaultOpen>
                       {memberships.length === 0 && (
                         <p style={{ fontSize: 13, color: "#8ea0b8", margin: "6px 0 0" }}>
                           배정된 회원권이 없습니다.
@@ -1008,9 +1007,29 @@ export default function AdminMembersPage() {
                           )}
                         </div>
                       ))}
+                    </CollapsibleSection>
                     </div>
 
                     <MemberBookingHistory memberId={m.id} />
+
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 12,
+                        color: "#5b7699",
+                        cursor: "pointer",
+                        marginTop: 14,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!m.is_test}
+                        onChange={() => handleToggleTest(m)}
+                      />
+                      테스트 계정으로 표시
+                    </label>
 
                     <button
                       type="button"
