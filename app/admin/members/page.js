@@ -797,6 +797,25 @@ export default function AdminMembersPage() {
 
                 {isExpanded && (
                   <div style={{ padding: "0 16px 16px" }}>
+                    <button
+                      type="button"
+                      onClick={() => openCouponModal(m)}
+                      style={{
+                        width: "100%",
+                        marginBottom: 12,
+                        padding: "10px 14px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: "1px solid #bcd7ee",
+                        color: "#3B82C4",
+                        borderRadius: 10,
+                        background: "white",
+                        cursor: "pointer",
+                      }}
+                    >
+                      쿠폰 발급
+                    </button>
+
                     <div
                       style={{
                         background: "#f8fafd",
@@ -912,23 +931,6 @@ export default function AdminMembersPage() {
                           배정된 회원권이 없습니다.
                         </p>
                       )}
-                <button
-                  type="button"
-                  onClick={() => openCouponModal(m)}
-                  style={{
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    border: "1px solid #bcd7ee",
-                    color: "#3B82C4",
-                    borderRadius: 8,
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                >
-                  쿠폰 발급
-                </button>
-
                       {memberships.map((ms) => (
                         <div
                           key={ms.id}
