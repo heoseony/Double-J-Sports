@@ -58,6 +58,175 @@ function ChevronDown({ open }) {
   );
 }
 
+function MemberBookingHistory({ memberId }) {
+  const [loading, setLoading] = useState(true);
+  const [monthGroups, setMonthGroups] = useState([]); // [{ key: 'YYYY-MM', label, bookings: [] }]
+  const [openMonths, setOpenMonths] = useState(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      const { data } = await supabase
+        .from("bookings")
+        .select(
+          "id, status, class_sessions(session_date, start_time, end_time, classes(class_name))"
+        )
+        .eq("member_id", memberId)
+        .order("class_sessions(session_date)", { ascending: false });
+
+      if (cancelled) return;
+
+      const groups = {};
+      (data || [])
+        .filter((b) => b.class_sessions?.session_date)
+        .forEach((b) => {
+          const d = b.class_sessions.session_date; // 'YYYY-MM-DD'
+          const key = d.slice(0, 7); // 'YYYY-MM'
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(b);
+        });
+
+      const sortedKeys = Object.keys(groups).sort((a, b) => (a < b ? 1 : -1));
+      const result = sortedKeys.map((key) => {
+        const [y, m] = key.split("-");
+        return {
+          key,
+          label: `${y}년 ${parseInt(m, 10)}월`,
+          bookings: groups[key],
+        };
+      });
+
+      setMonthGroups(result);
+      // 가장 최근 달은 기본으로 펼쳐둠
+      if (result.length > 0) setOpenMonths(new Set([result[0].key]));
+      setLoading(false);
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId]);
+
+  function toggleMonth(key) {
+    setOpenMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function statusLabel(status) {
+    if (status === "attended") return { label: "출석", color: "#2e7d32" };
+    if (status === "absent") return { label: "결석", color: "#b3261e" };
+    if (status === "cancelled_same_day") return { label: "당일취소", color: "#8a97a8" };
+    return { label: "예정", color: BLUE };
+  }
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginBottom: 8 }}>
+        수업 신청 내역
+      </div>
+
+      {loading && (
+        <div style={{ fontSize: 12, color: "#8ea0b8" }}>불러오는 중...</div>
+      )}
+
+      {!loading && monthGroups.length === 0 && (
+        <div style={{ fontSize: 12, color: "#8ea0b8" }}>신청 내역이 없습니다.</div>
+      )}
+
+      {!loading &&
+        monthGroups.map((group) => {
+          const isOpen = openMonths.has(group.key);
+          return (
+            <div
+              key={group.key}
+              style={{
+                border: "1px solid #eef2f8",
+                borderRadius: 10,
+                marginBottom: 8,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                onClick={() => toggleMonth(group.key)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  background: "white",
+                }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>
+                  {group.label} ({group.bookings.length}건)
+                </span>
+                <span style={{ color: "#8ea0b8" }}>
+                  <ChevronDown open={isOpen} />
+                </span>
+              </div>
+
+              {isOpen && (
+                <div style={{ borderTop: "1px solid #f0f3f8" }}>
+                  {group.bookings.map((b, i) => {
+                    const s = b.class_sessions;
+                    const st = statusLabel(b.status);
+                    return (
+                      <div
+                        key={b.id}
+                        style={{
+                          padding: "9px 12px",
+                          borderTop: i === 0 ? "none" : "1px solid #f5f7fa",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#33455e" }}>
+                            {s?.session_date} · {s?.start_time?.slice(0, 5)}~{s?.end_time?.slice(0, 5)}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: "#8ea0b8",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {s?.classes?.class_name || "반 정보 없음"}
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: st.color,
+                          }}
+                        >
+                          {st.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+    </div>
+  );
+}
+
 export default function AdminMembersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -801,6 +970,8 @@ export default function AdminMembersPage() {
                         </div>
                       ))}
                     </div>
+
+                    <MemberBookingHistory memberId={m.id} />
                   </div>
                 )}
               </div>
