@@ -266,11 +266,17 @@ function AttendanceInner() {
     setSelectedCandidate(member);
     setForceConfirm(false);
     setAddMemberError("");
+
+    // 이 세션이 속한 달(target_month)의 회원권만 유효한 것으로 인정한다.
+    // 예: 9월 수업엔 9월 회원권만 사용 가능, 10월 회원권으로는 9월 수업 신청 불가.
+    const sessionMonth = sessionInfo?.session_date ? sessionInfo.session_date.slice(0, 7) + "-01" : null;
+
     const { data } = await supabase
       .from("memberships")
-      .select("id, sessions_used, status, start_date, membership_plans(sessions_per_month)")
+      .select("id, sessions_used, status, start_date, target_month, membership_plans(sessions_per_month)")
       .eq("member_id", member.id)
       .eq("status", "active")
+      .eq("target_month", sessionMonth)
       .order("start_date", { ascending: false })
       .limit(1);
     const ms = (data || [])[0];

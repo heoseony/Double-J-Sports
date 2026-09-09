@@ -74,11 +74,17 @@ export default function BookClassPage() {
 
     setMember(memberData);
 
+    // 목록 화면 상단 요약은 "이번 달" 기준 회원권으로 표시 (실제 예약 가능 여부는
+    // 각 수업 상세화면 + DB함수(book_class_session)에서 그 수업이 속한 달 기준으로 정확히 체크됨)
+    const now = nowInGermany();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
     const { data: membershipData } = await supabase
       .from("memberships")
       .select("*, membership_plans(name, sessions_per_month, all_classes_allowed)")
       .eq("member_id", memberId)
       .eq("status", "active")
+      .eq("target_month", currentMonthStr)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

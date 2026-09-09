@@ -73,13 +73,17 @@ export default function AdultBookPage() {
     }
     setMember(memberData);
 
+    const nowForMonth = nowInGermany();
+    const currentMonthStrAdult = `${nowForMonth.getFullYear()}-${String(nowForMonth.getMonth() + 1).padStart(2, "0")}-01`;
+
     const { data: memberships } = await supabase
       .from("memberships")
       .select(
-        "id, sessions_used, status, plan_id, membership_plans(sessions_per_month, all_classes_allowed)"
+        "id, sessions_used, status, plan_id, target_month, membership_plans(sessions_per_month, all_classes_allowed)"
       )
       .eq("member_id", memberData.id)
       .eq("status", "active")
+      .eq("target_month", currentMonthStrAdult)
       .order("start_date", { ascending: false })
       .limit(1);
 

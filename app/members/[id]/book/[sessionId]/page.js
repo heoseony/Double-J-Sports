@@ -110,11 +110,17 @@ export default function ClassDetailPage() {
       );
     }
 
+    // 이 수업이 속한 달(target_month)에 해당하는 회원권만 유효한 것으로 인정
+    const sessionMonth = sessionData?.session_date
+      ? sessionData.session_date.slice(0, 7) + "-01"
+      : null;
+
     const { data: membershipData } = await supabase
       .from("memberships")
       .select("*, membership_plans(name, sessions_per_month, all_classes_allowed)")
       .eq("member_id", memberId)
       .eq("status", "active")
+      .eq("target_month", sessionMonth)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -173,11 +179,16 @@ export default function ClassDetailPage() {
     }
 
     if (isPrior) {
+      const sessionMonthForCancel = session?.session_date
+        ? session.session_date.slice(0, 7) + "-01"
+        : null;
+
       const { data: activeMembership } = await supabase
         .from("memberships")
         .select("id, sessions_used")
         .eq("member_id", memberId)
         .eq("status", "active")
+        .eq("target_month", sessionMonthForCancel)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

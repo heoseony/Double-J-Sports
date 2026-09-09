@@ -84,11 +84,17 @@ export default function AdultClassDetailPage() {
     }
     setSession(sessionData);
 
+    // 이 수업이 속한 달(target_month)에 해당하는 회원권만 유효한 것으로 인정
+    const sessionMonthForAdult = sessionData?.session_date
+      ? sessionData.session_date.slice(0, 7) + "-01"
+      : null;
+
     const { data: memberships } = await supabase
       .from("memberships")
-      .select("id, sessions_used, status, membership_plans(sessions_per_month)")
+      .select("id, sessions_used, status, target_month, membership_plans(sessions_per_month)")
       .eq("member_id", memberData.id)
       .eq("status", "active")
+      .eq("target_month", sessionMonthForAdult)
       .order("start_date", { ascending: false })
       .limit(1);
 
