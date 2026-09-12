@@ -9,6 +9,18 @@ import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
 
+function calcKoreanAge(birthDateStr) {
+  if (!birthDateStr) return null;
+  const today = new Date();
+  const birth = new Date(birthDateStr);
+  let age = today.getFullYear() - birth.getFullYear();
+  const hadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hadBirthdayThisYear) age -= 1;
+  return age;
+}
+
 function BackIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -43,6 +55,7 @@ function AttendanceInner() {
   const [myRole, setMyRole] = useState(null);
   const [confirmerName, setConfirmerName] = useState("");
   const [bookings, setBookings] = useState([]);
+  const [infoModalMember, setInfoModalMember] = useState(null);
   const [remainingByMember, setRemainingByMember] = useState({});
   const [updatingId, setUpdatingId] = useState(null);
   const [editingBookingId, setEditingBookingId] = useState(null);
@@ -159,7 +172,7 @@ function AttendanceInner() {
 
     const { data: bookingData, error } = await supabase
       .from("bookings")
-      .select("id, status, member_id, checked_by_name, coach_note, members(name, profile_image_url)")
+      .select("id, status, member_id, checked_by_name, coach_note, members(name, profile_image_url, birth_date, gender, notes, emergency_contact)")
       .eq("class_session_id", sessionId)
       .neq("status", "cancelled_prior")
       .order("created_at", { ascending: true });
@@ -551,7 +564,20 @@ function AttendanceInner() {
                         {(b.members?.name || "?")[0]}
                       </div>
                     )}
-                    <span style={{ fontSize: 15, fontWeight: 700, color: "#1b3a63" }}>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInfoModalMember(b.members);
+                      }}
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "#1b3a63",
+                        textDecoration: "underline",
+                        textDecorationColor: "#cbd8e8",
+                        cursor: "pointer",
+                      }}
+                    >
                       {b.members?.name || "(알 수 없음)"}
                     </span>
 
@@ -1024,6 +1050,109 @@ function AttendanceInner() {
           )}
         </div>
       </div>
+
+      {infoModalMember && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,35,60,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+          onClick={() => setInfoModalMember(null)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: 20,
+              width: "100%",
+              maxWidth: 380,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              {infoModalMember.profile_image_url ? (
+                <img
+                  src={infoModalMember.profile_image_url}
+                  alt=""
+                  style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "50%",
+                    background: "#eaf3fb",
+                    color: BLUE,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 16,
+                    fontWeight: 800,
+                  }}
+                >
+                  {(infoModalMember.name || "?")[0]}
+                </div>
+              )}
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#1b3a63" }}>
+                {infoModalMember.name}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 14, color: "#33455e", lineHeight: 1.8 }}>
+              <div>
+                생년월일: {infoModalMember.birth_date || "미입력"}
+                {infoModalMember.birth_date &&
+                  ` (만 ${calcKoreanAge(infoModalMember.birth_date)}세)`}
+              </div>
+              <div>성별: {infoModalMember.gender || "미입력"}</div>
+              <div>비상연락처: {infoModalMember.emergency_contact || "미입력"}</div>
+            </div>
+
+            {infoModalMember.notes && (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 12,
+                  background: "#fdecec",
+                  borderRadius: 10,
+                  fontSize: 14,
+                  color: "#b3261e",
+                  fontWeight: 600,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                ⚠ 특이사항: {infoModalMember.notes}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setInfoModalMember(null)}
+              style={{
+                width: "100%",
+                marginTop: 16,
+                padding: "12px 0",
+                fontSize: 14,
+                fontWeight: 700,
+                border: "1px solid #e5eaf2",
+                borderRadius: 10,
+                background: "white",
+                color: "#5b7699",
+                cursor: "pointer",
+              }}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
