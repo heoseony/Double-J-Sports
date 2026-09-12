@@ -8,6 +8,34 @@ import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
 
+// 'YYYY-MM-DD' 생년월일로 만 나이를 계산 (생일이 아직 안 지났으면 -1)
+function calcKoreanAge(birthDateStr) {
+  if (!birthDateStr) return null;
+  const today = new Date();
+  const birth = new Date(birthDateStr);
+  let age = today.getFullYear() - birth.getFullYear();
+  const hadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+// "(남, 2001년 7월 21일, 만 25세)" 형태로 조합
+function formatBirthInfo(birthDateStr, gender) {
+  if (!birthDateStr) return gender || "";
+  const d = new Date(`${birthDateStr}T00:00:00`);
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const age = calcKoreanAge(birthDateStr);
+  const parts = [];
+  if (gender) parts.push(gender);
+  parts.push(`${y}년 ${m}월 ${day}일`);
+  if (age !== null) parts.push(`만 ${age}세`);
+  return parts.join(", ");
+}
+
 function BackIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -186,7 +214,7 @@ function GrowthJournalInner() {
 
     const { data: memberData } = await supabase
       .from("members")
-      .select("id, name, birth_date, program, profile_image_url")
+      .select("id, name, birth_date, gender, program, profile_image_url")
       .eq("id", memberId)
       .single();
 
@@ -466,7 +494,7 @@ function GrowthJournalInner() {
           <div>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#1b3a63" }}>{member?.name}</div>
             <div style={{ fontSize: 13, color: "#9aa7b8", marginTop: 3 }}>
-              {member?.birth_date}
+              {formatBirthInfo(member?.birth_date, member?.gender)}
             </div>
             {classNames.length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
