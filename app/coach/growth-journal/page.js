@@ -687,31 +687,13 @@ function GrowthJournalInner() {
         </div>
 
         {/* 저장 버튼 */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+        <div style={{ marginBottom: 24 }}>
           <button
             type="button"
             disabled={saving}
             onClick={() => handleSave("draft")}
             style={{
-              flex: 1,
-              padding: "14px 0",
-              borderRadius: 12,
-              border: `1px solid ${BLUE}`,
-              background: "white",
-              color: BLUE,
-              fontSize: 14,
-              fontWeight: 800,
-              cursor: saving ? "default" : "pointer",
-            }}
-          >
-            임시저장
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => handleSave("published")}
-            style={{
-              flex: 1,
+              width: "100%",
               padding: "14px 0",
               borderRadius: 12,
               border: "none",
@@ -722,11 +704,11 @@ function GrowthJournalInner() {
               cursor: saving ? "default" : "pointer",
             }}
           >
-            바로 발행
+            {saving ? "저장 중..." : "저장"}
           </button>
-        </div>
-        <div style={{ fontSize: 12, color: "#8a97a8", textAlign: "center", marginBottom: 24 }}>
-          여러 선수를 먼저 임시저장 해두고, 관리자 현황판에서 한 번에 발행할 수도 있어요.
+          <div style={{ fontSize: 12, color: "#8a97a8", textAlign: "center", marginTop: 10 }}>
+            발행은 관리자 현황판에서 선택 발행 / 전체 발행으로 진행해주세요.
+          </div>
         </div>
       </div>
     </main>
