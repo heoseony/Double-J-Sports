@@ -608,13 +608,17 @@ export default function DashboardPage() {
         const childIds = (childList || []).map((c) => c.id);
 
         if (childIds.length > 0) {
+          const nowForMonth = nowInGermany();
+          const currentMonthStr = `${nowForMonth.getFullYear()}-${String(nowForMonth.getMonth() + 1).padStart(2, "0")}-01`;
+
           const { data: activeMemberships } = await supabase
             .from("memberships")
             .select(
-              "member_id, sessions_used, start_date, membership_plans(sessions_per_month)"
+              "member_id, sessions_used, start_date, target_month, membership_plans(sessions_per_month)"
             )
             .in("member_id", childIds)
             .eq("status", "active")
+            .eq("target_month", currentMonthStr)
             .order("start_date", { ascending: false });
 
           const membershipMap = {};
@@ -1034,6 +1038,36 @@ export default function DashboardPage() {
 
             {!isAdultMember && (
               <>
+            {(() => {
+              const now = nowInGermany();
+              if (now.getDate() < 25) return null;
+
+              const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+              const daysLeft = Math.max(
+                Math.round((lastDayOfMonth - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000),
+                0
+              );
+
+              const childrenWithMembership = children.filter((c) => membershipByChild[c.id]);
+              if (childrenWithMembership.length === 0) return null;
+
+              return (
+                <div
+                  style={{
+                    ...cardStyle,
+                    background: "#fff8ec",
+                    border: "1px solid #f3e2bd",
+                  }}
+                >
+                  {childrenWithMembership.map((c) => (
+                    <div key={c.id} style={{ fontSize: 13, fontWeight: 700, color: "#8a5a1e" }}>
+                      {c.name}님 이번 달 회원권 만료까지 D-{daysLeft} 남았어요!
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
             <div style={cardStyle}>
               <div style={cardTitleRow}>
                 <span style={cardTitle}>{t("dashboard.attendanceCheckWeek")}</span>
