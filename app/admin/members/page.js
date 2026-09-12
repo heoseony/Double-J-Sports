@@ -32,6 +32,22 @@ const STATUS_STYLE = {
   withdrawn: { label: "탈퇴", bg: "#fdecec", color: "#b3261e" },
 };
 
+// 배정 시점 기준 "대상 월" 계산 (25일 이후는 다음달로 간주 — 결제승인 로직과 동일 규칙)
+function getTargetMonthStr() {
+  const d = nowInGermany();
+  let year = d.getFullYear();
+  let month = d.getMonth();
+  if (d.getDate() >= 25) {
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+  const mm = String(month + 1).padStart(2, "0");
+  return `${year}-${mm}-01`;
+}
+
 function SearchIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -361,17 +377,23 @@ export default function AdminMembersPage() {
 
     setAssigningId(memberId);
 
-    // 기존 active 회원권이 있으면 먼저 만료 처리 (중복 방지)
+    const targetMonth = getTargetMonthStr();
+
+    // 같은 대상 월(target_month)의 기존 active 회원권만 만료 처리 (중복배정 정정용).
+    // 다른 달 회원권은 그대로 유지 — 이번달이 남아있는데 다음달을 미리 배정해도
+    // 이번달 회원권이 사라지면 안 되기 때문.
     await supabase
       .from("memberships")
       .update({ status: "expired" })
       .eq("member_id", memberId)
-      .eq("status", "active");
+      .eq("status", "active")
+      .eq("target_month", targetMonth);
 
     const { error } = await supabase.from("memberships").insert({
       member_id: memberId,
       plan_id: planId,
       start_date: todayStr(),
+      target_month: targetMonth,
       status: "active",
       sessions_used: 0,
     });
