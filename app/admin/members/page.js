@@ -287,7 +287,7 @@ export default function AdminMembersPage() {
     const { data, error } = await supabase
       .from("members")
       .select(
-        "id, name, name_en, program, status, birth_date, gender, referred_by, is_test, guardians(name, phone, referred_by), users(email, phone)"
+        "id, name, name_en, program, status, birth_date, gender, referred_by, is_test, notes, emergency_contact, guardians(name, phone, referred_by), users(email, phone)"
       )
       .order("created_at", { ascending: false });
 
@@ -815,6 +815,41 @@ export default function AdminMembersPage() {
                     >
                       쿠폰 발급
                     </button>
+
+                    <div
+                      style={{
+                        background: "#fff8ec",
+                        border: "1px solid #f3e2bd",
+                        borderRadius: 12,
+                        padding: 14,
+                        marginBottom: 12,
+                      }}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", marginBottom: 8 }}>
+                        회원 상세정보
+                      </div>
+                      <div style={{ fontSize: 13, color: "#33455e", lineHeight: 1.7 }}>
+                        <div>생년월일: {m.birth_date || "미입력"}</div>
+                        <div>성별: {m.gender || "미입력"}</div>
+                        <div>비상연락처: {m.emergency_contact || "미입력"}</div>
+                      </div>
+                      {m.notes && (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            padding: 10,
+                            background: "white",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            color: "#b3261e",
+                            fontWeight: 600,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          ⚠ 특이사항: {m.notes}
+                        </div>
+                      )}
+                    </div>
 
                     <div
                       style={{
