@@ -398,13 +398,39 @@ export default function AdminMembersPage() {
       sessions_used: 0,
     });
 
-    setAssigningId(null);
-
     if (error) {
+      setAssigningId(null);
       setAssignMsg("배정 실패: " + error.message);
       return;
     }
 
+    // 수동 배정(현장 결제 등)도 매출 리포트에 잡히도록 payments에 confirmed 상태로 같이 기록한다.
+    const assignedPlan = plans.find((p) => p.id === planId);
+    if (assignedPlan) {
+      const { error: paymentError } = await supabase.from("payments").insert({
+        member_id: memberId,
+        plan_id: planId,
+        depositor_name: "현장 수동 배정",
+        total_amount: assignedPlan.price,
+        net_amount: assignedPlan.price,
+        vat_amount: 0,
+        status: "confirmed",
+        payment_method: "manual",
+        requested_at: new Date().toISOString(),
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: adminUserId,
+      });
+      if (paymentError) {
+        // 회원권 배정 자체는 이미 성공했으니, 결제기록 실패는 조용히 넘어가되 메시지로만 안내
+        setAssignMsg("회원권은 배정됐지만 매출 기록 저장에 실패했습니다: " + paymentError.message);
+        setAssigningId(null);
+        setAssignPlanId((prev) => ({ ...prev, [memberId]: "" }));
+        await loadMemberships(memberId);
+        return;
+      }
+    }
+
+    setAssigningId(null);
     setAssignPlanId((prev) => ({ ...prev, [memberId]: "" }));
     setAssignMsg("회원권이 배정되었습니다.");
     await loadMemberships(memberId);
