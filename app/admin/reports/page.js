@@ -169,17 +169,31 @@ export default function AdminReportsPage() {
     const weekEndExclusive = localDateStr(tomorrow);
     setWeekLabel(`${weekStart} ~ ${localDateStr(now)} (진행중)`);
 
-    // 이번 달 (1일 ~ 오늘까지, 진행중 집계)
+    // 이번 달 (1일 ~ 오늘까지, 진행중 집계) - 출석률/신규회원은 달력 기준
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    setMonthLabel(`${monthStart.slice(0, 7)} 1일 ~ ${localDateStr(now)} (진행중)`);
 
-    const [w, m] = await Promise.all([
+    // 매출은 "전달 25일 ~ 이번달 24일"을 한 사이클로 본다 (회원권 target_month 규칙과 동일).
+    // 25일부터의 결제는 이미 "다음달" 매출로 넘어가므로, 이번달 매출 계산에서 제외.
+    const thisMonth25 = new Date(now.getFullYear(), now.getMonth(), 25);
+    const prevMonth25 = new Date(now.getFullYear(), now.getMonth() - 1, 25);
+    const tomorrowDate = new Date(now);
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const revenueEndDate = tomorrowDate < thisMonth25 ? tomorrowDate : thisMonth25;
+    const revenueStart = localDateStr(prevMonth25);
+    const revenueEndExclusive = localDateStr(revenueEndDate);
+
+    setMonthLabel(
+      `${revenueStart} ~ ${localDateStr(new Date(revenueEndDate.getTime() - 86400000))} (매출 기준 사이클, 진행중)`
+    );
+
+    const [w, mBase, revenueOnly] = await Promise.all([
       loadPeriodStats(weekStart, weekEndExclusive),
       loadPeriodStats(monthStart, weekEndExclusive),
+      loadPeriodStats(revenueStart, revenueEndExclusive),
     ]);
 
     setWeekStats(w);
-    setMonthStats(m);
+    setMonthStats({ ...mBase, revenue: revenueOnly.revenue });
     setLoading(false);
   }
 
