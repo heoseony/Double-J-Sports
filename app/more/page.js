@@ -16,6 +16,7 @@ function getMenuByRole(t) {
     { label: t("more.managePlayers"), href: "/members" },
     { label: t("more.paymentInfo"), href: "/invoices" },
     { label: t("more.myBookings"), key: "bookings", href: null },
+    { label: "성장일지", key: "growthJournal", href: null },
     { label: t("more.notices"), href: "/notices" },
     { label: t("more.gallery"), href: "/photos" },
     { label: t("more.faq"), href: null },
@@ -162,6 +163,9 @@ export default function MorePage() {
     }
     if (item.key === "bookings" && firstChildId) {
       return { ...item, href: `/members/${firstChildId}/reservations` };
+    }
+    if (item.key === "growthJournal" && firstChildId) {
+      return { ...item, href: `/members/${firstChildId}/growth-journal` };
     }
     return item;
   });
