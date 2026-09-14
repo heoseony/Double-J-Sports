@@ -105,6 +105,16 @@ function MenuIcon({ type, color }) {
       </svg>
     );
   }
+  if (type === "chart") {
+    return (
+      <svg {...props}>
+        <line x1="4" y1="20" x2="20" y2="20" />
+        <rect x="6" y="12" width="3" height="8" />
+        <rect x="13" y="7" width="3" height="13" />
+        <rect x="18" y="15" width="3" height="5" />
+      </svg>
+    );
+  }
   return null;
 }
 
@@ -853,6 +863,7 @@ export default function DashboardPage() {
     { label: "공지사항", href: "/notices", icon: "megaphone", bg: "#fef6e0", color: "#d6a02e" },
     { label: "갤러리", href: "/photos", icon: "image", bg: "#e6f7f7", color: "#2ea8a0" },
     { label: "월간 성장일지", href: "/admin/growth-journal", icon: "notebook", bg: "#eef0fb", color: "#5b5fc7" },
+    { label: "운영 리포트", href: "/admin/reports", icon: "chart", bg: "#e6f7f7", color: "#2ea8a0" },
   ];
 
   return (
