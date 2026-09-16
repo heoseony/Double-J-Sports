@@ -537,6 +537,8 @@ function Lightbox({
   mediaList,
   index,
   t,
+  postId,
+  onMediaAdded,
   title,
   caption,
   authorLabel,
@@ -561,6 +563,9 @@ function Lightbox({
 }) {
   const touchStartX = useRef(null);
   const m = mediaList[index];
+  const [addingMedia, setAddingMedia] = useState(false);
+  const [addMediaMsg, setAddMediaMsg] = useState("");
+  const addMediaInputRef = useRef(null);
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -582,6 +587,100 @@ function Lightbox({
     if (deltaX > 50) onChange(index - 1);
     else if (deltaX < -50) onChange(index + 1);
     touchStartX.current = null;
+  }
+
+  async function handleAddMediaChange(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !postId) return;
+
+    const MAX_SIZE = 50 * 1024 * 1024; // 50MB (Supabase 기본 업로드 제한 기준)
+
+    setAddingMedia(true);
+    setAddMediaMsg("");
+
+    let nextOrderIndex = mediaList.length;
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const file of files) {
+      if (file.size > MAX_SIZE) {
+        failCount += 1;
+        continue;
+      }
+
+      let fileToUpload = file;
+      try {
+        fileToUpload = await normalizeImageFile(file);
+      } catch (err) {
+        failCount += 1;
+        continue;
+      }
+
+      const mediaType = fileToUpload.type.startsWith("video") ? "video" : "image";
+      const safeName = fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, "_");
+      const uniquePath = `${postId}-add-${Date.now()}-${nextOrderIndex}-${safeName}`;
+
+      let uploadError = null;
+      try {
+        const result = await withTimeout(
+          supabase.storage.from("photos").upload(uniquePath, fileToUpload, {
+            contentType: fileToUpload.type || "application/octet-stream",
+            upsert: false,
+          }),
+          mediaType === "video" ? 120000 : 30000,
+          "업로드 시간 초과"
+        );
+        uploadError = result.error;
+      } catch (err) {
+        uploadError = err;
+      }
+
+      if (uploadError) {
+        failCount += 1;
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage.from("photos").getPublicUrl(uniquePath);
+
+      let posterUrl = null;
+      if (mediaType === "video") {
+        try {
+          const posterBlob = await withTimeout(generateVideoPoster(fileToUpload), 30000, "썸네일 생성 시간 초과");
+          const posterPath = `${postId}-add-${Date.now()}-${nextOrderIndex}-poster.jpg`;
+          const { error: posterUploadError } = await supabase.storage
+            .from("photos")
+            .upload(posterPath, posterBlob, { contentType: "image/jpeg", upsert: false });
+          if (!posterUploadError) {
+            const { data: posterUrlData } = supabase.storage.from("photos").getPublicUrl(posterPath);
+            posterUrl = posterUrlData.publicUrl;
+          }
+        } catch (err) {
+          posterUrl = null;
+        }
+      }
+
+      const { error: insertError } = await supabase.from("photo_post_media").insert({
+        post_id: postId,
+        media_url: urlData.publicUrl,
+        media_type: mediaType,
+        poster_url: posterUrl,
+        order_index: nextOrderIndex,
+      });
+
+      if (insertError) {
+        failCount += 1;
+      } else {
+        successCount += 1;
+        nextOrderIndex += 1;
+      }
+    }
+
+    setAddingMedia(false);
+    setAddMediaMsg(
+      failCount > 0 ? `추가 완료 (성공 ${successCount} / 실패 ${failCount})` : `${successCount}개 추가되었습니다.`
+    );
+    if (addMediaInputRef.current) addMediaInputRef.current.value = "";
+    if (onMediaAdded) await onMediaAdded();
   }
 
   if (!m) return null;
@@ -753,6 +852,38 @@ function Lightbox({
                 </option>
               ))}
             </select>
+
+            <input
+              ref={addMediaInputRef}
+              type="file"
+              accept="image/*,video/*,.heic,.heif"
+              multiple
+              onChange={handleAddMediaChange}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              disabled={addingMedia}
+              onClick={() => addMediaInputRef.current?.click()}
+              style={{
+                width: "100%",
+                marginTop: 8,
+                padding: "8px 0",
+                fontSize: 13,
+                fontWeight: 700,
+                border: "1px dashed rgba(255,255,255,0.4)",
+                borderRadius: 8,
+                background: "rgba(255,255,255,0.08)",
+                color: "white",
+                cursor: addingMedia ? "default" : "pointer",
+              }}
+            >
+              {addingMedia ? "업로드 중..." : "+ 사진/동영상 추가"}
+            </button>
+            {addMediaMsg && (
+              <div style={{ fontSize: 12, color: "#9fd6ff", marginTop: 6 }}>{addMediaMsg}</div>
+            )}
+
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button
                 type="button"
@@ -1797,6 +1928,8 @@ export default function PhotosPage() {
           mediaList={lightboxMediaList}
           index={lightboxIndex}
           t={t}
+          postId={lightboxPost.id}
+          onMediaAdded={loadPosts}
           title={lightboxPost.title}
           caption={lightboxPost.caption}
           authorLabel={lightboxPost.author?.name || t("gallery.unknownAuthor")}
