@@ -420,6 +420,7 @@ export default function DashboardPage() {
   const [selectedWeekDate, setSelectedWeekDate] = useState(toDateStr(nowInGermany()));
   const [weekSessionCounts, setWeekSessionCounts] = useState({});
   const [membershipByChild, setMembershipByChild] = useState({});
+  const [recentJournals, setRecentJournals] = useState([]);
 
   // 코치용
   const [coachTodaySessions, setCoachTodaySessions] = useState([]);
@@ -642,6 +643,30 @@ export default function DashboardPage() {
             };
           });
           setMembershipByChild(membershipMap);
+        }
+
+        if (childIds.length > 0) {
+          const { data: journalRows } = await supabase
+            .from("growth_journals")
+            .select("id, member_id, year_month")
+            .in("member_id", childIds)
+            .order("year_month", { ascending: false });
+
+          const latestByChild = {};
+          (journalRows || []).forEach((j) => {
+            if (latestByChild[j.member_id] !== undefined) return;
+            latestByChild[j.member_id] = j;
+          });
+
+          const nowForJournal = nowInGermany();
+          const thisMonthStr = `${nowForJournal.getFullYear()}-${String(nowForJournal.getMonth() + 1).padStart(2, "0")}-01`;
+          const prevDateForJournal = new Date(nowForJournal.getFullYear(), nowForJournal.getMonth() - 1, 1);
+          const prevMonthStr = `${prevDateForJournal.getFullYear()}-${String(prevDateForJournal.getMonth() + 1).padStart(2, "0")}-01`;
+
+          const recent = Object.values(latestByChild).filter(
+            (j) => j.year_month === thisMonthStr || j.year_month === prevMonthStr
+          );
+          setRecentJournals(recent);
         }
 
         if (childIds.length > 0) {
@@ -1049,15 +1074,52 @@ export default function DashboardPage() {
 
             {!isAdultMember && (
               <>
+            {recentJournals.length > 0 && (
+              <div
+                style={{
+                  ...cardStyle,
+                  background: "#eef0fb",
+                  border: "1px solid #d7dbf5",
+                }}
+              >
+                {recentJournals.map((j) => {
+                  const child = children.find((c) => c.id === j.member_id);
+                  if (!child) return null;
+                  return (
+                    <Link
+                      key={j.id}
+                      href={`/members/${child.id}/growth-journal`}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "4px 0",
+                        }}
+                      >
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#3d3f8f" }}>
+                          {child.name}님의 이번 달 성장 리포트 도착!
+                        </span>
+                        <span style={{ fontSize: 13, color: "#5b5fc7", fontWeight: 600 }}>
+                          보러가기 →
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
             {(() => {
               const now = nowInGermany();
-              if (now.getDate() < 25) return null;
-
               const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
               const daysLeft = Math.max(
                 Math.round((lastDayOfMonth - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000),
                 0
               );
+              const isUrgent = now.getDate() >= 25;
 
               const childrenWithMembership = children.filter((c) => membershipByChild[c.id]);
               if (childrenWithMembership.length === 0) return null;
@@ -1066,15 +1128,46 @@ export default function DashboardPage() {
                 <div
                   style={{
                     ...cardStyle,
-                    background: "#fff8ec",
-                    border: "1px solid #f3e2bd",
+                    background: isUrgent ? "#fff8ec" : "white",
+                    border: isUrgent ? "1px solid #f3e2bd" : "1px solid #eef2f8",
                   }}
                 >
-                  {childrenWithMembership.map((c) => (
-                    <div key={c.id} style={{ fontSize: 13, fontWeight: 700, color: "#8a5a1e" }}>
-                      {c.name}님 이번 달 회원권 만료까지 D-{daysLeft} 남았어요!
+                  <div style={cardTitleRow}>
+                    <span style={cardTitle}>회원권 현황</span>
+                  </div>
+                  {childrenWithMembership.map((c) => {
+                    const ms = membershipByChild[c.id];
+                    const used = ms.total - ms.remaining;
+                    return (
+                      <div
+                        key={c.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "6px 0",
+                        }}
+                      >
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#33455e" }}>
+                          {c.name}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: isUrgent ? 700 : 500,
+                            color: isUrgent ? "#8a5a1e" : "#5b7699",
+                          }}
+                        >
+                          이번 달 {used}/{ms.total}회 사용 · D-{daysLeft}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {isUrgent && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: "#8a5a1e", fontWeight: 600 }}>
+                      이번 달 회원권이 곧 만료돼요. 갱신을 원하시면 담당 코치에게 문의해주세요!
                     </div>
-                  ))}
+                  )}
                 </div>
               );
             })()}
