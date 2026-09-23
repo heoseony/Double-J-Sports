@@ -101,6 +101,8 @@ export default function AdminPaymentsPage() {
   // ===== 매출현황 탭 상태 =====
   const [allConfirmedPayments, setAllConfirmedPayments] = useState([]);
   const [revenueLoaded, setRevenueLoaded] = useState(false);
+  const [manualInvoicingId, setManualInvoicingId] = useState(null);
+  const [manuallyInvoiced, setManuallyInvoiced] = useState({});
 
   async function handleReject(payment) {
     if (
@@ -468,6 +470,38 @@ export default function AdminPaymentsPage() {
     setRevenueLoaded(false);
   }
 
+  // 이미 status='confirmed'로 들어간 결제(회원권 수동 배정 등, 확인 모달을 거치지 않은 건)에
+  // 인보이스를 발행하기 위한 함수. 결제 확인/회원권 배정은 이미 끝난 상태라 인보이스 API만 호출한다.
+  async function handleGenerateInvoiceForConfirmed(payment) {
+    setManualInvoicingId(payment.id);
+    let note = "";
+    try {
+      const res = await fetch("/api/generate-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: payment.id }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        note = `⚠ 인보이스 발급 실패: ${result.error || "알 수 없는 오류"}`;
+      } else if (!result.emailSent) {
+        note = `인보이스 ${result.invoiceNumber} 발급됨 (이메일 발송 실패: ${
+          result.emailError || "알 수 없는 이유"
+        })`;
+      } else {
+        note = `인보이스 ${result.invoiceNumber} 발급 및 이메일 발송 완료`;
+      }
+    } catch (e) {
+      note = `⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message}`;
+    }
+
+    setManualInvoicingId(null);
+    setManuallyInvoiced((prev) => ({ ...prev, [payment.id]: note }));
+    setInvoicesLoaded(false);
+    setRevenueLoaded(false);
+  }
+
   function handleSettingsChange(key, value) {
     setSettingsForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -661,6 +695,31 @@ export default function AdminPaymentsPage() {
                     </div>
                     <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 2 }}>
                       입금자명: {p.depositor_name} · 확인일시: {new Date(p.confirmed_at).toLocaleString("ko-KR")}
+                    </div>
+                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
+                      <button
+                        type="button"
+                        disabled={manualInvoicingId === p.id}
+                        onClick={() => handleGenerateInvoiceForConfirmed(p)}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          border: "1px solid #3B82C4",
+                          borderRadius: 8,
+                          background: "white",
+                          color: "#3B82C4",
+                          cursor: manualInvoicingId === p.id ? "default" : "pointer",
+                          opacity: manualInvoicingId === p.id ? 0.6 : 1,
+                        }}
+                      >
+                        {manualInvoicingId === p.id ? "발행 중..." : "인보이스 발행"}
+                      </button>
+                      {manuallyInvoiced[p.id] && (
+                        <span style={{ fontSize: 12, color: "#5b7699" }}>
+                          {manuallyInvoiced[p.id]}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ));
