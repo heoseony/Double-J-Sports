@@ -103,6 +103,8 @@ export default function AdminPaymentsPage() {
   const [revenueLoaded, setRevenueLoaded] = useState(false);
   const [manualInvoicingId, setManualInvoicingId] = useState(null);
   const [manuallyInvoiced, setManuallyInvoiced] = useState({});
+  const [resendingId, setResendingId] = useState(null);
+  const [resendNote, setResendNote] = useState({});
 
   async function handleReject(payment) {
     if (
@@ -502,6 +504,31 @@ export default function AdminPaymentsPage() {
     setRevenueLoaded(false);
   }
 
+  // 이미 발급된 인보이스를 새 번호로 다시 만들지 않고, 저장된 PDF 그대로 이메일만 재전송한다.
+  // (이메일 발송 실패 같은 경우 재시도용)
+  async function handleResendInvoice(payment) {
+    setResendingId(payment.id);
+    let note = "";
+    try {
+      const res = await fetch("/api/resend-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: payment.id }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        note = `⚠ 재전송 실패: ${result.error || "알 수 없는 오류"}`;
+      } else {
+        note = `인보이스 ${result.invoiceNumber} → ${result.sentTo} 재전송 완료`;
+      }
+    } catch (e) {
+      note = `⚠ 재전송 요청 자체가 실패했습니다: ${e.message}`;
+    }
+    setResendingId(null);
+    setResendNote((prev) => ({ ...prev, [payment.id]: note }));
+  }
+
   function handleSettingsChange(key, value) {
     setSettingsForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -715,12 +742,35 @@ export default function AdminPaymentsPage() {
                       >
                         {manualInvoicingId === p.id ? "발행 중..." : "인보이스 발행"}
                       </button>
-                      {manuallyInvoiced[p.id] && (
-                        <span style={{ fontSize: 12, color: "#5b7699" }}>
-                          {manuallyInvoiced[p.id]}
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        disabled={resendingId === p.id}
+                        onClick={() => handleResendInvoice(p)}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          border: "1px solid #e5eaf2",
+                          borderRadius: 8,
+                          background: "white",
+                          color: "#5b7699",
+                          cursor: resendingId === p.id ? "default" : "pointer",
+                          opacity: resendingId === p.id ? 0.6 : 1,
+                        }}
+                      >
+                        {resendingId === p.id ? "재전송 중..." : "인보이스 재전송"}
+                      </button>
                     </div>
+                    {manuallyInvoiced[p.id] && (
+                      <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>
+                        {manuallyInvoiced[p.id]}
+                      </div>
+                    )}
+                    {resendNote[p.id] && (
+                      <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>
+                        {resendNote[p.id]}
+                      </div>
+                    )}
                   </div>
                 ));
               })()}
