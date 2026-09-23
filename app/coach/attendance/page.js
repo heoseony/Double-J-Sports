@@ -245,6 +245,30 @@ function AttendanceInner() {
     setUpdatingId(null);
   }
 
+  // 실수로 전원 출석 처리한 경우 되돌리기 위한 함수.
+  // "attended" 상태인 예약만 "booked"로 되돌리고 checked_by_name을 초기화한다.
+  // absent/cancelled_same_day 등 다른 상태는 건드리지 않는다.
+  async function handleUndoAllAttended() {
+    const attendedIds = bookings
+      .filter((b) => b.status === "attended")
+      .map((b) => b.id);
+
+    if (attendedIds.length === 0) return;
+
+    const confirmed = window.confirm(
+      `출석 처리된 ${attendedIds.length}명을 다시 "예정" 상태로 되돌립니다. 계속할까요?`
+    );
+    if (!confirmed) return;
+
+    setUpdatingId("undo-all");
+    await supabase
+      .from("bookings")
+      .update({ status: "booked", checked_by_name: null })
+      .in("id", attendedIds);
+    await loadData();
+    setUpdatingId(null);
+  }
+
   async function handleSaveNote(bookingId, value) {
     setSavingNoteId(bookingId);
     await supabase
@@ -492,6 +516,32 @@ function AttendanceInner() {
             {updatingId === "all"
               ? "처리 중..."
               : `전원 출석 처리 (총 ${totalCount}명)`}
+          </button>
+        )}
+
+        {/* 되돌리기 버튼: "attended" 상태인 인원이 있을 때만 노출 (실수로 전원 출석 처리한 경우 대비) */}
+        {bookings.some((b) => b.status === "attended") && (
+          <button
+            type="button"
+            disabled={updatingId === "undo-all"}
+            onClick={handleUndoAllAttended}
+            style={{
+              width: "100%",
+              padding: "12px 0",
+              borderRadius: 12,
+              border: "1px solid #d32f2f",
+              background: "white",
+              color: "#d32f2f",
+              fontSize: 14,
+              fontWeight: 800,
+              marginBottom: 12,
+              cursor: updatingId === "undo-all" ? "default" : "pointer",
+              opacity: updatingId === "undo-all" ? 0.6 : 1,
+            }}
+          >
+            {updatingId === "undo-all"
+              ? "되돌리는 중..."
+              : `출석 처리 되돌리기 (${attendedCount}명)`}
           </button>
         )}
 
