@@ -298,6 +298,44 @@ export default function AdminMembersPage() {
   const [assignPlanId, setAssignPlanId] = useState({});
   const [assigningId, setAssigningId] = useState(null);
   const [assignMsg, setAssignMsg] = useState("");
+  const [assignAmountOverride, setAssignAmountOverride] = useState({});
+
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestNameEn, setGuestNameEn] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [creatingGuest, setCreatingGuest] = useState(false);
+  const [guestError, setGuestError] = useState("");
+
+  async function handleCreateGuestMember() {
+    if (!guestName.trim()) {
+      setGuestError("이름을 입력해주세요.");
+      return;
+    }
+    setCreatingGuest(true);
+    setGuestError("");
+
+    const { error } = await supabase.from("members").insert({
+      name: guestName.trim(),
+      name_en: guestNameEn.trim() || null,
+      guest_email: guestEmail.trim() || null,
+      program: "general",
+      status: "active",
+    });
+
+    if (error) {
+      setGuestError("등록 실패: " + error.message);
+      setCreatingGuest(false);
+      return;
+    }
+
+    setCreatingGuest(false);
+    setShowGuestForm(false);
+    setGuestName("");
+    setGuestNameEn("");
+    setGuestEmail("");
+    window.location.reload();
+  }
 
   async function loadMembers() {
     const { data, error } = await supabase
@@ -369,6 +407,7 @@ export default function AdminMembersPage() {
   async function handleAssignMembership(memberId, program) {
     setAssignMsg("");
     const planId = assignPlanId[memberId];
+    const amountOverride = assignAmountOverride[memberId];
 
     if (!planId) {
       setAssignMsg("배정할 회원권을 선택해주세요.");
@@ -411,8 +450,8 @@ export default function AdminMembersPage() {
         member_id: memberId,
         plan_id: planId,
         depositor_name: "현장 수동 배정",
-        total_amount: assignedPlan.price,
-        net_amount: assignedPlan.price,
+        total_amount: amountOverride ? Number(amountOverride) : assignedPlan.price,
+        net_amount: amountOverride ? Number(amountOverride) : assignedPlan.price,
         vat_amount: 0,
         status: "confirmed",
         payment_method: "manual",
@@ -672,6 +711,134 @@ export default function AdminMembersPage() {
               boxSizing: "border-box",
             }}
           />
+        </div>
+
+        {/* 게스트(비회원가입) 회원 등록 */}
+        <div style={{ marginBottom: 12 }}>
+          {!showGuestForm && (
+            <button
+              type="button"
+              onClick={() => setShowGuestForm(true)}
+              style={{
+                width: "100%",
+                padding: "10px 0",
+                fontSize: 13,
+                fontWeight: 700,
+                border: "1px dashed #9aa8bc",
+                borderRadius: 10,
+                background: "white",
+                color: "#5b7699",
+                cursor: "pointer",
+              }}
+            >
+              + 신규 회원 추가 (회원가입 없이, 개인레슨 등)
+            </button>
+          )}
+          {showGuestForm && (
+            <div
+              style={{
+                padding: 12,
+                border: "1px solid #e5eaf2",
+                borderRadius: 10,
+                background: "white",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#1b3a63" }}>
+                신규 회원 추가 (게스트)
+              </div>
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="이름"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: 8,
+                  fontSize: 13,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
+              />
+              <input
+                type="text"
+                value={guestNameEn}
+                onChange={(e) => setGuestNameEn(e.target.value)}
+                placeholder="영문 이름 (인보이스용, 나중에 입력해도 됨)"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: 8,
+                  fontSize: 13,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
+              />
+              <input
+                type="email"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                placeholder="이메일 (인보이스 발송용)"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: 8,
+                  fontSize: 13,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
+              />
+              {guestError && (
+                <div style={{ color: "#c0392b", fontSize: 12, marginBottom: 8 }}>
+                  {guestError}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  disabled={creatingGuest}
+                  onClick={handleCreateGuestMember}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "none",
+                    borderRadius: 8,
+                    background: BLUE,
+                    color: "white",
+                    cursor: creatingGuest ? "default" : "pointer",
+                    opacity: creatingGuest ? 0.6 : 1,
+                  }}
+                >
+                  {creatingGuest ? "등록 중..." : "등록"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGuestForm(false);
+                    setGuestError("");
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: "1px solid #e5eaf2",
+                    borderRadius: 8,
+                    background: "white",
+                    color: "#5b7699",
+                    cursor: "pointer",
+                  }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 프로그램 탭 */}
@@ -955,6 +1122,23 @@ export default function AdminMembersPage() {
 
                       <CollapsibleSection title="회원권 배정 (현장 결제 등 수동 배정)">
                       <div style={{ marginTop: 8 }}>
+                        <input
+                          type="number"
+                          value={assignAmountOverride[m.id] || ""}
+                          onChange={(e) =>
+                            setAssignAmountOverride((prev) => ({ ...prev, [m.id]: e.target.value }))
+                          }
+                          placeholder="금액 직접 입력 (비우면 플랜 기본가 사용 · 개인레슨은 필수)"
+                          style={{
+                            width: "100%",
+                            boxSizing: "border-box",
+                            padding: 8,
+                            fontSize: 13,
+                            border: "1px solid #e5eaf2",
+                            borderRadius: 8,
+                            marginBottom: 8,
+                          }}
+                        />
                         <select
                           value={assignPlanId[m.id] || ""}
                           onChange={(e) =>

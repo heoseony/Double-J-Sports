@@ -33,7 +33,7 @@ export async function POST(request) {
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
       .select(
-        "id, member_id, plan_id, total_amount, net_amount, vat_amount, confirmed_at, members(id, name, name_en, program, guardian_id), membership_plans(name, sessions_per_month)"
+        "id, member_id, plan_id, total_amount, net_amount, vat_amount, confirmed_at, members(id, name, name_en, program, guardian_id, guest_email), membership_plans(name, sessions_per_month)"
       )
       .eq("id", paymentId)
       .single();
@@ -74,6 +74,11 @@ export async function POST(request) {
           .single();
         guardianEmail = guardianUser?.email || null;
       }
+    }
+
+    // guardian이 없는 회원(회원가입 없이 등록된 개인레슨 회원 등)은 guest_email로 발송
+    if (!guardianEmail && member.guest_email) {
+      guardianEmail = member.guest_email;
     }
 
     // 3. 회사/계좌 정보
