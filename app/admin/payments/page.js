@@ -73,6 +73,7 @@ export default function AdminPaymentsPage() {
   const [pendingPayments, setPendingPayments] = useState([]);
   const [confirmedPayments, setConfirmedPayments] = useState([]);
   const [clearedBefore, setClearedBefore] = useState(null);
+  const [personalClearedBefore, setPersonalClearedBefore] = useState(null);
   const [confirmingId, setConfirmingId] = useState(null);
   const [modalPayment, setModalPayment] = useState(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
@@ -514,6 +515,15 @@ export default function AdminPaymentsPage() {
         // localStorage 접근 불가 시 그냥 무시 (숨김 기능만 안 됨)
       }
 
+      try {
+        const storedPersonal = localStorage.getItem(
+          "double-j-sports-personal-cleared-before"
+        );
+        if (storedPersonal) setPersonalClearedBefore(storedPersonal);
+      } catch (e) {
+        // localStorage 접근 불가 시 그냥 무시 (숨김 기능만 안 됨)
+      }
+
       await loadPayments();
       setLoading(false);
     }
@@ -552,6 +562,16 @@ export default function AdminPaymentsPage() {
       // localStorage 접근 불가 시에도 이번 세션 동안은 화면에서 숨겨지도록 진행
     }
     setClearedBefore(now);
+  }
+
+  function handleClearPersonalList() {
+    const now = nowInGermany().toISOString();
+    try {
+      localStorage.setItem("double-j-sports-personal-cleared-before", now);
+    } catch (e) {
+      // localStorage 접근 불가 시에도 이번 세션 동안은 화면에서 숨겨지도록 진행
+    }
+    setPersonalClearedBefore(now);
   }
 
   async function handleConfirm(payment, description, customInvoiceNumber) {
@@ -1314,15 +1334,25 @@ export default function AdminPaymentsPage() {
             </div>
 
             <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
-                최근 등록한 개인레슨
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>최근 등록한 개인레슨</div>
+                {personalPayments.some((p) => !personalClearedBefore || p.confirmed_at > personalClearedBefore) && (
+                  <button
+                    type="button"
+                    onClick={handleClearPersonalList}
+                    style={{ fontSize: 12, fontWeight: 700, color: "#8ea0b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    모두 지우기
+                  </button>
+                )}
               </div>
 
-              {personalPaymentsLoaded && personalPayments.length === 0 && (
-                <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 등록된 개인레슨이 없습니다.</p>
-              )}
-
-              {personalPayments.map((p, idx) => (
+              {(() => {
+                const visiblePersonal = personalPayments.filter((p) => !personalClearedBefore || p.confirmed_at > personalClearedBefore);
+                if (personalPaymentsLoaded && visiblePersonal.length === 0) {
+                  return <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 등록된 개인레슨이 없습니다.</p>;
+                }
+                return visiblePersonal.map((p, idx) => (
                 <div key={p.id} style={{ padding: "10px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
                   <div style={{ color: "#1b3a63", fontWeight: 600 }}>
                     {p.members?.name} — {p.membership_plans?.name} · {p.total_amount} EUR
@@ -1375,7 +1405,8 @@ export default function AdminPaymentsPage() {
                     <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{resendNote[p.id]}</div>
                   )}
                 </div>
-              ))}
+                ));
+              })()}
             </div>
           </>
         )}
