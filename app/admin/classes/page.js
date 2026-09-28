@@ -88,7 +88,8 @@ function AdminClassesPageInner() {
   const [editProgram, setEditProgram] = useState("kids");
   const [editClassType, setEditClassType] = useState("group");
   const [editClassName, setEditClassName] = useState("");
-  const [editWeekday, setEditWeekday] = useState("1");
+  const [editWeekdays, setEditWeekdays] = useState(["1"]);
+  const [editRegion, setEditRegion] = useState("frankfurt");
   const [editStartTime, setEditStartTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
   const [editLocation, setEditLocation] = useState("");
@@ -524,10 +525,12 @@ function AdminClassesPageInner() {
     setEditingClassId(c.id);
     setEditProgram(c.program);
     setEditClassName(c.class_name);
-    setEditWeekday(String(c.weekday));
+    setEditWeekdays([String(c.weekday)]);
+    setEditRegion(c.region);
     setEditStartTime(c.start_time?.slice(0, 5) || "");
     setEditEndTime(c.end_time?.slice(0, 5) || "");
     setEditLocation(c.location || "");
+    setEditClassType(c.class_type || "group");
   }
 
   function cancelEdit() {
@@ -535,13 +538,21 @@ function AdminClassesPageInner() {
   }
 
   async function saveEdit(classId) {
+    if (editWeekdays.length === 0) {
+      return;
+    }
+
     setSavingEdit(true);
+
+    const [primaryWeekday, ...extraWeekdays] = editWeekdays;
+
     const { error } = await supabase
       .from("classes")
       .update({
         program: editProgram,
         class_name: editClassName,
-        weekday: Number(editWeekday),
+        weekday: Number(primaryWeekday),
+        region: editRegion,
         start_time: editStartTime,
         end_time: editEndTime,
         location: editLocation || null,
@@ -549,12 +560,31 @@ function AdminClassesPageInner() {
       })
       .eq("id", classId);
 
-    setSavingEdit(false);
-
-    if (!error) {
-      setEditingClassId(null);
-      await loadClasses();
+    if (error) {
+      setSavingEdit(false);
+      return;
     }
+
+    // 원래 요일 외에 추가로 선택한 요일은, 같은 내용으로 새 수업 행을 만들어준다
+    // (이 시스템은 "수업 하나 = 요일 하나" 구조라, 여러 요일을 한 수업으로 합칠 수 없다).
+    if (extraWeekdays.length > 0) {
+      const newRows = extraWeekdays.map((wd) => ({
+        program: editProgram,
+        class_name: editClassName,
+        weekday: Number(wd),
+        start_time: editStartTime,
+        end_time: editEndTime,
+        location: editLocation || null,
+        active: true,
+        region: editRegion,
+        class_type: editClassType,
+      }));
+      await supabase.from("classes").insert(newRows);
+    }
+
+    setSavingEdit(false);
+    setEditingClassId(null);
+    await loadClasses();
   }
 
   async function toggleActive(classId, currentActive) {
@@ -1339,19 +1369,42 @@ function AdminClassesPageInner() {
                       style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8, boxSizing: "border-box" }}
                     />
 
-                    <label style={{ fontSize: 12 }}>요일</label>
-                    <select
-                      value={editWeekday}
-                      onChange={(e) => setEditWeekday(e.target.value)}
-                      style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #ddd", borderRadius: 8, marginBottom: 8 }}
-                    >
-                      <option value="1">월요일</option>
-                      <option value="2">화요일</option>
-                      <option value="3">수요일</option>
-                      <option value="4">목요일</option>
-                      <option value="5">금요일</option>
-                      <option value="6">토요일</option>
-                    </select>
+                    <label style={{ fontSize: 12 }}>요일 (여러 개 선택 가능 — 추가로 선택한 요일은 같은 내용으로 새 수업이 만들어집니다)</label>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                      {[
+                        { value: "1", label: "월" },
+                        { value: "2", label: "화" },
+                        { value: "3", label: "수" },
+                        { value: "4", label: "목" },
+                        { value: "5", label: "금" },
+                        { value: "6", label: "토" },
+                      ].map((d) => {
+                        const checked = editWeekdays.includes(d.value);
+                        return (
+                          <button
+                            key={d.value}
+                            type="button"
+                            onClick={() =>
+                              setEditWeekdays((prev) =>
+                                checked ? prev.filter((v) => v !== d.value) : [...prev, d.value]
+                              )
+                            }
+                            style={{
+                              padding: "8px 12px",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              borderRadius: 8,
+                              border: checked ? "2px solid #3B82C4" : "1px solid #ddd",
+                              background: checked ? "#eaf3fb" : "white",
+                              color: checked ? "#1b3a63" : "#5b7699",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {d.label}
+                          </button>
+                        );
+                      })}
+                    </div>
 
                     <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                       <div style={{ flex: 1 }}>
