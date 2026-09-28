@@ -33,7 +33,7 @@ export async function POST(request) {
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
       .select(
-        "id, member_id, plan_id, total_amount, net_amount, vat_amount, confirmed_at, members(id, name, name_en, program, guardian_id, guest_email), membership_plans(name, sessions_per_month)"
+        "id, member_id, plan_id, total_amount, net_amount, vat_amount, confirmed_at, members(id, name, name_en, program, guardian_id, guest_email, address_street, address_zip, address_city), membership_plans(name, sessions_per_month)"
       )
       .eq("id", paymentId)
       .single();
@@ -141,6 +141,11 @@ export async function POST(request) {
       invoiceNumber,
       issueDate: formatDateDE(issueDate),
       memberNameEn: member.name_en,
+      memberAddress: {
+        street: member.address_street,
+        zip: member.address_zip,
+        city: member.address_city,
+      },
       description: finalDescription,
       quantity: sessionsPerMonth,
       unitPrice,

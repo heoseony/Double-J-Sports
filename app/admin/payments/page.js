@@ -116,6 +116,9 @@ export default function AdminPaymentsPage() {
   const [guestName, setGuestName] = useState("");
   const [guestNameEn, setGuestNameEn] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
+  const [guestAddressStreet, setGuestAddressStreet] = useState("");
+  const [guestAddressZip, setGuestAddressZip] = useState("");
+  const [guestAddressCity, setGuestAddressCity] = useState("");
   const [guestAmount, setGuestAmount] = useState("");
   const [guestPlanId, setGuestPlanId] = useState("");
   const [creatingGuestPayment, setCreatingGuestPayment] = useState(false);
@@ -226,6 +229,9 @@ export default function AdminPaymentsPage() {
         name: guestName.trim(),
         name_en: guestNameEn.trim() || null,
         guest_email: guestEmail.trim() || null,
+        address_street: guestAddressStreet.trim() || null,
+        address_zip: guestAddressZip.trim() || null,
+        address_city: guestAddressCity.trim() || null,
         program: "general",
         status: "active",
       })
@@ -292,6 +298,9 @@ export default function AdminPaymentsPage() {
     setGuestName("");
     setGuestNameEn("");
     setGuestEmail("");
+    setGuestAddressStreet("");
+    setGuestAddressZip("");
+    setGuestAddressCity("");
     setGuestAmount("");
     setGuestPlanId("");
     setGuestInvoiceNumber("");
@@ -1256,6 +1265,38 @@ export default function AdminPaymentsPage() {
                 placeholder="이메일"
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
               />
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                주소 (250유로 이상 인보이스는 독일 법상 필수)
+              </label>
+              <input
+                type="text"
+                value={guestAddressStreet}
+                onChange={(e) => setGuestAddressStreet(e.target.value)}
+                placeholder="거리명, 번지 (예: Cäsar-von-hofacker Straße 3)"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 8 }}
+              />
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <input
+                  type="text"
+                  value={guestAddressZip}
+                  onChange={(e) => setGuestAddressZip(e.target.value)}
+                  placeholder="우편번호"
+                  style={{ width: 110, boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8 }}
+                />
+                <input
+                  type="text"
+                  value={guestAddressCity}
+                  onChange={(e) => setGuestAddressCity(e.target.value)}
+                  placeholder="도시"
+                  style={{ flex: 1, boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8 }}
+                />
+              </div>
+              {Number(guestAmount) >= 250 && !guestAddressStreet.trim() && (
+                <div style={{ background: "#fff4e5", color: "#c07a1e", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
+                  250유로 이상 결제입니다 — 독일 세법상 인보이스에 주소가 필요해요. 위 주소 칸을 채워주세요.
+                </div>
+              )}
 
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>플랜</label>
               <select
