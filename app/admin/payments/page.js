@@ -154,8 +154,7 @@ export default function AdminPaymentsPage() {
   const [pimInvoiceNumber, setPimInvoiceNumber] = useState("");
   const [pimSaving, setPimSaving] = useState(false);
   const [pimError, setPimError] = useState("");
-  const [deletingPersonalId, setDeletingPersonalId] = useState(null);
-  const [deletePersonalErrors, setDeletePersonalErrors] = useState({});
+  const [hiddenPersonalIds, setHiddenPersonalIds] = useState([]);
 
   async function handleReject(payment) {
     if (
@@ -561,6 +560,15 @@ export default function AdminPaymentsPage() {
         // localStorage 접근 불가 시 그냥 무시 (숨김 기능만 안 됨)
       }
 
+      try {
+        const storedHiddenIds = localStorage.getItem(
+          "double-j-sports-personal-hidden-ids"
+        );
+        if (storedHiddenIds) setHiddenPersonalIds(JSON.parse(storedHiddenIds));
+      } catch (e) {
+        // localStorage 접근 불가 시 그냥 무시 (숨김 기능만 안 됨)
+      }
+
       await loadPayments();
       setLoading(false);
     }
@@ -828,62 +836,22 @@ export default function AdminPaymentsPage() {
     closePersonalInvoiceModal();
   }
 
-  // 개인레슨 등록 건을 완전히 삭제한다: 연결된 인보이스(+저장된 PDF), 쿠폰 연결,
-  // 결제 기록, 마지막으로 게스트 회원 기록까지 순서대로 지운다. (전체 개인레슨
-  // 등록 내역 목록에서만 사용 — 되돌릴 수 없으므로 신중하게)
-  async function handleDeletePersonalPayment(payment) {
-    const confirmed = window.confirm(
-      `${payment.members?.name || "이 결제"} 건을 완전히 삭제할까요?\n연결된 인보이스와 회원 기록까지 모두 삭제되며 되돌릴 수 없습니다.`
-    );
-    if (!confirmed) return;
-
-    setDeletingPersonalId(payment.id);
-    setDeletePersonalErrors((prev) => ({ ...prev, [payment.id]: "" }));
-
-    try {
-      // 연결된 인보이스 조회 (Storage에서 PDF도 같이 지우기 위해)
-      const { data: relatedInvoices } = await supabase
-        .from("invoices")
-        .select("id, pdf_url")
-        .eq("payment_id", payment.id);
-
-      const pdfPaths = (relatedInvoices || []).map((inv) => inv.pdf_url).filter(Boolean);
-      if (pdfPaths.length > 0) {
-        await supabase.storage.from("invoices").remove(pdfPaths);
+  // "삭제"는 실제 DB 삭제 대신, 이 관리자 브라우저에서만 그 항목을
+  // "전체 개인레슨 등록 내역" 목록에서 숨긴다. 데이터(결제/인보이스/회원)는 그대로 남는다.
+  function handleHidePersonalPayment(payment) {
+    setHiddenPersonalIds((prev) => {
+      if (prev.includes(payment.id)) return prev;
+      const next = [...prev, payment.id];
+      try {
+        localStorage.setItem(
+          "double-j-sports-personal-hidden-ids",
+          JSON.stringify(next)
+        );
+      } catch (e) {
+        // localStorage 접근 불가 시에도 이번 세션 동안은 화면에서 숨겨지도록 진행
       }
-
-      const { error: invoiceDeleteError } = await supabase
-        .from("invoices")
-        .delete()
-        .eq("payment_id", payment.id);
-      if (invoiceDeleteError) {
-        throw new Error("인보이스 삭제 실패: " + invoiceDeleteError.message);
-      }
-
-      // 이 결제에 연결된 쿠폰이 있다면 연결만 해제 (쿠폰 자체는 남김)
-      await supabase.from("coupons").update({ payment_id: null }).eq("payment_id", payment.id);
-
-      const { error: paymentDeleteError } = await supabase
-        .from("payments")
-        .delete()
-        .eq("id", payment.id);
-      if (paymentDeleteError) {
-        throw new Error("결제 삭제 실패: " + paymentDeleteError.message);
-      }
-
-      if (payment.member_id) {
-        await supabase.from("members").delete().eq("id", payment.member_id);
-      }
-
-      setPersonalPaymentsLoaded(false);
-      await loadPersonalPayments();
-      setInvoicesLoaded(false);
-      setRevenueLoaded(false);
-    } catch (e) {
-      setDeletePersonalErrors((prev) => ({ ...prev, [payment.id]: e.message }));
-    } finally {
-      setDeletingPersonalId(null);
-    }
+      return next;
+    });
   }
 
   // 이미 발급된 인보이스를 새 번호로 다시 만들지 않고, 저장된 PDF 그대로 이메일만 재전송한다.
@@ -1652,7 +1620,7 @@ export default function AdminPaymentsPage() {
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
-                  전체 개인레슨 등록 내역 ({personalPayments.length}건)
+                  전체 개인레슨 등록 내역 ({personalPayments.filter((p) => !hiddenPersonalIds.includes(p.id)).length}건)
                 </div>
                 <div style={{ fontSize: 12, color: "#3B82C4", fontWeight: 700 }}>
                   {showAllPersonal ? "접기 ▲" : "펼치기 ▼"}
@@ -1661,10 +1629,12 @@ export default function AdminPaymentsPage() {
 
               {showAllPersonal && (
                 <div style={{ marginTop: 12 }}>
-                  {personalPaymentsLoaded && personalPayments.length === 0 && (
-                    <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 등록된 개인레슨이 없습니다.</p>
-                  )}
-                  {personalPayments.map((p, idx) => {
+                  {(() => {
+                    const visibleAllPersonal = personalPayments.filter((p) => !hiddenPersonalIds.includes(p.id));
+                    if (personalPaymentsLoaded && visibleAllPersonal.length === 0) {
+                      return <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>표시할 개인레슨 내역이 없습니다.</p>;
+                    }
+                    return visibleAllPersonal.map((p, idx) => {
                     const addressLine = [p.members?.address_street, p.members?.address_zip, p.members?.address_city]
                       .filter(Boolean)
                       .join(", ");
@@ -1719,8 +1689,7 @@ export default function AdminPaymentsPage() {
                           </button>
                           <button
                             type="button"
-                            disabled={deletingPersonalId === p.id}
-                            onClick={() => handleDeletePersonalPayment(p)}
+                            onClick={() => handleHidePersonalPayment(p)}
                             style={{
                               padding: "6px 12px",
                               fontSize: 12,
@@ -1729,11 +1698,10 @@ export default function AdminPaymentsPage() {
                               borderRadius: 8,
                               background: "white",
                               color: "#b3261e",
-                              cursor: deletingPersonalId === p.id ? "default" : "pointer",
-                              opacity: deletingPersonalId === p.id ? 0.6 : 1,
+                              cursor: "pointer",
                             }}
                           >
-                            {deletingPersonalId === p.id ? "삭제 중..." : "삭제"}
+                            숨기기
                           </button>
                         </div>
                         {manuallyInvoiced[p.id] && (
@@ -1742,12 +1710,10 @@ export default function AdminPaymentsPage() {
                         {resendNote[p.id] && (
                           <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{resendNote[p.id]}</div>
                         )}
-                        {deletePersonalErrors[p.id] && (
-                          <div style={{ fontSize: 12, color: "#b3261e", marginTop: 4 }}>{deletePersonalErrors[p.id]}</div>
-                        )}
                       </div>
                     );
-                  })}
+                    });
+                  })()}
                 </div>
               )}
             </div>
