@@ -560,6 +560,7 @@ export default function AdminPaymentsPage() {
     if (activeTab === "personal" && !personalPlansLoaded) loadPersonalPlans();
     if (activeTab === "personal" && !personalPaymentsLoaded) loadPersonalPayments();
     if (activeTab === "personal" && !nextInvoiceNumberPreviewLoaded) loadNextInvoiceNumberPreview();
+    if (activeTab === "pending" && !nextInvoiceNumberPreviewLoaded) loadNextInvoiceNumberPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -567,6 +568,7 @@ export default function AdminPaymentsPage() {
     setModalPayment(payment);
     setInvoiceNumberDraft("");
     setDescriptionDraft(defaultDescription());
+    loadNextInvoiceNumberPreview();
   }
 
   function closeConfirmModal() {
@@ -1494,7 +1496,7 @@ export default function AdminPaymentsPage() {
                 type="text"
                 value={invoiceNumberDraft}
                 onChange={(e) => setInvoiceNumberDraft(e.target.value)}
-                placeholder="예: 2026-014"
+                placeholder={nextInvoiceNumberPreview ? `비워두면 ${nextInvoiceNumberPreview} 로 자동 생성` : "예: 2026-001"}
                 style={{
                   width: "100%",
                   padding: 10,
