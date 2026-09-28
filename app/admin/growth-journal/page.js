@@ -152,6 +152,7 @@ export default function GrowthJournalAdminPage() {
 
   const [activeTab, setActiveTab] = useState("all"); // all | written | pending
   const [classFilter, setClassFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   async function loadData(month) {
@@ -297,6 +298,7 @@ export default function GrowthJournalAdminPage() {
     if (activeTab === "written" && !r.journal) return false;
     if (activeTab === "pending" && r.journal) return false;
     if (classFilter !== "all" && !r.classNames.includes(classFilter)) return false;
+    if (regionFilter !== "all" && r.member.region !== regionFilter) return false;
     if (searchQuery.trim() && !r.member.name.includes(searchQuery.trim())) return false;
     return true;
   });
@@ -409,6 +411,61 @@ export default function GrowthJournalAdminPage() {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* 지역(프랑크푸르트/뒤셀도르프) 토글 */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <button
+            type="button"
+            onClick={() => setRegionFilter("all")}
+            style={{
+              flex: 1,
+              padding: "9px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: regionFilter === "all" ? "2px solid #5b7699" : "1px solid #ddd",
+              background: regionFilter === "all" ? "#eef2f7" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            전체
+          </button>
+          <button
+            type="button"
+            onClick={() => setRegionFilter("frankfurt")}
+            style={{
+              flex: 1,
+              padding: "9px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: regionFilter === "frankfurt" ? "2px solid #3B82C4" : "1px solid #ddd",
+              background: regionFilter === "frankfurt" ? "#eaf4fc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            {getRegionLabel("frankfurt", "ko")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setRegionFilter("dusseldorf")}
+            style={{
+              flex: 1,
+              padding: "9px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: regionFilter === "dusseldorf" ? "2px solid #8b5fd6" : "1px solid #ddd",
+              background: regionFilter === "dusseldorf" ? "#f2eefc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            {getRegionLabel("dusseldorf", "ko")}
+          </button>
         </div>
 
         <div

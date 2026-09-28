@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
 import { nowInGermany } from "../../../lib/germanyTime";
+import { getRegionLabel } from "../../../lib/classColors";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
@@ -281,6 +282,7 @@ export default function AdminMembersPage() {
   const [members, setMembers] = useState([]);
   const [query, setQuery] = useState("");
   const [programFilter, setProgramFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [expandedId, setExpandedId] = useState(null);
@@ -305,7 +307,7 @@ export default function AdminMembersPage() {
     const { data, error } = await supabase
       .from("members")
       .select(
-        "id, name, name_en, program, status, birth_date, gender, referred_by, is_test, notes, emergency_contact, guardians(name, phone, referred_by), users(email, phone)"
+        "id, name, name_en, program, status, birth_date, gender, referred_by, is_test, notes, emergency_contact, region, guardians(name, phone, referred_by), users(email, phone)"
       )
       // 개인레슨(결제 관리 > 개인레슨 탭) 게스트 등록은 guest_email이 채워지는데,
       // 이 회원들은 회원관리 화면이 아니라 개인레슨 탭에서 전부 관리하므로 목록에서 제외한다.
@@ -619,9 +621,11 @@ export default function AdminMembersPage() {
 
     const matchesProgram =
       programFilter === "all" || m.program === programFilter;
+    const matchesRegion =
+      regionFilter === "all" || m.region === regionFilter;
     const matchesStatus =
       statusFilter === "all" || m.status === statusFilter;
-    return matchesQuery && matchesProgram && matchesStatus;
+    return matchesQuery && matchesProgram && matchesRegion && matchesStatus;
   });
 
   if (loading || !isAdmin) {
@@ -678,6 +682,61 @@ export default function AdminMembersPage() {
               boxSizing: "border-box",
             }}
           />
+        </div>
+
+        {/* 지역(프랑크푸르트/뒤셀도르프) 토글 */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <button
+            type="button"
+            onClick={() => setRegionFilter("all")}
+            style={{
+              flex: 1,
+              padding: "9px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: regionFilter === "all" ? "2px solid #5b7699" : "1px solid #ddd",
+              background: regionFilter === "all" ? "#eef2f7" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            전체
+          </button>
+          <button
+            type="button"
+            onClick={() => setRegionFilter("frankfurt")}
+            style={{
+              flex: 1,
+              padding: "9px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: regionFilter === "frankfurt" ? "2px solid #3B82C4" : "1px solid #ddd",
+              background: regionFilter === "frankfurt" ? "#eaf4fc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            {getRegionLabel("frankfurt", "ko")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setRegionFilter("dusseldorf")}
+            style={{
+              flex: 1,
+              padding: "9px 0",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: regionFilter === "dusseldorf" ? "2px solid #8b5fd6" : "1px solid #ddd",
+              background: regionFilter === "dusseldorf" ? "#f2eefc" : "white",
+              color: "#1b3a63",
+              cursor: "pointer",
+            }}
+          >
+            {getRegionLabel("dusseldorf", "ko")}
+          </button>
         </div>
 
         {/* 프로그램 탭 */}
