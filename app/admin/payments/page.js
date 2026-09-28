@@ -42,6 +42,19 @@ function defaultDescription() {
   return `Double J GmbH --\nAkademie-Training (${monthLabel})`;
 }
 
+// 개인레슨(guest) 인보이스 전용 기본 문구. 아카데미 문구 대신
+// "{횟수} Personal Training Sessions {월}" 형식으로 표시한다.
+function defaultPersonalDescription(sessions) {
+  const monthLabel = nowInGermany().toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+  const sessionsLabel = sessions
+    ? `${sessions} Personal Training Session${Number(sessions) === 1 ? "" : "s"}`
+    : "Personal Training";
+  return `${sessionsLabel} ${monthLabel}`;
+}
+
 function monthKey(dateStr) {
   return dateStr.slice(0, 7); // YYYY-MM
 }
@@ -125,7 +138,7 @@ export default function AdminPaymentsPage() {
   const [guestFormError, setGuestFormError] = useState("");
   const [guestFormNote, setGuestFormNote] = useState("");
   const [guestInvoiceNumber, setGuestInvoiceNumber] = useState("");
-  const [guestDescription, setGuestDescription] = useState(defaultDescription());
+  const [guestDescription, setGuestDescription] = useState(defaultPersonalDescription());
   const [nextInvoiceNumberPreview, setNextInvoiceNumberPreview] = useState("");
   const [nextInvoiceNumberPreviewLoaded, setNextInvoiceNumberPreviewLoaded] = useState(false);
 
@@ -304,7 +317,7 @@ export default function AdminPaymentsPage() {
     setGuestAmount("");
     setGuestPlanId("");
     setGuestInvoiceNumber("");
-    setGuestDescription(defaultDescription());
+    setGuestDescription(defaultPersonalDescription());
     setPersonalPaymentsLoaded(false);
     await loadPersonalPayments();
     await loadNextInvoiceNumberPreview();
@@ -1301,7 +1314,12 @@ export default function AdminPaymentsPage() {
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>플랜</label>
               <select
                 value={guestPlanId}
-                onChange={(e) => setGuestPlanId(e.target.value)}
+                onChange={(e) => {
+                  const planId = e.target.value;
+                  setGuestPlanId(planId);
+                  const selected = personalPlans.find((p) => p.id === planId);
+                  setGuestDescription(defaultPersonalDescription(selected?.sessions_per_month));
+                }}
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
               >
                 <option value="">플랜 선택</option>
