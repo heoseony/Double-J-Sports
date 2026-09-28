@@ -120,6 +120,8 @@ export default function AdminPaymentsPage() {
   const [creatingGuestPayment, setCreatingGuestPayment] = useState(false);
   const [guestFormError, setGuestFormError] = useState("");
   const [guestFormNote, setGuestFormNote] = useState("");
+  const [guestInvoiceNumber, setGuestInvoiceNumber] = useState("");
+  const [guestDescription, setGuestDescription] = useState(defaultDescription());
 
   async function handleReject(payment) {
     if (
@@ -236,7 +238,11 @@ export default function AdminPaymentsPage() {
       const res = await fetch("/api/generate-invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId: newPayment.id }),
+        body: JSON.stringify({
+          paymentId: newPayment.id,
+          descriptionOverride: guestDescription,
+          customInvoiceNumber: guestInvoiceNumber.trim() || null,
+        }),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -259,6 +265,8 @@ export default function AdminPaymentsPage() {
     setGuestEmail("");
     setGuestAmount("");
     setGuestPlanId("");
+    setGuestInvoiceNumber("");
+    setGuestDescription(defaultDescription());
     setPersonalPaymentsLoaded(false);
     await loadPersonalPayments();
     setInvoicesLoaded(false);
@@ -1219,7 +1227,28 @@ export default function AdminPaymentsPage() {
                 value={guestAmount}
                 onChange={(e) => setGuestAmount(e.target.value)}
                 placeholder="예: 80"
-                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 12 }}
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+              />
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                인보이스 번호 (선택, 비워두면 자동 생성)
+              </label>
+              <input
+                type="text"
+                value={guestInvoiceNumber}
+                onChange={(e) => setGuestInvoiceNumber(e.target.value)}
+                placeholder="예: 2026-014"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+              />
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                인보이스 항목 설명 (Description)
+              </label>
+              <textarea
+                value={guestDescription}
+                onChange={(e) => setGuestDescription(e.target.value)}
+                rows={3}
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, resize: "vertical", fontFamily: "inherit", marginBottom: 12 }}
               />
 
               {guestFormError && (
