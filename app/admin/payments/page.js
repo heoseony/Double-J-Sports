@@ -154,6 +154,8 @@ export default function AdminPaymentsPage() {
   const [pimInvoiceNumber, setPimInvoiceNumber] = useState("");
   const [pimSaving, setPimSaving] = useState(false);
   const [pimError, setPimError] = useState("");
+  const [deletingPersonalId, setDeletingPersonalId] = useState(null);
+  const [deletePersonalErrors, setDeletePersonalErrors] = useState({});
 
   async function handleReject(payment) {
     if (
@@ -824,6 +826,64 @@ export default function AdminPaymentsPage() {
     await loadPersonalPayments();
 
     closePersonalInvoiceModal();
+  }
+
+  // 개인레슨 등록 건을 완전히 삭제한다: 연결된 인보이스(+저장된 PDF), 쿠폰 연결,
+  // 결제 기록, 마지막으로 게스트 회원 기록까지 순서대로 지운다. (전체 개인레슨
+  // 등록 내역 목록에서만 사용 — 되돌릴 수 없으므로 신중하게)
+  async function handleDeletePersonalPayment(payment) {
+    const confirmed = window.confirm(
+      `${payment.members?.name || "이 결제"} 건을 완전히 삭제할까요?\n연결된 인보이스와 회원 기록까지 모두 삭제되며 되돌릴 수 없습니다.`
+    );
+    if (!confirmed) return;
+
+    setDeletingPersonalId(payment.id);
+    setDeletePersonalErrors((prev) => ({ ...prev, [payment.id]: "" }));
+
+    try {
+      // 연결된 인보이스 조회 (Storage에서 PDF도 같이 지우기 위해)
+      const { data: relatedInvoices } = await supabase
+        .from("invoices")
+        .select("id, pdf_url")
+        .eq("payment_id", payment.id);
+
+      const pdfPaths = (relatedInvoices || []).map((inv) => inv.pdf_url).filter(Boolean);
+      if (pdfPaths.length > 0) {
+        await supabase.storage.from("invoices").remove(pdfPaths);
+      }
+
+      const { error: invoiceDeleteError } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("payment_id", payment.id);
+      if (invoiceDeleteError) {
+        throw new Error("인보이스 삭제 실패: " + invoiceDeleteError.message);
+      }
+
+      // 이 결제에 연결된 쿠폰이 있다면 연결만 해제 (쿠폰 자체는 남김)
+      await supabase.from("coupons").update({ payment_id: null }).eq("payment_id", payment.id);
+
+      const { error: paymentDeleteError } = await supabase
+        .from("payments")
+        .delete()
+        .eq("id", payment.id);
+      if (paymentDeleteError) {
+        throw new Error("결제 삭제 실패: " + paymentDeleteError.message);
+      }
+
+      if (payment.member_id) {
+        await supabase.from("members").delete().eq("id", payment.member_id);
+      }
+
+      setPersonalPaymentsLoaded(false);
+      await loadPersonalPayments();
+      setInvoicesLoaded(false);
+      setRevenueLoaded(false);
+    } catch (e) {
+      setDeletePersonalErrors((prev) => ({ ...prev, [payment.id]: e.message }));
+    } finally {
+      setDeletingPersonalId(null);
+    }
   }
 
   // 이미 발급된 인보이스를 새 번호로 다시 만들지 않고, 저장된 PDF 그대로 이메일만 재전송한다.
@@ -1657,12 +1717,33 @@ export default function AdminPaymentsPage() {
                           >
                             {resendingId === p.id ? "재전송 중..." : "인보이스 재전송"}
                           </button>
+                          <button
+                            type="button"
+                            disabled={deletingPersonalId === p.id}
+                            onClick={() => handleDeletePersonalPayment(p)}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              border: "1px solid #f3c6c2",
+                              borderRadius: 8,
+                              background: "white",
+                              color: "#b3261e",
+                              cursor: deletingPersonalId === p.id ? "default" : "pointer",
+                              opacity: deletingPersonalId === p.id ? 0.6 : 1,
+                            }}
+                          >
+                            {deletingPersonalId === p.id ? "삭제 중..." : "삭제"}
+                          </button>
                         </div>
                         {manuallyInvoiced[p.id] && (
                           <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{manuallyInvoiced[p.id]}</div>
                         )}
                         {resendNote[p.id] && (
                           <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{resendNote[p.id]}</div>
+                        )}
+                        {deletePersonalErrors[p.id] && (
+                          <div style={{ fontSize: 12, color: "#b3261e", marginTop: 4 }}>{deletePersonalErrors[p.id]}</div>
                         )}
                       </div>
                     );
