@@ -122,6 +122,8 @@ export default function AdminPaymentsPage() {
   const [guestFormNote, setGuestFormNote] = useState("");
   const [guestInvoiceNumber, setGuestInvoiceNumber] = useState("");
   const [guestDescription, setGuestDescription] = useState(defaultDescription());
+  const [nextInvoiceNumberPreview, setNextInvoiceNumberPreview] = useState("");
+  const [nextInvoiceNumberPreviewLoaded, setNextInvoiceNumberPreviewLoaded] = useState(false);
 
   async function handleReject(payment) {
     if (
@@ -147,6 +149,30 @@ export default function AdminPaymentsPage() {
     }
 
     await loadPayments();
+  }
+
+  // 실제 발급될 인보이스 번호를 미리 보여주기 위한 조회 (RPC를 호출하면 번호가 실제로
+  // 소모되므로, invoices 테이블에서 올해 최신 번호를 읽어 +1한 값을 미리보기로만 사용한다.
+  async function loadNextInvoiceNumberPreview() {
+    const year = nowInGermany().getFullYear();
+    const { data } = await supabase
+      .from("invoices")
+      .select("invoice_number")
+      .eq("invoice_year", year)
+      .order("invoice_number", { ascending: false })
+      .limit(1);
+
+    const last = data?.[0]?.invoice_number;
+    let preview;
+    if (last) {
+      const parts = String(last).split("-");
+      const num = Number(parts[1] || 0) + 1;
+      preview = `${year}-${String(num).padStart(3, "0")}`;
+    } else {
+      preview = `${year}-001`;
+    }
+    setNextInvoiceNumberPreview(preview);
+    setNextInvoiceNumberPreviewLoaded(true);
   }
 
   async function loadPersonalPlans() {
@@ -271,6 +297,7 @@ export default function AdminPaymentsPage() {
     setGuestDescription(defaultDescription());
     setPersonalPaymentsLoaded(false);
     await loadPersonalPayments();
+    await loadNextInvoiceNumberPreview();
     setInvoicesLoaded(false);
     setRevenueLoaded(false);
   }
@@ -501,6 +528,7 @@ export default function AdminPaymentsPage() {
     if (activeTab === "revenue" && !revenueLoaded) loadRevenue();
     if (activeTab === "personal" && !personalPlansLoaded) loadPersonalPlans();
     if (activeTab === "personal" && !personalPaymentsLoaded) loadPersonalPayments();
+    if (activeTab === "personal" && !nextInvoiceNumberPreviewLoaded) loadNextInvoiceNumberPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -1239,7 +1267,7 @@ export default function AdminPaymentsPage() {
                 type="text"
                 value={guestInvoiceNumber}
                 onChange={(e) => setGuestInvoiceNumber(e.target.value)}
-                placeholder="예: 2026-014"
+                placeholder={nextInvoiceNumberPreview ? `비워두면 ${nextInvoiceNumberPreview} 로 자동 생성` : "예: 2026-001"}
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
               />
 
