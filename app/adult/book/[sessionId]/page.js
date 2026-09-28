@@ -145,32 +145,22 @@ export default function AdultClassDetailPage() {
     setBooking(true);
     setErrorMsg("");
 
-    const { error: bookingError } = await supabase.from("bookings").insert({
-      member_id: member.id,
-      class_session_id: sessionId,
-      status: "booked",
+    // 클라이언트에서 직접 bookings.insert()를 호출하던 방식은 회원권
+    // 유효기간(target_month) 검증을 서버에서 다시 하지 않아, 지난달
+    // 회원권으로도 다음달 수업이 예약되는 문제가 있었다. 키즈 예약과
+    // 동일하게 book_class_session RPC를 사용해 서버에서 최종 검증되도록 통일.
+    const { error } = await supabase.rpc("book_class_session", {
+      p_member_id: member.id,
+      p_class_session_id: sessionId,
     });
 
-    if (bookingError) {
-      setBooking(false);
-      setErrorMsg(t("classDetail.errBookingFailedPrefix") + bookingError.message);
+    setBooking(false);
+
+    if (error) {
+      setErrorMsg(t("classDetail.errBookingFailedPrefix") + error.message);
       return;
     }
 
-    if (membershipId) {
-      const { data: currentMembership } = await supabase
-        .from("memberships")
-        .select("sessions_used")
-        .eq("id", membershipId)
-        .single();
-
-      await supabase
-        .from("memberships")
-        .update({ sessions_used: (currentMembership?.sessions_used || 0) + 1 })
-        .eq("id", membershipId);
-    }
-
-    setBooking(false);
     setStep("done");
   }
 
