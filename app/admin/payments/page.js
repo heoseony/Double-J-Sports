@@ -142,6 +142,19 @@ export default function AdminPaymentsPage() {
   const [nextInvoiceNumberPreview, setNextInvoiceNumberPreview] = useState("");
   const [nextInvoiceNumberPreviewLoaded, setNextInvoiceNumberPreviewLoaded] = useState(false);
 
+  // ===== 개인레슨 "인보이스 발행" 확인/수정 모달 상태 =====
+  const [pimPayment, setPimPayment] = useState(null); // 발행 대상 payment row
+  const [pimName, setPimName] = useState("");
+  const [pimNameEn, setPimNameEn] = useState("");
+  const [pimEmail, setPimEmail] = useState("");
+  const [pimAddressStreet, setPimAddressStreet] = useState("");
+  const [pimAddressZip, setPimAddressZip] = useState("");
+  const [pimAddressCity, setPimAddressCity] = useState("");
+  const [pimDescription, setPimDescription] = useState("");
+  const [pimInvoiceNumber, setPimInvoiceNumber] = useState("");
+  const [pimSaving, setPimSaving] = useState(false);
+  const [pimError, setPimError] = useState("");
+
   async function handleReject(payment) {
     if (
       !confirm(
@@ -207,7 +220,7 @@ export default function AdminPaymentsPage() {
     const { data } = await supabase
       .from("payments")
       .select(
-        "id, total_amount, depositor_name, confirmed_at, member_id, plan_id, members(name, guest_email, address_street, address_zip, address_city), membership_plans(name)"
+        "id, total_amount, depositor_name, confirmed_at, member_id, plan_id, members(id, name, name_en, guest_email, address_street, address_zip, address_city), membership_plans(name, sessions_per_month)"
       )
       .eq("depositor_name", "개인레슨(현장)")
       .order("confirmed_at", { ascending: false })
@@ -719,6 +732,98 @@ export default function AdminPaymentsPage() {
     setManuallyInvoiced((prev) => ({ ...prev, [payment.id]: note }));
     setInvoicesLoaded(false);
     setRevenueLoaded(false);
+  }
+
+  // 개인레슨 "인보이스 발행" 클릭 시 바로 발급하지 않고, 이름/이메일/주소를
+  // 한 번 더 확인·수정할 수 있는 모달을 연다.
+  function openPersonalInvoiceModal(payment) {
+    setPimPayment(payment);
+    setPimName(payment.members?.name || "");
+    setPimNameEn(payment.members?.name_en || "");
+    setPimEmail(payment.members?.guest_email || "");
+    setPimAddressStreet(payment.members?.address_street || "");
+    setPimAddressZip(payment.members?.address_zip || "");
+    setPimAddressCity(payment.members?.address_city || "");
+    setPimDescription(defaultPersonalDescription(payment.membership_plans?.sessions_per_month));
+    setPimInvoiceNumber("");
+    setPimError("");
+  }
+
+  function closePersonalInvoiceModal() {
+    setPimPayment(null);
+    setPimError("");
+  }
+
+  // 모달에서 수정한 이름/이메일/주소를 members 테이블에 먼저 저장한 뒤,
+  // 그 정보로 인보이스를 발급한다.
+  async function handleConfirmPersonalInvoice() {
+    if (!pimPayment) return;
+    setPimError("");
+
+    if (!pimNameEn.trim()) {
+      setPimError("영문 이름을 입력해주세요. (인보이스에 영문 이름이 필요합니다)");
+      return;
+    }
+
+    setPimSaving(true);
+
+    const { error: updateError } = await supabase
+      .from("members")
+      .update({
+        name: pimName.trim(),
+        name_en: pimNameEn.trim() || null,
+        guest_email: pimEmail.trim() || null,
+        address_street: pimAddressStreet.trim() || null,
+        address_zip: pimAddressZip.trim() || null,
+        address_city: pimAddressCity.trim() || null,
+      })
+      .eq("id", pimPayment.member_id);
+
+    if (updateError) {
+      setPimSaving(false);
+      setPimError("회원 정보 저장 실패: " + updateError.message);
+      return;
+    }
+
+    const payment = pimPayment;
+    setManualInvoicingId(payment.id);
+    let note = "";
+    try {
+      const res = await fetch("/api/generate-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId: payment.id,
+          descriptionOverride: pimDescription,
+          customInvoiceNumber: pimInvoiceNumber.trim() || null,
+        }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        note = `⚠ 인보이스 발급 실패: ${result.error || "알 수 없는 오류"}`;
+      } else if (!result.emailSent) {
+        note = `인보이스 ${result.invoiceNumber} 발급됨 (이메일 발송 실패: ${
+          result.emailError || "알 수 없는 이유"
+        })`;
+      } else {
+        note = `인보이스 ${result.invoiceNumber} 발급 및 이메일 발송 완료`;
+      }
+    } catch (e) {
+      note = `⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message}`;
+    }
+
+    setManualInvoicingId(null);
+    setManuallyInvoiced((prev) => ({ ...prev, [payment.id]: note }));
+    setInvoicesLoaded(false);
+    setRevenueLoaded(false);
+    setPimSaving(false);
+
+    // 수정된 이름/주소가 목록에도 바로 반영되도록 새로고침
+    setPersonalPaymentsLoaded(false);
+    await loadPersonalPayments();
+
+    closePersonalInvoiceModal();
   }
 
   // 이미 발급된 인보이스를 새 번호로 다시 만들지 않고, 저장된 PDF 그대로 이메일만 재전송한다.
@@ -1424,7 +1529,7 @@ export default function AdminPaymentsPage() {
                     <button
                       type="button"
                       disabled={manualInvoicingId === p.id}
-                      onClick={() => handleGenerateInvoiceForConfirmed(p)}
+                      onClick={() => openPersonalInvoiceModal(p)}
                       style={{
                         padding: "6px 12px",
                         fontSize: 12,
@@ -1519,7 +1624,7 @@ export default function AdminPaymentsPage() {
                           <button
                             type="button"
                             disabled={manualInvoicingId === p.id}
-                            onClick={() => handleGenerateInvoiceForConfirmed(p)}
+                            onClick={() => openPersonalInvoiceModal(p)}
                             style={{
                               padding: "6px 12px",
                               fontSize: 12,
@@ -1632,6 +1737,131 @@ export default function AdminPaymentsPage() {
               <button
                 type="button"
                 onClick={closeConfirmModal}
+                style={{ padding: "12px 16px", fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#5b7699", cursor: "pointer" }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== 개인레슨 인보이스 발행 확인/수정 모달 ===================== */}
+      {pimPayment && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(20,35,60,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}
+          onClick={closePersonalInvoiceModal}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "white", borderRadius: 16, padding: 24, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto" }}
+          >
+            <div style={{ fontWeight: 800, fontSize: 16, color: "#1b3a63", marginBottom: 4 }}>
+              인보이스 발행 · 정보 확인
+            </div>
+            <div style={{ fontSize: 12, color: "#8ea0b8", marginBottom: 16 }}>
+              발급 전에 이름/이메일/주소가 맞는지 확인하고, 틀린 부분은 고쳐주세요.
+            </div>
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>이름</label>
+            <input
+              type="text"
+              value={pimName}
+              onChange={(e) => setPimName(e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+            />
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>영문 이름 (인보이스 표기용, 필수)</label>
+            <input
+              type="text"
+              value={pimNameEn}
+              onChange={(e) => setPimNameEn(e.target.value)}
+              placeholder="예: Haohua Wang"
+              style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+            />
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>이메일</label>
+            <input
+              type="email"
+              value={pimEmail}
+              onChange={(e) => setPimEmail(e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+            />
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+              주소 (250유로 이상 인보이스는 독일 법상 필수)
+            </label>
+            <input
+              type="text"
+              value={pimAddressStreet}
+              onChange={(e) => setPimAddressStreet(e.target.value)}
+              placeholder="거리명, 번지"
+              style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 8 }}
+            />
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <input
+                type="text"
+                value={pimAddressZip}
+                onChange={(e) => setPimAddressZip(e.target.value)}
+                placeholder="우편번호"
+                style={{ width: 110, boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8 }}
+              />
+              <input
+                type="text"
+                value={pimAddressCity}
+                onChange={(e) => setPimAddressCity(e.target.value)}
+                placeholder="도시"
+                style={{ flex: 1, boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8 }}
+              />
+            </div>
+            {Number(pimPayment?.total_amount) >= 250 && !pimAddressStreet.trim() && (
+              <div style={{ background: "#fff4e5", color: "#c07a1e", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
+                250유로 이상 결제입니다 — 독일 세법상 인보이스에 주소가 필요해요.
+              </div>
+            )}
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>인보이스 항목 설명</label>
+            <textarea
+              value={pimDescription}
+              onChange={(e) => setPimDescription(e.target.value)}
+              rows={2}
+              style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, fontFamily: "inherit" }}
+            />
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+              인보이스 번호 (선택, 비워두면 자동 생성)
+            </label>
+            <input
+              type="text"
+              value={pimInvoiceNumber}
+              onChange={(e) => setPimInvoiceNumber(e.target.value)}
+              placeholder={nextInvoiceNumberPreview ? `비워두면 ${nextInvoiceNumberPreview} 로 자동 생성` : "예: 2026-001"}
+              style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+            />
+
+            <div style={{ fontSize: 12, color: "#8ea0b8", marginBottom: 10 }}>
+              금액: {pimPayment?.total_amount} EUR (VAT 포함)
+            </div>
+
+            {pimError && (
+              <div style={{ background: "#fdecec", color: "#b3261e", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
+                {pimError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+              <button
+                type="button"
+                disabled={pimSaving}
+                onClick={handleConfirmPersonalInvoice}
+                style={{ flex: 1, padding: "12px 16px", fontSize: 14, fontWeight: 700, border: "none", borderRadius: 10, background: BLUE, color: "white", cursor: pimSaving ? "default" : "pointer", opacity: pimSaving ? 0.6 : 1 }}
+              >
+                {pimSaving ? "처리 중..." : "확인하고 발행"}
+              </button>
+              <button
+                type="button"
+                onClick={closePersonalInvoiceModal}
+                disabled={pimSaving}
                 style={{ padding: "12px 16px", fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#5b7699", cursor: "pointer" }}
               >
                 취소
