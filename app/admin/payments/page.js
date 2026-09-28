@@ -53,6 +53,7 @@ function monthLabelKr(key) {
 
 const TABS = [
   { key: "pending", label: "입금확인" },
+  { key: "personal", label: "개인레슨" },
   { key: "invoices", label: "인보이스" },
   { key: "settings", label: "계좌설정" },
   { key: "revenue", label: "매출현황" },
@@ -106,6 +107,20 @@ export default function AdminPaymentsPage() {
   const [resendingId, setResendingId] = useState(null);
   const [resendNote, setResendNote] = useState({});
 
+  const [personalPlans, setPersonalPlans] = useState([]);
+  const [personalPlansLoaded, setPersonalPlansLoaded] = useState(false);
+  const [personalPayments, setPersonalPayments] = useState([]);
+  const [personalPaymentsLoaded, setPersonalPaymentsLoaded] = useState(false);
+
+  const [guestName, setGuestName] = useState("");
+  const [guestNameEn, setGuestNameEn] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestAmount, setGuestAmount] = useState("");
+  const [guestPlanId, setGuestPlanId] = useState("");
+  const [creatingGuestPayment, setCreatingGuestPayment] = useState(false);
+  const [guestFormError, setGuestFormError] = useState("");
+  const [guestFormNote, setGuestFormNote] = useState("");
+
   async function handleReject(payment) {
     if (
       !confirm(
@@ -130,6 +145,124 @@ export default function AdminPaymentsPage() {
     }
 
     await loadPayments();
+  }
+
+  async function loadPersonalPlans() {
+    const { data } = await supabase
+      .from("membership_plans")
+      .select("id, name, sessions_per_month, program")
+      .order("name");
+    setPersonalPlans(data || []);
+    setPersonalPlansLoaded(true);
+  }
+
+  async function loadPersonalPayments() {
+    const { data } = await supabase
+      .from("payments")
+      .select(
+        "id, total_amount, depositor_name, confirmed_at, member_id, plan_id, members(name), membership_plans(name)"
+      )
+      .eq("depositor_name", "개인레슨(현장)")
+      .order("confirmed_at", { ascending: false })
+      .limit(30);
+    setPersonalPayments(data || []);
+    setPersonalPaymentsLoaded(true);
+  }
+
+  // 게스트(회원가입 없는) 회원 등록 + 결제 생성 + 인보이스 발행을 한 번에 처리한다.
+  async function handleCreateGuestPayment() {
+    setGuestFormError("");
+    setGuestFormNote("");
+
+    if (!guestName.trim()) {
+      setGuestFormError("이름을 입력해주세요.");
+      return;
+    }
+    if (!guestPlanId) {
+      setGuestFormError("플랜을 선택해주세요.");
+      return;
+    }
+    if (!guestAmount || Number(guestAmount) <= 0) {
+      setGuestFormError("금액을 입력해주세요.");
+      return;
+    }
+
+    setCreatingGuestPayment(true);
+
+    const { data: newMember, error: memberError } = await supabase
+      .from("members")
+      .insert({
+        name: guestName.trim(),
+        name_en: guestNameEn.trim() || null,
+        guest_email: guestEmail.trim() || null,
+        program: "general",
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    if (memberError || !newMember) {
+      setGuestFormError("회원 등록 실패: " + (memberError?.message || ""));
+      setCreatingGuestPayment(false);
+      return;
+    }
+
+    const { data: newPayment, error: paymentError } = await supabase
+      .from("payments")
+      .insert({
+        member_id: newMember.id,
+        plan_id: guestPlanId,
+        depositor_name: "개인레슨(현장)",
+        total_amount: Number(guestAmount),
+        net_amount: Number(guestAmount),
+        vat_amount: 0,
+        status: "confirmed",
+        payment_method: "manual",
+        requested_at: new Date().toISOString(),
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: adminUserId,
+      })
+      .select("id")
+      .single();
+
+    if (paymentError || !newPayment) {
+      setGuestFormError("결제 기록 실패: " + (paymentError?.message || ""));
+      setCreatingGuestPayment(false);
+      return;
+    }
+
+    let invoiceNote = "";
+    try {
+      const res = await fetch("/api/generate-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: newPayment.id }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        invoiceNote = ` (⚠ 인보이스 발급 실패: ${result.error || "알 수 없는 오류"})`;
+      } else if (!result.emailSent) {
+        invoiceNote = ` (인보이스 ${result.invoiceNumber} 발급됨, 이메일 발송 실패: ${
+          result.emailError || "알 수 없는 이유"
+        })`;
+      } else {
+        invoiceNote = ` (인보이스 ${result.invoiceNumber} 발급 및 이메일 발송 완료)`;
+      }
+    } catch (e) {
+      invoiceNote = ` (⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message})`;
+    }
+
+    setCreatingGuestPayment(false);
+    setGuestFormNote(`${guestName.trim()}님 등록 및 결제 생성 완료.${invoiceNote}`);
+    setGuestName("");
+    setGuestNameEn("");
+    setGuestEmail("");
+    setGuestAmount("");
+    setGuestPlanId("");
+    setPersonalPaymentsLoaded(false);
+    await loadPersonalPayments();
+    setInvoicesLoaded(false);
+    setRevenueLoaded(false);
   }
 
   async function loadPayments() {
@@ -356,6 +489,8 @@ export default function AdminPaymentsPage() {
     if (activeTab === "invoices" && !invoicesLoaded) loadInvoices();
     if (activeTab === "settings" && !settingsLoaded) loadSettings();
     if (activeTab === "revenue" && !revenueLoaded) loadRevenue();
+    if (activeTab === "personal" && !personalPlansLoaded) loadPersonalPlans();
+    if (activeTab === "personal" && !personalPaymentsLoaded) loadPersonalPayments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -1020,6 +1155,166 @@ export default function AdminPaymentsPage() {
                 <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
                   <span style={{ color: "#33455e" }}>{monthLabelKr(key)}</span>
                   <strong style={{ color: "#1b3a63" }}>{revenueByMonth[key].toLocaleString()} EUR</strong>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ===================== 개인레슨 탭 ===================== */}
+        {activeTab === "personal" && (
+          <>
+            <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 4 }}>
+                개인레슨 회원 등록 · 결제 · 인보이스
+              </div>
+              <p style={{ fontSize: 12, color: "#8ea0b8", marginTop: 0, marginBottom: 12 }}>
+                회원가입 없이 이름만으로 등록하고, 바로 결제 생성 및 인보이스 발행까지 한 번에 처리합니다.
+              </p>
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>이름</label>
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="이름"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+              />
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>영문 이름 (인보이스용)</label>
+              <input
+                type="text"
+                value={guestNameEn}
+                onChange={(e) => setGuestNameEn(e.target.value)}
+                placeholder="영문 이름"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+              />
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>이메일 (인보이스 발송용)</label>
+              <input
+                type="email"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                placeholder="이메일"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+              />
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>플랜</label>
+              <select
+                value={guestPlanId}
+                onChange={(e) => setGuestPlanId(e.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
+              >
+                <option value="">플랜 선택</option>
+                {personalPlans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sessions_per_month}회)
+                  </option>
+                ))}
+              </select>
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>금액 (EUR)</label>
+              <input
+                type="number"
+                value={guestAmount}
+                onChange={(e) => setGuestAmount(e.target.value)}
+                placeholder="예: 80"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 12 }}
+              />
+
+              {guestFormError && (
+                <div style={{ background: "#fdecec", color: "#b3261e", padding: 10, borderRadius: 8, fontSize: 13, marginBottom: 10 }}>
+                  {guestFormError}
+                </div>
+              )}
+              {guestFormNote && (
+                <div style={{ background: "#e9f1fb", color: "#1b3a63", padding: 10, borderRadius: 8, fontSize: 13, marginBottom: 10 }}>
+                  {guestFormNote}
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={creatingGuestPayment}
+                onClick={handleCreateGuestPayment}
+                style={{
+                  width: "100%",
+                  padding: "12px 0",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 10,
+                  background: BLUE,
+                  color: "white",
+                  cursor: creatingGuestPayment ? "default" : "pointer",
+                  opacity: creatingGuestPayment ? 0.6 : 1,
+                }}
+              >
+                {creatingGuestPayment ? "처리 중..." : "등록 · 결제 생성 · 인보이스 발행"}
+              </button>
+            </div>
+
+            <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 12 }}>
+                최근 등록한 개인레슨
+              </div>
+
+              {personalPaymentsLoaded && personalPayments.length === 0 && (
+                <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 등록된 개인레슨이 없습니다.</p>
+              )}
+
+              {personalPayments.map((p, idx) => (
+                <div key={p.id} style={{ padding: "10px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
+                  <div style={{ color: "#1b3a63", fontWeight: 600 }}>
+                    {p.members?.name} — {p.membership_plans?.name} · {p.total_amount} EUR
+                  </div>
+                  <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 2 }}>
+                    등록일시: {new Date(p.confirmed_at).toLocaleString("ko-KR")}
+                  </div>
+                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
+                    <button
+                      type="button"
+                      disabled={manualInvoicingId === p.id}
+                      onClick={() => handleGenerateInvoiceForConfirmed(p)}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "1px solid #3B82C4",
+                        borderRadius: 8,
+                        background: "white",
+                        color: "#3B82C4",
+                        cursor: manualInvoicingId === p.id ? "default" : "pointer",
+                        opacity: manualInvoicingId === p.id ? 0.6 : 1,
+                      }}
+                    >
+                      {manualInvoicingId === p.id ? "발행 중..." : "인보이스 발행"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={resendingId === p.id}
+                      onClick={() => handleResendInvoice(p)}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        border: "1px solid #e5eaf2",
+                        borderRadius: 8,
+                        background: "white",
+                        color: "#5b7699",
+                        cursor: resendingId === p.id ? "default" : "pointer",
+                        opacity: resendingId === p.id ? 0.6 : 1,
+                      }}
+                    >
+                      {resendingId === p.id ? "재전송 중..." : "인보이스 재전송"}
+                    </button>
+                  </div>
+                  {manuallyInvoiced[p.id] && (
+                    <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{manuallyInvoiced[p.id]}</div>
+                  )}
+                  {resendNote[p.id] && (
+                    <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{resendNote[p.id]}</div>
+                  )}
                 </div>
               ))}
             </div>
