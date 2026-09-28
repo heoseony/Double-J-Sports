@@ -43,16 +43,15 @@ function defaultDescription() {
 }
 
 // 개인레슨(guest) 인보이스 전용 기본 문구. 아카데미 문구 대신
-// "{횟수} Personal Training Sessions {월}" 형식으로 표시한다.
+// "{횟수} Personal Training" / "Session(s) {월}" 두 줄로 표시한다.
 function defaultPersonalDescription(sessions) {
   const monthLabel = nowInGermany().toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
   });
-  const sessionsLabel = sessions
-    ? `${sessions} Personal Training Session${Number(sessions) === 1 ? "" : "s"}`
-    : "Personal Training";
-  return `${sessionsLabel} ${monthLabel}`;
+  const sessionWord = Number(sessions) === 1 ? "Session" : "Sessions";
+  const firstLine = sessions ? `${sessions} Personal Training` : "Personal Training";
+  return `${firstLine}\n${sessionWord} ${monthLabel}`;
 }
 
 function monthKey(dateStr) {
