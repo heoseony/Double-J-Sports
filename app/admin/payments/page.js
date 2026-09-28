@@ -153,6 +153,8 @@ export default function AdminPaymentsPage() {
     const { data } = await supabase
       .from("membership_plans")
       .select("id, name, sessions_per_month, program")
+      .eq("active", true)
+      .or("is_hidden.is.null,is_hidden.eq.false")
       .order("name");
     setPersonalPlans(data || []);
     setPersonalPlansLoaded(true);
