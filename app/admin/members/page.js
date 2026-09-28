@@ -307,6 +307,9 @@ export default function AdminMembersPage() {
       .select(
         "id, name, name_en, program, status, birth_date, gender, referred_by, is_test, notes, emergency_contact, guardians(name, phone, referred_by), users(email, phone)"
       )
+      // 개인레슨(결제 관리 > 개인레슨 탭) 게스트 등록은 guest_email이 채워지는데,
+      // 이 회원들은 회원관리 화면이 아니라 개인레슨 탭에서 전부 관리하므로 목록에서 제외한다.
+      .is("guest_email", null)
       .order("created_at", { ascending: false });
 
     if (!error) {

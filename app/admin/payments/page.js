@@ -86,6 +86,7 @@ export default function AdminPaymentsPage() {
   const [confirmedPayments, setConfirmedPayments] = useState([]);
   const [clearedBefore, setClearedBefore] = useState(null);
   const [personalClearedBefore, setPersonalClearedBefore] = useState(null);
+  const [showAllPersonal, setShowAllPersonal] = useState(false);
   const [confirmingId, setConfirmingId] = useState(null);
   const [modalPayment, setModalPayment] = useState(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
@@ -206,11 +207,11 @@ export default function AdminPaymentsPage() {
     const { data } = await supabase
       .from("payments")
       .select(
-        "id, total_amount, depositor_name, confirmed_at, member_id, plan_id, members(name), membership_plans(name)"
+        "id, total_amount, depositor_name, confirmed_at, member_id, plan_id, members(name, guest_email, address_street, address_zip, address_city), membership_plans(name)"
       )
       .eq("depositor_name", "개인레슨(현장)")
       .order("confirmed_at", { ascending: false })
-      .limit(30);
+      .limit(1000);
     setPersonalPayments(data || []);
     setPersonalPaymentsLoaded(true);
   }
@@ -990,6 +991,103 @@ export default function AdminPaymentsPage() {
                   </div>
                 ));
               })()}
+            </div>
+
+            {/* 전체 개인레슨 등록 내역: "모두 지우기"와 무관하게 지금까지의 전체 이력을 보여준다.
+                이름/이메일/주소/인보이스 재전송까지 여기서 전부 관리할 수 있도록 함. */}
+            <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)", marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => setShowAllPersonal((v) => !v)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>
+                  전체 개인레슨 등록 내역 ({personalPayments.length}건)
+                </div>
+                <div style={{ fontSize: 12, color: "#3B82C4", fontWeight: 700 }}>
+                  {showAllPersonal ? "접기 ▲" : "펼치기 ▼"}
+                </div>
+              </button>
+
+              {showAllPersonal && (
+                <div style={{ marginTop: 12 }}>
+                  {personalPaymentsLoaded && personalPayments.length === 0 && (
+                    <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 등록된 개인레슨이 없습니다.</p>
+                  )}
+                  {personalPayments.map((p, idx) => {
+                    const addressLine = [p.members?.address_street, p.members?.address_zip, p.members?.address_city]
+                      .filter(Boolean)
+                      .join(", ");
+                    return (
+                      <div key={p.id} style={{ padding: "10px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
+                        <div style={{ color: "#1b3a63", fontWeight: 600 }}>
+                          {p.members?.name} — {p.membership_plans?.name} · {p.total_amount} EUR
+                        </div>
+                        <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 2 }}>
+                          {p.members?.guest_email || "이메일 없음"}
+                          {addressLine ? ` · ${addressLine}` : ""}
+                        </div>
+                        <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 2 }}>
+                          등록일시: {new Date(p.confirmed_at).toLocaleString("ko-KR")}
+                        </div>
+                        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
+                          <button
+                            type="button"
+                            disabled={manualInvoicingId === p.id}
+                            onClick={() => handleGenerateInvoiceForConfirmed(p)}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              border: "1px solid #3B82C4",
+                              borderRadius: 8,
+                              background: "white",
+                              color: "#3B82C4",
+                              cursor: manualInvoicingId === p.id ? "default" : "pointer",
+                              opacity: manualInvoicingId === p.id ? 0.6 : 1,
+                            }}
+                          >
+                            {manualInvoicingId === p.id ? "발행 중..." : "인보이스 발행"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={resendingId === p.id}
+                            onClick={() => handleResendInvoice(p)}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              border: "1px solid #e5eaf2",
+                              borderRadius: 8,
+                              background: "white",
+                              color: "#5b7699",
+                              cursor: resendingId === p.id ? "default" : "pointer",
+                              opacity: resendingId === p.id ? 0.6 : 1,
+                            }}
+                          >
+                            {resendingId === p.id ? "재전송 중..." : "인보이스 재전송"}
+                          </button>
+                        </div>
+                        {manuallyInvoiced[p.id] && (
+                          <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{manuallyInvoiced[p.id]}</div>
+                        )}
+                        {resendNote[p.id] && (
+                          <div style={{ fontSize: 12, color: "#5b7699", marginTop: 4 }}>{resendNote[p.id]}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </>
         )}
