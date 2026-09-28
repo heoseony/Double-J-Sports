@@ -113,6 +113,8 @@ function AdminClassesPageInner() {
   const [addEndTime, setAddEndTime] = useState("17:00");
   const [addSaving, setAddSaving] = useState(false);
   const [addMsg, setAddMsg] = useState("");
+  const [addRepeat, setAddRepeat] = useState(false);
+  const [addRepeatWeekdays, setAddRepeatWeekdays] = useState([]);
 
   async function loadClasses() {
     const { data, error } = await supabase
@@ -336,24 +338,80 @@ function AdminClassesPageInner() {
       setAddMsg("추가할 수업(상품)을 선택해주세요.");
       return;
     }
-    setAddSaving(true);
 
-    const { error } = await supabase.from("class_sessions").insert({
-      class_id: addClassId,
-      session_date: selectedDate,
-      start_time: addStartTime,
-      end_time: addEndTime,
-      status: "scheduled",
-    });
+    if (!addRepeat) {
+      setAddSaving(true);
+      const { error } = await supabase.from("class_sessions").insert({
+        class_id: addClassId,
+        session_date: selectedDate,
+        start_time: addStartTime,
+        end_time: addEndTime,
+        status: "scheduled",
+      });
+      setAddSaving(false);
 
-    setAddSaving(false);
+      if (error) {
+        setAddMsg("추가 실패: " + error.message);
+        return;
+      }
 
-    if (error) {
-      setAddMsg("추가 실패: " + error.message);
+      setAddMsg("이 날짜에 수업이 추가되었습니다. 계속해서 다른 수업도 추가할 수 있습니다.");
+      await loadMonthSessions(currentMonth);
       return;
     }
 
-    setAddMsg("이 날짜에 수업이 추가되었습니다. 계속해서 다른 수업도 추가할 수 있습니다.");
+    // 4주 반복: 선택한 날짜부터 28일간, 체크한 요일에 해당하는 날짜마다 세션을 생성한다.
+    // 이미 같은 수업/같은 날짜 세션이 있으면 건너뛴다 (중복 방지).
+    if (addRepeatWeekdays.length === 0) {
+      setAddMsg("반복할 요일을 선택해주세요.");
+      return;
+    }
+
+    setAddSaving(true);
+
+    const startDate = new Date(selectedDate + "T00:00:00");
+    const targetDates = [];
+    for (let i = 0; i < 28; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      if (addRepeatWeekdays.includes(String(d.getDay()))) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        targetDates.push(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+
+    let createdCount = 0;
+    let skippedCount = 0;
+    for (const dateStr of targetDates) {
+      const { data: existing } = await supabase
+        .from("class_sessions")
+        .select("id")
+        .eq("class_id", addClassId)
+        .eq("session_date", dateStr)
+        .maybeSingle();
+
+      if (existing) {
+        skippedCount += 1;
+        continue;
+      }
+
+      const { error } = await supabase.from("class_sessions").insert({
+        class_id: addClassId,
+        session_date: dateStr,
+        start_time: addStartTime,
+        end_time: addEndTime,
+        status: "scheduled",
+      });
+      if (!error) createdCount += 1;
+    }
+
+    setAddSaving(false);
+    setAddMsg(
+      `${createdCount}개 세션이 추가되었습니다.` +
+        (skippedCount > 0 ? ` (이미 있던 ${skippedCount}개는 건너뜀)` : "")
+    );
     await loadMonthSessions(currentMonth);
   }
 
@@ -899,6 +957,8 @@ function AdminClassesPageInner() {
                   setShowAddSession(true);
                   setAddClassId("");
                   setAddMsg("");
+                  setAddRepeat(false);
+                  setAddRepeatWeekdays([]);
                 }}
                 style={{ marginTop: 12, padding: "10px 16px", fontSize: 13, fontWeight: 700, border: "none", borderRadius: 8, background: BLUE, color: "white", cursor: "pointer" }}
               >
@@ -949,6 +1009,61 @@ function AdminClassesPageInner() {
                     />
                   </div>
                 </div>
+
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={addRepeat}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAddRepeat(checked);
+                      if (checked && addRepeatWeekdays.length === 0) {
+                        const wd = new Date(selectedDate + "T00:00:00").getDay();
+                        setAddRepeatWeekdays([String(wd)]);
+                      }
+                    }}
+                  />
+                  4주 반복 (선택한 요일마다 앞으로 4주간 생성)
+                </label>
+
+                {addRepeat && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                    {[
+                      { value: "0", label: "일" },
+                      { value: "1", label: "월" },
+                      { value: "2", label: "화" },
+                      { value: "3", label: "수" },
+                      { value: "4", label: "목" },
+                      { value: "5", label: "금" },
+                      { value: "6", label: "토" },
+                    ].map((d) => {
+                      const checked = addRepeatWeekdays.includes(d.value);
+                      return (
+                        <button
+                          key={d.value}
+                          type="button"
+                          onClick={() =>
+                            setAddRepeatWeekdays((prev) =>
+                              checked ? prev.filter((v) => v !== d.value) : [...prev, d.value]
+                            )
+                          }
+                          style={{
+                            padding: "8px 12px",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            borderRadius: 8,
+                            border: checked ? "2px solid #3B82C4" : "1px solid #ddd",
+                            background: checked ? "#eaf3fb" : "white",
+                            color: checked ? "#1b3a63" : "#5b7699",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {addMsg && (
                   <div style={{ fontSize: 12, color: addMsg.indexOf("실패") >= 0 ? "#b3261e" : BLUE, marginBottom: 8, fontWeight: 600 }}>
