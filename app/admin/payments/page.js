@@ -155,22 +155,22 @@ export default function AdminPaymentsPage() {
   // 소모되므로, invoices 테이블에서 올해 최신 번호를 읽어 +1한 값을 미리보기로만 사용한다.
   async function loadNextInvoiceNumberPreview() {
     const year = nowInGermany().getFullYear();
+    // invoice_number가 text 컬럼이라 문자열 정렬로는 크기순이 보장되지 않으므로
+    // (예: "9"가 "074"보다 사전순으로 더 큼), 전부 가져와서 숫자로 직접 비교한다.
     const { data } = await supabase
       .from("invoices")
       .select("invoice_number")
       .eq("invoice_year", year)
-      .order("invoice_number", { ascending: false })
-      .limit(1);
+      .limit(1000);
 
-    const last = data?.[0]?.invoice_number;
-    let preview;
-    if (last) {
-      const parts = String(last).split("-");
-      const num = Number(parts[1] || 0) + 1;
-      preview = `${year}-${String(num).padStart(3, "0")}`;
-    } else {
-      preview = `${year}-001`;
-    }
+    let maxNum = 0;
+    (data || []).forEach((row) => {
+      const parts = String(row.invoice_number || "").split("-");
+      const n = Number(parts[1]);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    });
+
+    const preview = `${year}-${String(maxNum + 1).padStart(3, "0")}`;
     setNextInvoiceNumberPreview(preview);
     setNextInvoiceNumberPreviewLoaded(true);
   }
