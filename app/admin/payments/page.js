@@ -157,6 +157,8 @@ export default function AdminPaymentsPage() {
   const [pimSaving, setPimSaving] = useState(false);
   const [pimError, setPimError] = useState("");
   const [hiddenPersonalIds, setHiddenPersonalIds] = useState([]);
+  const [showConfirmedRecent, setShowConfirmedRecent] = useState(true);
+  const [showPersonalRecent, setShowPersonalRecent] = useState(true);
 
   async function handleReject(payment) {
     if (
@@ -1051,18 +1053,27 @@ export default function AdminPaymentsPage() {
             <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>최근 확인 완료 내역</div>
-                {confirmedPayments.some((p) => !clearedBefore || p.confirmed_at > clearedBefore) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {confirmedPayments.some((p) => !clearedBefore || p.confirmed_at > clearedBefore) && (
+                    <button
+                      type="button"
+                      onClick={handleClearConfirmedList}
+                      style={{ fontSize: 12, fontWeight: 700, color: "#8ea0b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      모두 지우기
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={handleClearConfirmedList}
-                    style={{ fontSize: 12, fontWeight: 700, color: "#8ea0b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    onClick={() => setShowConfirmedRecent((prev) => !prev)}
+                    style={{ fontSize: 12, fontWeight: 700, color: "#3B82C4", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                   >
-                    모두 지우기
+                    {showConfirmedRecent ? "접기 ▲" : "펼치기 ▼"}
                   </button>
-                )}
+                </div>
               </div>
 
-              {(() => {
+              {showConfirmedRecent && (() => {
                 const visibleConfirmed = confirmedPayments.filter((p) => !clearedBefore || p.confirmed_at > clearedBefore);
                 if (visibleConfirmed.length === 0) {
                   return <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 확인된 결제 내역이 없습니다.</p>;
@@ -1531,18 +1542,27 @@ export default function AdminPaymentsPage() {
             <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63" }}>최근 등록한 개인레슨</div>
-                {personalPayments.some((p) => !personalClearedBefore || p.confirmed_at > personalClearedBefore) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {personalPayments.some((p) => !personalClearedBefore || p.confirmed_at > personalClearedBefore) && (
+                    <button
+                      type="button"
+                      onClick={handleClearPersonalList}
+                      style={{ fontSize: 12, fontWeight: 700, color: "#8ea0b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      모두 지우기
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={handleClearPersonalList}
-                    style={{ fontSize: 12, fontWeight: 700, color: "#8ea0b8", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    onClick={() => setShowPersonalRecent((prev) => !prev)}
+                    style={{ fontSize: 12, fontWeight: 700, color: "#3B82C4", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                   >
-                    모두 지우기
+                    {showPersonalRecent ? "접기 ▲" : "펼치기 ▼"}
                   </button>
-                )}
+                </div>
               </div>
 
-              {(() => {
+              {showPersonalRecent && (() => {
                 const visiblePersonal = personalPayments.filter((p) => !personalClearedBefore || p.confirmed_at > personalClearedBefore);
                 if (personalPaymentsLoaded && visiblePersonal.length === 0) {
                   return <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>아직 등록된 개인레슨이 없습니다.</p>;
