@@ -11,9 +11,9 @@ const BLUE = "#3B82C4";
 
 function todayStr() {
   const d = nowInGermany();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -21,9 +21,9 @@ function todayStr() {
 // 매월 25일부터는 다음 달 결제로 간주 (아카데미가 25일부터 다음달 결제 안내를 시작하기 때문).
 function getTargetMonthStr() {
   const d = nowInGermany();
-  let year = d.getFullYear();
-  let month = d.getMonth(); // 0-indexed
-  if (d.getDate() >= 25) {
+  let year = d.getUTCFullYear();
+  let month = d.getUTCMonth(); // 0-indexed
+  if (d.getUTCDate() >= 25) {
     month += 1;
     if (month > 11) {
       month = 0;
@@ -38,6 +38,7 @@ function defaultDescription() {
   const monthLabel = nowInGermany().toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
   return `Double J GmbH --\nAkademie-Training (${monthLabel})`;
 }
@@ -48,6 +49,7 @@ function defaultPersonalDescription(sessions) {
   const monthLabel = nowInGermany().toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
   const sessionWord = Number(sessions) === 1 ? "Session" : "Sessions";
   const firstLine = sessions ? `${sessions} Personal Training` : "Personal Training";
@@ -185,7 +187,7 @@ export default function AdminPaymentsPage() {
   // 실제 발급될 인보이스 번호를 미리 보여주기 위한 조회 (RPC를 호출하면 번호가 실제로
   // 소모되므로, invoices 테이블에서 올해 최신 번호를 읽어 +1한 값을 미리보기로만 사용한다.
   async function loadNextInvoiceNumberPreview() {
-    const year = nowInGermany().getFullYear();
+    const year = nowInGermany().getUTCFullYear();
     // invoice_number가 text 컬럼이라 문자열 정렬로는 크기순이 보장되지 않으므로
     // (예: "9"가 "074"보다 사전순으로 더 큼), 전부 가져와서 숫자로 직접 비교한다.
     const { data } = await supabase
@@ -1194,9 +1196,9 @@ export default function AdminPaymentsPage() {
 
               // 검색 중이 아닐 때: 월 하나씩 넘겨보기
               const now = nowInGermany();
-              const targetDate = new Date(now.getFullYear(), now.getMonth() + invoiceMonthOffset, 1);
-              const targetKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}`;
-              const targetLabel = `${targetDate.getFullYear()}년 ${targetDate.getMonth() + 1}월`;
+              const targetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + invoiceMonthOffset, 1));
+              const targetKey = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, "0")}`;
+              const targetLabel = `${targetDate.getUTCFullYear()}년 ${targetDate.getUTCMonth() + 1}월`;
 
               const monthInvoices = invoices.filter((inv) => inv.issued_at && inv.issued_at.slice(0, 7) === targetKey);
 
@@ -1951,7 +1953,7 @@ function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf }) {
         )}
       </div>
       <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
-        발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR") : "-"} · 금액: {inv.total_amount} EUR
+        발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR", { timeZone: "Europe/Berlin" }) : "-"} · 금액: {inv.total_amount} EUR
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ function pad2(n) {
 }
 
 function toDateStr(d) {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 }
 
 function todayStr() {
@@ -61,7 +61,7 @@ function BookPageInner() {
 
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = nowInGermany();
-    d.setDate(1);
+    d.setUTCDate(1);
     return d;
   });
   const [selectedDate, setSelectedDate] = useState(todayStr());
@@ -250,11 +250,11 @@ function BookPageInner() {
   }, [sessions, selectedRegion]);
 
   const calendarCells = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startWeekday = firstDay.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const year = currentMonth.getUTCFullYear();
+    const month = currentMonth.getUTCMonth();
+    const firstDay = new Date(Date.UTC(year, month, 1));
+    const startWeekday = firstDay.getUTCDay();
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     const cells = [];
     for (let i = 0; i < startWeekday; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) {
@@ -265,13 +265,13 @@ function BookPageInner() {
 
   function goPrevMonth() {
     const d = new Date(currentMonth);
-    d.setMonth(d.getMonth() - 1);
+    d.setUTCMonth(d.getUTCMonth() - 1);
     setCurrentMonth(d);
   }
 
   function goNextMonth() {
     const d = new Date(currentMonth);
-    d.setMonth(d.getMonth() + 1);
+    d.setUTCMonth(d.getUTCMonth() + 1);
     setCurrentMonth(d);
   }
 
@@ -298,7 +298,7 @@ function BookPageInner() {
     const session = sessions.find((s) => s.id === sessionId);
     if (session) {
       const sessionDateTime = new Date(
-        `${session.session_date}T${session.start_time}`
+        `${session.session_date}T${session.start_time}Z`
       );
       const deadline = new Date(
         sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
@@ -368,9 +368,9 @@ function BookPageInner() {
     }
 
     setCancellingSessionId(sessionId);
-    const sessionDay = new Date(`${session.session_date}T00:00:00`);
+    const sessionDay = new Date(`${session.session_date}T00:00:00Z`);
     const cutoffTime = new Date(sessionDay.getTime() - 24 * 60 * 60 * 1000);
-    cutoffTime.setHours(23, 59, 59, 999);
+    cutoffTime.setUTCHours(23, 59, 59, 999);
     const now = nowInGermany();
 
     const isPrior = now < cutoffTime;
@@ -419,8 +419,8 @@ function BookPageInner() {
 
   const monthLabel =
     lang === "en"
-      ? currentMonth.toLocaleDateString("en-US", { year: "numeric", month: "long" })
-      : `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
+      ? currentMonth.toLocaleDateString("en-US", { year: "numeric", month: "long", timeZone: "UTC" })
+      : `${currentMonth.getUTCFullYear()}년 ${currentMonth.getUTCMonth() + 1}월`;
   const selectedSessions = sessionsByDate[selectedDate] || [];
   const weekdayHeaders = lang === "en" ? WEEKDAY_HEADERS_EN : WEEKDAY_HEADERS_KO;
 
@@ -611,7 +611,7 @@ function BookPageInner() {
           const isExpanded = expandedSessionId === s.id;
           const alreadyBooked = myBookedSessionIds.includes(s.id);
 
-          const sessionDateTime = new Date(`${s.session_date}T${s.start_time}`);
+          const sessionDateTime = new Date(`${s.session_date}T${s.start_time}Z`);
           const bookingDeadline = new Date(
             sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000
           );

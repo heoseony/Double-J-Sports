@@ -161,9 +161,9 @@ export default function ClassDetailPage() {
     setCancelling(true);
     setErrorMsg("");
 
-    const sessionDay = new Date(`${session.session_date}T00:00:00`);
+    const sessionDay = new Date(`${session.session_date}T00:00:00Z`);
     const cutoffTime = new Date(sessionDay.getTime() - 24 * 60 * 60 * 1000);
-    cutoffTime.setHours(23, 59, 59, 999);
+    cutoffTime.setUTCHours(23, 59, 59, 999);
     const isPrior = nowInGermany() < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
 

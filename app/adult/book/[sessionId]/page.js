@@ -200,7 +200,7 @@ export default function AdultClassDetailPage() {
   }
 
   const cls = session.classes;
-  const sessionDateTime = new Date(`${session.session_date}T${session.start_time}`);
+  const sessionDateTime = new Date(`${session.session_date}T${session.start_time}Z`);
   const bookingDeadline = new Date(sessionDateTime.getTime() - bookingCutoffHours * 60 * 60 * 1000);
   const isPastDeadline = nowInGermany() > bookingDeadline;
   const canBook = remaining > 0 && !alreadyBooked && !isPastDeadline;

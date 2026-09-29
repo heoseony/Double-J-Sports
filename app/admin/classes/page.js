@@ -27,7 +27,8 @@ function toDateStr(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 function todayStr() {
-  return toDateStr(nowInGermany());
+  const d = nowInGermany();
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 }
 
 function ChevronDown({ open }) {
@@ -102,7 +103,7 @@ function AdminClassesPageInner() {
 
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = nowInGermany();
-    d.setDate(1);
+    d.setUTCDate(1);
     return d;
   });
   const [selectedDate, setSelectedDate] = useState(searchParams.get("date") || todayStr());
@@ -165,8 +166,8 @@ function AdminClassesPageInner() {
 
   async function loadMonthSessions(monthDate) {
     setLoadingCalendar(true);
-    const year = monthDate.getFullYear();
-    const month = monthDate.getMonth();
+    const year = monthDate.getUTCFullYear();
+    const month = monthDate.getUTCMonth();
     const firstDay = toDateStr(new Date(year, month, 1));
     const lastDay = toDateStr(new Date(year, month + 1, 0));
 
@@ -301,12 +302,12 @@ function AdminClassesPageInner() {
 
   function goPrevMonth() {
     const d = new Date(currentMonth);
-    d.setMonth(d.getMonth() - 1);
+    d.setUTCMonth(d.getUTCMonth() - 1);
     setCurrentMonth(d);
   }
   function goNextMonth() {
     const d = new Date(currentMonth);
-    d.setMonth(d.getMonth() + 1);
+    d.setUTCMonth(d.getUTCMonth() + 1);
     setCurrentMonth(d);
   }
 
@@ -320,11 +321,11 @@ function AdminClassesPageInner() {
   });
 
   const calendarCells = (() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startWeekday = firstDay.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const year = currentMonth.getUTCFullYear();
+    const month = currentMonth.getUTCMonth();
+    const firstDay = new Date(Date.UTC(year, month, 1));
+    const startWeekday = firstDay.getUTCDay();
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     const cells = [];
     for (let i = 0; i < startWeekday; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) {
@@ -429,11 +430,11 @@ function AdminClassesPageInner() {
       const today = nowInGermany();
       for (let i = 0; i < 28; i++) {
         const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        if (d.getDay() === c.weekday) {
-          const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, "0");
-          const dd = String(d.getDate()).padStart(2, "0");
+        d.setUTCDate(today.getUTCDate() + i);
+        if (d.getUTCDay() === c.weekday) {
+          const yyyy = d.getUTCFullYear();
+          const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+          const dd = String(d.getUTCDate()).padStart(2, "0");
           targetDates.push(`${yyyy}-${mm}-${dd}`);
         }
       }
@@ -690,7 +691,7 @@ function AdminClassesPageInner() {
     );
   }
 
-  const monthLabel = `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`;
+  const monthLabel = `${currentMonth.getUTCFullYear()}년 ${currentMonth.getUTCMonth() + 1}월`;
   const selectedDaySessions = sessionsByDate[selectedDate] || [];
 
   return (

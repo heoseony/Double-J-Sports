@@ -12,9 +12,9 @@ const BLUE = "#3B82C4";
 
 function todayStr() {
   const d = nowInGermany();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -36,9 +36,9 @@ const STATUS_STYLE = {
 // 배정 시점 기준 "대상 월" 계산 (25일 이후는 다음달로 간주 — 결제승인 로직과 동일 규칙)
 function getTargetMonthStr() {
   const d = nowInGermany();
-  let year = d.getFullYear();
-  let month = d.getMonth();
-  if (d.getDate() >= 25) {
+  let year = d.getUTCFullYear();
+  let month = d.getUTCMonth();
+  if (d.getUTCDate() >= 25) {
     month += 1;
     if (month > 11) {
       month = 0;

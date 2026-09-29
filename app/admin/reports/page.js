@@ -18,18 +18,18 @@ function BackIcon() {
 }
 
 function localDateStr(d) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
 function getMonday(d) {
   const date = new Date(d);
-  const day = date.getDay(); // 0=일 ... 6=토
+  const day = date.getUTCDay(); // 0=일 ... 6=토
   const diff = day === 0 ? -6 : 1 - day; // 월요일 시작
-  date.setDate(date.getDate() + diff);
-  date.setHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + diff);
+  date.setUTCHours(0, 0, 0, 0);
   return date;
 }
 
@@ -165,19 +165,19 @@ export default function AdminReportsPage() {
     const monday = getMonday(now);
     const weekStart = localDateStr(monday);
     const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     const weekEndExclusive = localDateStr(tomorrow);
     setWeekLabel(`${weekStart} ~ ${localDateStr(now)} (진행중)`);
 
     // 이번 달 (1일 ~ 오늘까지, 진행중 집계) - 출석률/신규회원은 달력 기준
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const monthStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
 
     // 매출은 "전달 25일 ~ 이번달 24일"을 한 사이클로 본다 (회원권 target_month 규칙과 동일).
     // 25일부터의 결제는 이미 "다음달" 매출로 넘어가므로, 이번달 매출 계산에서 제외.
-    const thisMonth25 = new Date(now.getFullYear(), now.getMonth(), 25);
-    const prevMonth25 = new Date(now.getFullYear(), now.getMonth() - 1, 25);
+    const thisMonth25 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 25));
+    const prevMonth25 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 25));
     const tomorrowDate = new Date(now);
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
     const revenueEndDate = tomorrowDate < thisMonth25 ? tomorrowDate : thisMonth25;
     const revenueStart = localDateStr(prevMonth25);
     const revenueEndExclusive = localDateStr(revenueEndDate);

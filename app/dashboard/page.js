@@ -122,18 +122,18 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 function toDateStr(d) {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 }
 function getMonday(date) {
   const d = new Date(date);
-  const day = d.getDay();
+  const day = d.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
+  d.setUTCDate(d.getUTCDate() + diff);
   return d;
 }
 function addDays(date, days) {
   const d = new Date(date);
-  d.setDate(d.getDate() + days);
+  d.setUTCDate(d.getUTCDate() + days);
   return d;
 }
 function formatShortDate(dateStr) {
@@ -620,7 +620,7 @@ export default function DashboardPage() {
 
         if (childIds.length > 0) {
           const nowForMonth = nowInGermany();
-          const currentMonthStr = `${nowForMonth.getFullYear()}-${String(nowForMonth.getMonth() + 1).padStart(2, "0")}-01`;
+          const currentMonthStr = `${nowForMonth.getUTCFullYear()}-${String(nowForMonth.getUTCMonth() + 1).padStart(2, "0")}-01`;
 
           const { data: activeMemberships } = await supabase
             .from("memberships")
@@ -659,9 +659,9 @@ export default function DashboardPage() {
           });
 
           const nowForJournal = nowInGermany();
-          const thisMonthStr = `${nowForJournal.getFullYear()}-${String(nowForJournal.getMonth() + 1).padStart(2, "0")}-01`;
-          const prevDateForJournal = new Date(nowForJournal.getFullYear(), nowForJournal.getMonth() - 1, 1);
-          const prevMonthStr = `${prevDateForJournal.getFullYear()}-${String(prevDateForJournal.getMonth() + 1).padStart(2, "0")}-01`;
+          const thisMonthStr = `${nowForJournal.getUTCFullYear()}-${String(nowForJournal.getUTCMonth() + 1).padStart(2, "0")}-01`;
+          const prevDateForJournal = new Date(Date.UTC(nowForJournal.getUTCFullYear(), nowForJournal.getUTCMonth() - 1, 1));
+          const prevMonthStr = `${prevDateForJournal.getUTCFullYear()}-${String(prevDateForJournal.getUTCMonth() + 1).padStart(2, "0")}-01`;
 
           const recent = Object.values(latestByChild).filter(
             (j) => j.year_month === thisMonthStr || j.year_month === prevMonthStr
@@ -1114,12 +1114,12 @@ export default function DashboardPage() {
 
             {(() => {
               const now = nowInGermany();
-              const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+              const lastDayOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
               const daysLeft = Math.max(
-                Math.round((lastDayOfMonth - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000),
+                Math.round((lastDayOfMonth - new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))) / 86400000),
                 0
               );
-              const isUrgent = now.getDate() >= 25;
+              const isUrgent = now.getUTCDate() >= 25;
 
               const childrenWithMembership = children.filter((c) => membershipByChild[c.id]);
               if (childrenWithMembership.length === 0) return null;
