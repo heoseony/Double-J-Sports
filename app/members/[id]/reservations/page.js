@@ -152,11 +152,15 @@ export default function ReservationsPage() {
     }
 
     if (isPrior) {
+      const sessionMonthForCancel = s?.session_date
+        ? s.session_date.slice(0, 7) + "-01"
+        : null;
       const { data: activeMembership } = await supabase
         .from("memberships")
         .select("id, sessions_used")
         .eq("member_id", memberId)
         .eq("status", "active")
+        .eq("target_month", sessionMonthForCancel)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

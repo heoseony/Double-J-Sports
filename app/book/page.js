@@ -378,19 +378,28 @@ function BookPageInner() {
       return;
     }
 
-    if (isPrior && membershipId) {
-      const { data: currentMembership } = await supabase
+    if (isPrior) {
+      const sessionMonthForCancel = session?.session_date
+        ? session.session_date.slice(0, 7) + "-01"
+        : null;
+      const { data: activeMembership } = await supabase
         .from("memberships")
-        .select("sessions_used")
-        .eq("id", membershipId)
-        .single();
+        .select("id, sessions_used")
+        .eq("member_id", memberId)
+        .eq("status", "active")
+        .eq("target_month", sessionMonthForCancel)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      const newUsed = Math.max((currentMembership?.sessions_used || 0) - 1, 0);
-
-      await supabase
-        .from("memberships")
-        .update({ sessions_used: newUsed })
-        .eq("id", membershipId);
+      if (activeMembership) {
+        await supabase
+          .from("memberships")
+          .update({
+            sessions_used: Math.max((activeMembership.sessions_used || 0) - 1, 0),
+          })
+          .eq("id", activeMembership.id);
+      }
     }
 
     setCancellingSessionId(null);
