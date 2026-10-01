@@ -28,7 +28,9 @@ export async function POST(request) {
 
     const { data: invoice, error: invoiceError } = await supabaseAdmin
       .from("invoices")
-      .select("id, pdf_url, payments(member_id, members(guardian_id))")
+      .select(
+        "id, invoice_number, pdf_url, payments(member_id, members(guardian_id, name, name_en))"
+      )
       .eq("id", invoiceId)
       .single();
 
@@ -65,10 +67,19 @@ export async function POST(request) {
       );
     }
 
+    // 다운로드 시 파일명에 인보이스 번호뿐 아니라 회원 이름도 보이도록
+    // Supabase의 download 옵션으로 Content-Disposition 파일명을 덮어쓴다.
+    const memberName =
+      invoice.payments?.members?.name_en || invoice.payments?.members?.name || "";
+    const safeName = memberName.replace(/[^a-zA-Z0-9가-힣]/g, "");
+    const downloadFilename = safeName
+      ? `${invoice.invoice_number}-${safeName}.pdf`
+      : `${invoice.invoice_number}.pdf`;
+
     // 60초짜리 임시 링크만 발급 — 비공개 버킷이라 이 링크 없이는 아무도 못 엶
     const { data: signed, error: signError } = await supabaseAdmin.storage
       .from("invoices")
-      .createSignedUrl(invoice.pdf_url, 60);
+      .createSignedUrl(invoice.pdf_url, 60, { download: downloadFilename });
 
     if (signError) {
       return NextResponse.json(
