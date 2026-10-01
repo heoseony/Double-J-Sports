@@ -17,6 +17,23 @@ function todayStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// 배정일 기준 "대상 월(target_month)" 계산 (25일 이후는 다음달로 간주 —
+// 결제승인/수동배정 로직과 동일 규칙).
+function computeTargetMonth(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  let year = y;
+  let month = m - 1; // 0-indexed
+  if (d >= 25) {
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+  const mm = String(month + 1).padStart(2, "0");
+  return `${year}-${mm}-01`;
+}
+
 const statusLabel = {
   active: "활성",
   expired: "만료",
@@ -109,13 +126,14 @@ export default function AdminMembershipsPage() {
     await supabase
       .from("memberships")
       .update({ status: "inactive" })
-      .eq("member_id", req.member_id)
+      .eq("member_id", memberId)
       .eq("status", "active");
 
     const { error } = await supabase.from("memberships").insert({
       member_id: memberId,
       plan_id: planId,
       start_date: startDate,
+      target_month: computeTargetMonth(startDate),
       status: "active",
       sessions_used: 0,
     });
