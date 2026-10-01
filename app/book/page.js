@@ -314,10 +314,12 @@ function BookPageInner() {
 
     setBookingSessionId(sessionId);
 
-    const { error: bookingError } = await supabase.from("bookings").insert({
-      member_id: memberId,
-      class_session_id: sessionId,
-      status: "booked",
+    // 회원권 "대상 월(target_month)"이 이 수업 날짜와 일치하는지까지 서버에서
+    // 원자적으로 검증하는 RPC. 예전 방식(직접 insert)은 지난달 회원권이 아직
+    // active 상태로 남아있으면 다음달 수업도 그냥 예약되는 버그가 있었다.
+    const { error: bookingError } = await supabase.rpc("book_class_session", {
+      p_member_id: memberId,
+      p_class_session_id: sessionId,
     });
 
     if (bookingError) {
@@ -333,17 +335,6 @@ function BookPageInner() {
       }
       return;
     }
-
-    const { data: currentMembership } = await supabase
-      .from("memberships")
-      .select("sessions_used")
-      .eq("id", membershipId)
-      .single();
-
-    await supabase
-      .from("memberships")
-      .update({ sessions_used: (currentMembership?.sessions_used || 0) + 1 })
-      .eq("id", membershipId);
 
     setBookingSessionId(null);
     setSuccessMsg(t("book.successBooked"));
