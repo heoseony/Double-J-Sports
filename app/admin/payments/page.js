@@ -134,8 +134,8 @@ export default function AdminPaymentsPage() {
   const [guestAddressStreet, setGuestAddressStreet] = useState("");
   const [guestAddressZip, setGuestAddressZip] = useState("");
   const [guestAddressCity, setGuestAddressCity] = useState("");
-  const [guestAmount, setGuestAmount] = useState("");
-  const [guestPlanId, setGuestPlanId] = useState("");
+  const [guestUnitPrice, setGuestUnitPrice] = useState("");
+  const [guestSessionCount, setGuestSessionCount] = useState(1);
   const [creatingGuestPayment, setCreatingGuestPayment] = useState(false);
   const [guestFormError, setGuestFormError] = useState("");
   const [guestFormNote, setGuestFormNote] = useState("");
@@ -213,12 +213,20 @@ export default function AdminPaymentsPage() {
   async function loadPersonalPlans() {
     const { data } = await supabase
       .from("membership_plans")
-      .select("id, name, sessions_per_month, program")
+      .select("id, name, sessions_per_month, program, price")
       .eq("active", true)
       .or("is_hidden.is.null,is_hidden.eq.false")
       .order("name");
     setPersonalPlans(data || []);
     setPersonalPlansLoaded(true);
+
+    // 개인레슨 1회 단가를 기본값으로 미리 채워준다 (수정은 자유롭게 가능).
+    const basePlan = (data || []).find(
+      (p) => p.program === "pro" && Number(p.sessions_per_month) === 1
+    );
+    if (basePlan && basePlan.price != null) {
+      setGuestUnitPrice((prev) => (prev ? prev : String(basePlan.price)));
+    }
   }
 
   async function loadPersonalPayments() {
@@ -243,16 +251,54 @@ export default function AdminPaymentsPage() {
       setGuestFormError("이름을 입력해주세요.");
       return;
     }
-    if (!guestPlanId) {
-      setGuestFormError("플랜을 선택해주세요.");
+    if (!guestUnitPrice || Number(guestUnitPrice) <= 0) {
+      setGuestFormError("단가를 입력해주세요.");
       return;
     }
-    if (!guestAmount || Number(guestAmount) <= 0) {
-      setGuestFormError("금액을 입력해주세요.");
+    if (!guestSessionCount || Number(guestSessionCount) <= 0) {
+      setGuestFormError("회차를 선택해주세요.");
       return;
     }
 
     setCreatingGuestPayment(true);
+
+    const guestAmount = Math.round(Number(guestUnitPrice) * guestSessionCount * 100) / 100;
+
+    // 선택한 회차에 맞는 개인레슨 플랜이 없으면 자동으로 만든다 (단가 × 회차).
+    let planIdToUse = null;
+    const { data: existingPlan } = await supabase
+      .from("membership_plans")
+      .select("id")
+      .eq("program", "pro")
+      .eq("sessions_per_month", guestSessionCount)
+      .eq("price", guestAmount)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (existingPlan) {
+      planIdToUse = existingPlan.id;
+    } else {
+      const { data: newPlan, error: newPlanError } = await supabase
+        .from("membership_plans")
+        .insert({
+          name: `개인레슨 ${guestSessionCount}회`,
+          program: "pro",
+          sessions_per_month: guestSessionCount,
+          price: guestAmount,
+          currency: "EUR",
+          active: true,
+          is_hidden: true,
+        })
+        .select("id")
+        .single();
+
+      if (newPlanError || !newPlan) {
+        setGuestFormError("플랜 생성 실패: " + (newPlanError?.message || ""));
+        setCreatingGuestPayment(false);
+        return;
+      }
+      planIdToUse = newPlan.id;
+    }
 
     const { data: newMember, error: memberError } = await supabase
       .from("members")
@@ -279,11 +325,11 @@ export default function AdminPaymentsPage() {
       .from("payments")
       .insert({
         member_id: newMember.id,
-        plan_id: guestPlanId,
+        plan_id: planIdToUse,
         depositor_name: "개인레슨(현장)",
-        total_amount: Number(guestAmount),
-        net_amount: Math.round((Number(guestAmount) / 1.19) * 100) / 100,
-        vat_amount: Math.round((Number(guestAmount) - Number(guestAmount) / 1.19) * 100) / 100,
+        total_amount: guestAmount,
+        net_amount: Math.round((guestAmount / 1.19) * 100) / 100,
+        vat_amount: Math.round((guestAmount - guestAmount / 1.19) * 100) / 100,
         status: "confirmed",
         payment_method: "manual",
         requested_at: new Date().toISOString(),
@@ -332,8 +378,7 @@ export default function AdminPaymentsPage() {
     setGuestAddressStreet("");
     setGuestAddressZip("");
     setGuestAddressCity("");
-    setGuestAmount("");
-    setGuestPlanId("");
+    setGuestSessionCount(1);
     setGuestInvoiceNumber("");
     setGuestDescription(defaultPersonalDescription());
     setPersonalPaymentsLoaded(false);
@@ -1452,39 +1497,61 @@ export default function AdminPaymentsPage() {
                   style={{ flex: 1, boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8 }}
                 />
               </div>
-              {Number(guestAmount) >= 250 && !guestAddressStreet.trim() && (
+              {Number(guestUnitPrice) * guestSessionCount >= 250 && !guestAddressStreet.trim() && (
                 <div style={{ background: "#fff4e5", color: "#c07a1e", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
                   250유로 이상 결제입니다 — 독일 세법상 인보이스에 주소가 필요해요. 위 주소 칸을 채워주세요.
                 </div>
               )}
 
-              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>플랜</label>
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                단가 (1회당, EUR)
+              </label>
+              <input
+                type="number"
+                value={guestUnitPrice}
+                onChange={(e) => setGuestUnitPrice(e.target.value)}
+                placeholder="예: 70"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+              />
+
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>회차</label>
               <select
-                value={guestPlanId}
+                value={guestSessionCount}
                 onChange={(e) => {
-                  const planId = e.target.value;
-                  setGuestPlanId(planId);
-                  const selected = personalPlans.find((p) => p.id === planId);
-                  setGuestDescription(defaultPersonalDescription(selected?.sessions_per_month));
+                  const count = Number(e.target.value);
+                  setGuestSessionCount(count);
+                  setGuestDescription(defaultPersonalDescription(count));
                 }}
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
               >
-                <option value="">플랜 선택</option>
-                {personalPlans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sessions_per_month}회)
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <option key={n} value={n}>
+                    {n}회
                   </option>
                 ))}
               </select>
 
-              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>금액 (EUR)</label>
-              <input
-                type="number"
-                value={guestAmount}
-                onChange={(e) => setGuestAmount(e.target.value)}
-                placeholder="예: 80"
-                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
-              />
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                총 금액 (단가 × 회차, 자동 계산)
+              </label>
+              <div
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#1b3a63",
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 8,
+                  marginBottom: 10,
+                  background: "#f3f7fc",
+                }}
+              >
+                {guestUnitPrice && Number(guestUnitPrice) > 0
+                  ? `${(Number(guestUnitPrice) * guestSessionCount).toFixed(2)} EUR`
+                  : "단가를 입력해주세요"}
+              </div>
 
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
                 인보이스 번호 (선택, 비워두면 자동 생성)
