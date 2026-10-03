@@ -23,6 +23,7 @@ const PROGRAM_TABS = [
   { value: "kids", label: "Kids" },
   { value: "pro", label: "프로" },
   { value: "general", label: "일반/취미" },
+  { value: "trial", label: "체험" },
   { value: "test", label: "테스트" },
 ];
 
@@ -619,6 +620,11 @@ export default function AdminMembersPage() {
     }
     if (m.is_test === true) return false;
 
+    if (programFilter === "trial") {
+      return matchesQuery && m.status === "trial";
+    }
+    if (m.status === "trial") return false;
+
     const matchesProgram =
       programFilter === "all" || m.program === programFilter;
     const matchesRegion =
@@ -792,7 +798,6 @@ export default function AdminMembersPage() {
             <option value="all">상태: 전체</option>
             <option value="active">활동</option>
             <option value="inactive">비활성</option>
-            <option value="trial">체험</option>
             <option value="withdrawn">탈퇴</option>
           </select>
         </div>
