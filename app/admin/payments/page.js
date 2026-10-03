@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { nowInGermany } from "../../../lib/germanyTime";
 import { supabase } from "../../../lib/supabaseClient";
+import { getRegionLabel } from "../../../lib/classColors";
 import LoadingScreen from "../../components/LoadingScreen";
 
 const BLUE = "#3B82C4";
@@ -266,7 +267,7 @@ export default function AdminPaymentsPage() {
   async function loadRegisteredMembers() {
     const { data } = await supabase
       .from("members")
-      .select("id, name, name_en, program, guardian_id, address_street, address_zip, address_city, is_test")
+      .select("id, name, name_en, program, guardian_id, address_street, address_zip, address_city, is_test, region")
       .is("guest_email", null)
       .or("is_test.is.null,is_test.eq.false")
       .order("name");
@@ -1763,18 +1764,34 @@ export default function AdminPaymentsPage() {
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
               >
                 <option value="">직접 입력 (신규 등록)</option>
-                {registeredMembers
-                  .filter((m) =>
+                {(() => {
+                  const matched = registeredMembers.filter((m) =>
                     personalExistingSearch.trim()
                       ? (m.name || "").includes(personalExistingSearch.trim()) ||
                         (m.name_en || "").toLowerCase().includes(personalExistingSearch.trim().toLowerCase())
                       : true
-                  )
-                  .map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} {m.name_en ? `(${m.name_en})` : ""}
-                    </option>
-                  ))}
+                  );
+                  const frankfurt = matched.filter((m) => m.region !== "dusseldorf");
+                  const dusseldorf = matched.filter((m) => m.region === "dusseldorf");
+                  return (
+                    <>
+                      <optgroup label={getRegionLabel("frankfurt")}>
+                        {frankfurt.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} {m.name_en ? `(${m.name_en})` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label={getRegionLabel("dusseldorf")}>
+                        {dusseldorf.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} {m.name_en ? `(${m.name_en})` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  );
+                })()}
               </select>
               {personalExistingMemberId && (
                 <div style={{ background: "#e9f1fb", color: "#1b3a63", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
@@ -1966,18 +1983,34 @@ export default function AdminPaymentsPage() {
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
               >
                 <option value="">회원 선택</option>
-                {registeredMembers
-                  .filter((m) =>
+                {(() => {
+                  const matched = registeredMembers.filter((m) =>
                     academySearch.trim()
                       ? (m.name || "").includes(academySearch.trim()) ||
                         (m.name_en || "").toLowerCase().includes(academySearch.trim().toLowerCase())
                       : true
-                  )
-                  .map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} {m.name_en ? `(${m.name_en})` : ""}
-                    </option>
-                  ))}
+                  );
+                  const frankfurt = matched.filter((m) => m.region !== "dusseldorf");
+                  const dusseldorf = matched.filter((m) => m.region === "dusseldorf");
+                  return (
+                    <>
+                      <optgroup label={getRegionLabel("frankfurt")}>
+                        {frankfurt.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} {m.name_en ? `(${m.name_en})` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label={getRegionLabel("dusseldorf")}>
+                        {dusseldorf.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} {m.name_en ? `(${m.name_en})` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  );
+                })()}
               </select>
 
               {academyMemberId && (
