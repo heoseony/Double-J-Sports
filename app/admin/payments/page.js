@@ -81,7 +81,7 @@ function monthLabelKr(key) {
 
 const TABS = [
   { key: "pending", label: "입금확인" },
-  { key: "personal", label: "개인레슨" },
+  { key: "personal", label: "수동 결제 등록" },
   { key: "invoices", label: "인보이스" },
   { key: "settings", label: "계좌설정" },
   { key: "revenue", label: "매출현황" },
@@ -1684,10 +1684,10 @@ export default function AdminPaymentsPage() {
           <>
             <div style={{ background: "white", borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 4 }}>
-                개인레슨 회원 등록 · 결제 · 인보이스
+                수동 결제 등록
               </div>
               <p style={{ fontSize: 12, color: "#8ea0b8", marginTop: 0, marginBottom: 12 }}>
-                회원가입 없이 이름만으로 등록하고, 바로 결제 생성 및 인보이스 발행까지 한 번에 처리합니다.
+                개인레슨 또는 아카데미 수업 결제를 등록하고, 결제 생성과 인보이스 발행까지 한 번에 처리합니다.
               </p>
 
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
