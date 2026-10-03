@@ -1775,15 +1775,15 @@ export default function AdminPaymentsPage() {
                   const dusseldorf = matched.filter((m) => m.region === "dusseldorf");
                   return (
                     <>
-                      <optgroup label={getRegionLabel("frankfurt")}>
-                        {frankfurt.map((m) => (
+                      <optgroup label={getRegionLabel("dusseldorf")}>
+                        {dusseldorf.map((m) => (
                           <option key={m.id} value={m.id}>
                             {m.name} {m.name_en ? `(${m.name_en})` : ""}
                           </option>
                         ))}
                       </optgroup>
-                      <optgroup label={getRegionLabel("dusseldorf")}>
-                        {dusseldorf.map((m) => (
+                      <optgroup label={getRegionLabel("frankfurt")}>
+                        {frankfurt.map((m) => (
                           <option key={m.id} value={m.id}>
                             {m.name} {m.name_en ? `(${m.name_en})` : ""}
                           </option>
@@ -1994,15 +1994,15 @@ export default function AdminPaymentsPage() {
                   const dusseldorf = matched.filter((m) => m.region === "dusseldorf");
                   return (
                     <>
-                      <optgroup label={getRegionLabel("frankfurt")}>
-                        {frankfurt.map((m) => (
+                      <optgroup label={getRegionLabel("dusseldorf")}>
+                        {dusseldorf.map((m) => (
                           <option key={m.id} value={m.id}>
                             {m.name} {m.name_en ? `(${m.name_en})` : ""}
                           </option>
                         ))}
                       </optgroup>
-                      <optgroup label={getRegionLabel("dusseldorf")}>
-                        {dusseldorf.map((m) => (
+                      <optgroup label={getRegionLabel("frankfurt")}>
+                        {frankfurt.map((m) => (
                           <option key={m.id} value={m.id}>
                             {m.name} {m.name_en ? `(${m.name_en})` : ""}
                           </option>
