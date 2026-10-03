@@ -56,6 +56,8 @@ function defaultPersonalDescription(sessions) {
   return `${firstLine}\n${sessionWord} ${monthLabel}`;
 }
 
+const COUPON_AMOUNT = 20;
+
 function monthKey(dateStr) {
   return dateStr.slice(0, 7); // YYYY-MM
 }
@@ -136,6 +138,23 @@ export default function AdminPaymentsPage() {
   const [guestAddressCity, setGuestAddressCity] = useState("");
   const [guestUnitPrice, setGuestUnitPrice] = useState("");
   const [guestSessionCount, setGuestSessionCount] = useState(1);
+  const [onsiteMode, setOnsiteMode] = useState("personal"); // "personal" | "academy"
+  const [registeredMembers, setRegisteredMembers] = useState([]);
+  const [registeredMembersLoaded, setRegisteredMembersLoaded] = useState(false);
+  const [personalExistingSearch, setPersonalExistingSearch] = useState("");
+  const [personalExistingMemberId, setPersonalExistingMemberId] = useState("");
+  const [academySearch, setAcademySearch] = useState("");
+  const [academyMemberId, setAcademyMemberId] = useState("");
+  const [academyPlans, setAcademyPlans] = useState([]);
+  const [academyPlanId, setAcademyPlanId] = useState("");
+  const [academyCoupon, setAcademyCoupon] = useState(null);
+  const [academyUseCoupon, setAcademyUseCoupon] = useState(false);
+  const [academyDepositorName, setAcademyDepositorName] = useState("");
+  const [academyInvoiceNumber, setAcademyInvoiceNumber] = useState("");
+  const [academyDescription, setAcademyDescription] = useState("");
+  const [creatingAcademyPayment, setCreatingAcademyPayment] = useState(false);
+  const [academyFormError, setAcademyFormError] = useState("");
+  const [academyFormNote, setAcademyFormNote] = useState("");
   const [creatingGuestPayment, setCreatingGuestPayment] = useState(false);
   const [guestFormError, setGuestFormError] = useState("");
   const [guestFormNote, setGuestFormNote] = useState("");
@@ -229,6 +248,62 @@ export default function AdminPaymentsPage() {
     }
   }
 
+  // 게스트가 아닌 정식 등록 회원 목록 (현장결제를 기존 회원 앞으로 발행할 때 검색용).
+  async function loadRegisteredMembers() {
+    const { data } = await supabase
+      .from("members")
+      .select("id, name, name_en, program, guardian_id, address_street, address_zip, address_city")
+      .is("guest_email", null)
+      .order("name");
+    setRegisteredMembers(data || []);
+    setRegisteredMembersLoaded(true);
+  }
+
+  // 아카데미 회원 선택 시 해당 회원의 프로그램 플랜 + 사용 가능한 쿠폰을 불러온다.
+  async function handleSelectAcademyMember(memberId) {
+    setAcademyMemberId(memberId);
+    setAcademyPlanId("");
+    setAcademyUseCoupon(false);
+    setAcademyCoupon(null);
+    setAcademyPlans([]);
+    if (!memberId) return;
+
+    const member = registeredMembers.find((m) => m.id === memberId);
+    if (!member) return;
+
+    const { data: planData } = await supabase
+      .from("membership_plans")
+      .select("id, name, program, sessions_per_month, price, currency")
+      .eq("active", true)
+      .eq("program", member.program)
+      .order("price", { ascending: true });
+    setAcademyPlans(planData || []);
+
+    const { data: couponData } = await supabase
+      .from("coupons")
+      .select("id, amount")
+      .eq("member_id", memberId)
+      .eq("used", false)
+      .order("issued_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    setAcademyCoupon(couponData || null);
+  }
+
+  // 개인레슨 폼에서 "기존 회원" 선택 시 입력칸을 그 회원 정보로 채운다.
+  function handleSelectExistingPersonalMember(memberId) {
+    setPersonalExistingMemberId(memberId);
+    if (!memberId) return;
+    const m = registeredMembers.find((rm) => rm.id === memberId);
+    if (!m) return;
+    setGuestName(m.name || "");
+    setGuestNameEn(m.name_en || "");
+    setGuestEmail("");
+    setGuestAddressStreet(m.address_street || "");
+    setGuestAddressZip(m.address_zip || "");
+    setGuestAddressCity(m.address_city || "");
+  }
+
   async function loadPersonalPayments() {
     const { data } = await supabase
       .from("payments")
@@ -300,31 +375,36 @@ export default function AdminPaymentsPage() {
       planIdToUse = newPlan.id;
     }
 
-    const { data: newMember, error: memberError } = await supabase
-      .from("members")
-      .insert({
-        name: guestName.trim(),
-        name_en: guestNameEn.trim() || null,
-        guest_email: guestEmail.trim() || null,
-        address_street: guestAddressStreet.trim() || null,
-        address_zip: guestAddressZip.trim() || null,
-        address_city: guestAddressCity.trim() || null,
-        program: "general",
-        status: "active",
-      })
-      .select("id")
-      .single();
+    let memberIdToUse = personalExistingMemberId || null;
 
-    if (memberError || !newMember) {
-      setGuestFormError("회원 등록 실패: " + (memberError?.message || ""));
-      setCreatingGuestPayment(false);
-      return;
+    if (!memberIdToUse) {
+      const { data: newMember, error: memberError } = await supabase
+        .from("members")
+        .insert({
+          name: guestName.trim(),
+          name_en: guestNameEn.trim() || null,
+          guest_email: guestEmail.trim() || null,
+          address_street: guestAddressStreet.trim() || null,
+          address_zip: guestAddressZip.trim() || null,
+          address_city: guestAddressCity.trim() || null,
+          program: "general",
+          status: "active",
+        })
+        .select("id")
+        .single();
+
+      if (memberError || !newMember) {
+        setGuestFormError("회원 등록 실패: " + (memberError?.message || ""));
+        setCreatingGuestPayment(false);
+        return;
+      }
+      memberIdToUse = newMember.id;
     }
 
     const { data: newPayment, error: paymentError } = await supabase
       .from("payments")
       .insert({
-        member_id: newMember.id,
+        member_id: memberIdToUse,
         plan_id: planIdToUse,
         depositor_name: "개인레슨(현장)",
         total_amount: guestAmount,
@@ -379,11 +459,141 @@ export default function AdminPaymentsPage() {
     setGuestAddressZip("");
     setGuestAddressCity("");
     setGuestSessionCount(1);
+    setPersonalExistingMemberId("");
+    setPersonalExistingSearch("");
     setGuestInvoiceNumber("");
     setGuestDescription(defaultPersonalDescription());
     setPersonalPaymentsLoaded(false);
     await loadPersonalPayments();
     await loadNextInvoiceNumberPreview();
+    setInvoicesLoaded(false);
+    setRevenueLoaded(false);
+  }
+
+  // 등록된 회원의 아카데미 수업(현장결제) + 결제 생성 + 인보이스 발행을 한 번에 처리한다.
+  async function handleCreateAcademyPayment() {
+    setAcademyFormError("");
+    setAcademyFormNote("");
+
+    if (!academyMemberId) {
+      setAcademyFormError("회원을 선택해주세요.");
+      return;
+    }
+    if (!academyPlanId) {
+      setAcademyFormError("플랜을 선택해주세요.");
+      return;
+    }
+
+    const selectedPlan = academyPlans.find((p) => p.id === academyPlanId);
+    if (!selectedPlan) {
+      setAcademyFormError("플랜을 다시 선택해주세요.");
+      return;
+    }
+
+    setCreatingAcademyPayment(true);
+
+    const rawPrice = Number(selectedPlan.price);
+    const discount = academyUseCoupon && academyCoupon ? Math.min(COUPON_AMOUNT, rawPrice) : 0;
+    const totalAmount = Math.max(rawPrice - discount, 0);
+    const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
+    const vatAmount = Math.round((totalAmount - netAmount) * 100) / 100;
+    const appliedCouponId = academyUseCoupon && academyCoupon ? academyCoupon.id : null;
+
+    const targetMonth = getTargetMonthStr();
+
+    // 같은 대상 월(target_month)의 기존 active 회원권만 만료 처리 (중복배정 정정용).
+    await supabase
+      .from("memberships")
+      .update({ status: "expired" })
+      .eq("member_id", academyMemberId)
+      .eq("status", "active")
+      .eq("target_month", targetMonth);
+
+    const { error: membershipError } = await supabase.from("memberships").insert({
+      member_id: academyMemberId,
+      plan_id: academyPlanId,
+      start_date: todayStr(),
+      target_month: targetMonth,
+      status: "active",
+      sessions_used: 0,
+    });
+
+    if (membershipError) {
+      setAcademyFormError("회원권 등록 실패: " + membershipError.message);
+      setCreatingAcademyPayment(false);
+      return;
+    }
+
+    const { data: newPayment, error: paymentError } = await supabase
+      .from("payments")
+      .insert({
+        member_id: academyMemberId,
+        plan_id: academyPlanId,
+        depositor_name: academyDepositorName.trim() || "현장결제(아카데미)",
+        total_amount: totalAmount,
+        net_amount: netAmount,
+        vat_amount: vatAmount,
+        status: "confirmed",
+        payment_method: "manual",
+        coupon_id: appliedCouponId,
+        discount_amount: discount,
+        requested_at: new Date().toISOString(),
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: adminUserId,
+      })
+      .select("id")
+      .single();
+
+    if (paymentError || !newPayment) {
+      setAcademyFormError("결제 기록 실패: " + (paymentError?.message || ""));
+      setCreatingAcademyPayment(false);
+      return;
+    }
+
+    if (appliedCouponId) {
+      await supabase
+        .from("coupons")
+        .update({ used: true, used_at: new Date().toISOString(), payment_id: newPayment.id })
+        .eq("id", appliedCouponId);
+    }
+
+    let invoiceNote = "";
+    try {
+      const res = await fetch("/api/generate-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId: newPayment.id,
+          descriptionOverride: academyDescription.trim() || undefined,
+          customInvoiceNumber: academyInvoiceNumber.trim() || null,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        invoiceNote = ` (⚠ 인보이스 발급 실패: ${result.error || "알 수 없는 오류"})`;
+      } else if (!result.emailSent) {
+        invoiceNote = ` (인보이스 ${result.invoiceNumber} 발급됨, 이메일 발송 실패: ${
+          result.emailError || "알 수 없는 이유"
+        })`;
+      } else {
+        invoiceNote = ` (인보이스 ${result.invoiceNumber} 발급 및 이메일 발송 완료)`;
+      }
+    } catch (e) {
+      invoiceNote = ` (⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message})`;
+    }
+
+    const memberName = registeredMembers.find((m) => m.id === academyMemberId)?.name || "회원";
+    setCreatingAcademyPayment(false);
+    setAcademyFormNote(`${memberName}님 결제 생성 완료.${invoiceNote}`);
+    setAcademyMemberId("");
+    setAcademySearch("");
+    setAcademyPlanId("");
+    setAcademyPlans([]);
+    setAcademyCoupon(null);
+    setAcademyUseCoupon(false);
+    setAcademyDepositorName("");
+    setAcademyInvoiceNumber("");
+    setAcademyDescription("");
     setInvoicesLoaded(false);
     setRevenueLoaded(false);
   }
@@ -632,6 +842,7 @@ export default function AdminPaymentsPage() {
     if (activeTab === "revenue" && !revenueLoaded) loadRevenue();
     if (activeTab === "personal" && !personalPlansLoaded) loadPersonalPlans();
     if (activeTab === "personal" && !personalPaymentsLoaded) loadPersonalPayments();
+    if (activeTab === "personal" && !registeredMembersLoaded) loadRegisteredMembers();
     if (activeTab === "personal" && !nextInvoiceNumberPreviewLoaded) loadNextInvoiceNumberPreview();
     if (activeTab === "pending" && !nextInvoiceNumberPreviewLoaded) loadNextInvoiceNumberPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1444,6 +1655,80 @@ export default function AdminPaymentsPage() {
                 회원가입 없이 이름만으로 등록하고, 바로 결제 생성 및 인보이스 발행까지 한 번에 처리합니다.
               </p>
 
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                <button
+                  type="button"
+                  onClick={() => setOnsiteMode("personal")}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: onsiteMode === "personal" ? "none" : "1px solid #e5eaf2",
+                    borderRadius: 8,
+                    background: onsiteMode === "personal" ? BLUE : "white",
+                    color: onsiteMode === "personal" ? "white" : "#8ea0b8",
+                    cursor: "pointer",
+                  }}
+                >
+                  개인레슨
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnsiteMode("academy")}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: onsiteMode === "academy" ? "none" : "1px solid #e5eaf2",
+                    borderRadius: 8,
+                    background: onsiteMode === "academy" ? BLUE : "white",
+                    color: onsiteMode === "academy" ? "white" : "#8ea0b8",
+                    cursor: "pointer",
+                  }}
+                >
+                  아카데미 수업
+                </button>
+              </div>
+
+              {onsiteMode === "personal" && (
+              <>
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                기존 회원에서 불러오기 (선택)
+              </label>
+              <input
+                type="text"
+                value={personalExistingSearch}
+                onChange={(e) => setPersonalExistingSearch(e.target.value)}
+                placeholder="회원 이름 검색"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 6 }}
+              />
+              <select
+                value={personalExistingMemberId}
+                onChange={(e) => handleSelectExistingPersonalMember(e.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
+              >
+                <option value="">직접 입력 (신규 등록)</option>
+                {registeredMembers
+                  .filter((m) =>
+                    personalExistingSearch.trim()
+                      ? (m.name || "").includes(personalExistingSearch.trim()) ||
+                        (m.name_en || "").toLowerCase().includes(personalExistingSearch.trim().toLowerCase())
+                      : true
+                  )
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} {m.name_en ? `(${m.name_en})` : ""}
+                    </option>
+                  ))}
+              </select>
+              {personalExistingMemberId && (
+                <div style={{ background: "#e9f1fb", color: "#1b3a63", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
+                  기존 회원 "{guestName}"님 정보를 불러왔어요. 아래 이름·주소는 수정 가능합니다.
+                </div>
+              )}
+
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>이름</label>
               <input
                 type="text"
@@ -1604,6 +1889,162 @@ export default function AdminPaymentsPage() {
               >
                 {creatingGuestPayment ? "처리 중..." : "등록 · 결제 생성 · 인보이스 발행"}
               </button>
+              </>
+              )}
+
+              {onsiteMode === "academy" && (
+              <>
+              <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                회원 검색
+              </label>
+              <input
+                type="text"
+                value={academySearch}
+                onChange={(e) => setAcademySearch(e.target.value)}
+                placeholder="회원 이름 검색"
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 6 }}
+              />
+              <select
+                value={academyMemberId}
+                onChange={(e) => handleSelectAcademyMember(e.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
+              >
+                <option value="">회원 선택</option>
+                {registeredMembers
+                  .filter((m) =>
+                    academySearch.trim()
+                      ? (m.name || "").includes(academySearch.trim()) ||
+                        (m.name_en || "").toLowerCase().includes(academySearch.trim().toLowerCase())
+                      : true
+                  )
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} {m.name_en ? `(${m.name_en})` : ""}
+                    </option>
+                  ))}
+              </select>
+
+              {academyMemberId && (
+                <>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    플랜
+                  </label>
+                  <select
+                    value={academyPlanId}
+                    onChange={(e) => setAcademyPlanId(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
+                  >
+                    <option value="">플랜 선택</option>
+                    {academyPlans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.sessions_per_month}회) · {p.price} {p.currency}
+                      </option>
+                    ))}
+                  </select>
+
+                  {academyCoupon && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1b3a63", marginBottom: 10 }}>
+                      <input
+                        type="checkbox"
+                        checked={academyUseCoupon}
+                        onChange={(e) => setAcademyUseCoupon(e.target.checked)}
+                      />
+                      보유 쿠폰 적용 (-{Math.min(COUPON_AMOUNT, academyCoupon.amount || COUPON_AMOUNT)} EUR)
+                    </label>
+                  )}
+
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    총 금액
+                  </label>
+                  <div
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: 10,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#1b3a63",
+                      border: "1px solid #e5eaf2",
+                      borderRadius: 8,
+                      marginBottom: 10,
+                      background: "#f3f7fc",
+                    }}
+                  >
+                    {(() => {
+                      const selected = academyPlans.find((p) => p.id === academyPlanId);
+                      if (!selected) return "플랜을 선택해주세요";
+                      const raw = Number(selected.price);
+                      const discount = academyUseCoupon && academyCoupon ? Math.min(COUPON_AMOUNT, raw) : 0;
+                      return `${Math.max(raw - discount, 0).toFixed(2)} EUR${discount ? ` (쿠폰 -${discount} EUR 적용)` : ""}`;
+                    })()}
+                  </div>
+
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    입금자명 (선택)
+                  </label>
+                  <input
+                    type="text"
+                    value={academyDepositorName}
+                    onChange={(e) => setAcademyDepositorName(e.target.value)}
+                    placeholder="비워두면 '현장결제(아카데미)'로 기록"
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+                  />
+
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    인보이스 번호 (선택, 비워두면 자동 생성)
+                  </label>
+                  <input
+                    type="text"
+                    value={academyInvoiceNumber}
+                    onChange={(e) => setAcademyInvoiceNumber(e.target.value)}
+                    placeholder={nextInvoiceNumberPreview ? `비워두면 ${nextInvoiceNumberPreview} 로 자동 생성` : "예: 2026-001"}
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+                  />
+
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    인보이스 항목 설명 (선택, 비워두면 기본 문구 사용)
+                  </label>
+                  <textarea
+                    value={academyDescription}
+                    onChange={(e) => setAcademyDescription(e.target.value)}
+                    rows={3}
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, resize: "vertical", fontFamily: "inherit", marginBottom: 12 }}
+                  />
+                </>
+              )}
+
+              {academyFormError && (
+                <div style={{ background: "#fdecec", color: "#b3261e", padding: 10, borderRadius: 8, fontSize: 13, marginBottom: 10 }}>
+                  {academyFormError}
+                </div>
+              )}
+              {academyFormNote && (
+                <div style={{ background: "#e9f1fb", color: "#1b3a63", padding: 10, borderRadius: 8, fontSize: 13, marginBottom: 10 }}>
+                  {academyFormNote}
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={creatingAcademyPayment || !academyMemberId}
+                onClick={handleCreateAcademyPayment}
+                style={{
+                  width: "100%",
+                  padding: "12px 0",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 10,
+                  background: BLUE,
+                  color: "white",
+                  cursor: creatingAcademyPayment ? "default" : "pointer",
+                  opacity: creatingAcademyPayment || !academyMemberId ? 0.6 : 1,
+                }}
+              >
+                {creatingAcademyPayment ? "처리 중..." : "회원권 등록 · 결제 생성 · 인보이스 발행"}
+              </button>
+              </>
+              )}
             </div>
 
             <div style={{ background: "white", borderRadius: 16, padding: 18, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
