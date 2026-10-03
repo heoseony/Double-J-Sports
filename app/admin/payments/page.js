@@ -159,6 +159,7 @@ export default function AdminPaymentsPage() {
   const [academyMemberId, setAcademyMemberId] = useState("");
   const [academyPlans, setAcademyPlans] = useState([]);
   const [academyPlanId, setAcademyPlanId] = useState("");
+  const [academyUnitPrice, setAcademyUnitPrice] = useState("");
   const [academyCoupon, setAcademyCoupon] = useState(null);
   const [academyMemberEmail, setAcademyMemberEmail] = useState("");
   const [academyUseCoupon, setAcademyUseCoupon] = useState(false);
@@ -276,6 +277,7 @@ export default function AdminPaymentsPage() {
   async function handleSelectAcademyMember(memberId) {
     setAcademyMemberId(memberId);
     setAcademyPlanId("");
+    setAcademyUnitPrice("");
     setAcademyUseCoupon(false);
     setAcademyCoupon(null);
     setAcademyPlans([]);
@@ -516,16 +518,14 @@ export default function AdminPaymentsPage() {
       setAcademyFormError("플랜을 선택해주세요.");
       return;
     }
-
-    const selectedPlan = academyPlans.find((p) => p.id === academyPlanId);
-    if (!selectedPlan) {
-      setAcademyFormError("플랜을 다시 선택해주세요.");
+    if (!academyUnitPrice || Number(academyUnitPrice) < 0) {
+      setAcademyFormError("가격을 입력해주세요.");
       return;
     }
 
     setCreatingAcademyPayment(true);
 
-    const rawPrice = Number(selectedPlan.price);
+    const rawPrice = Number(academyUnitPrice);
     const discount = academyUseCoupon && academyCoupon ? Math.min(COUPON_AMOUNT, rawPrice) : 0;
     const totalAmount = Math.max(rawPrice - discount, 0);
     const netAmount = Math.round((totalAmount / 1.19) * 100) / 100;
@@ -621,6 +621,7 @@ export default function AdminPaymentsPage() {
     setAcademyMemberId("");
     setAcademySearch("");
     setAcademyPlanId("");
+    setAcademyUnitPrice("");
     setAcademyPlans([]);
     setAcademyCoupon(null);
     setAcademyUseCoupon(false);
@@ -1974,7 +1975,12 @@ export default function AdminPaymentsPage() {
                   </label>
                   <select
                     value={academyPlanId}
-                    onChange={(e) => setAcademyPlanId(e.target.value)}
+                    onChange={(e) => {
+                      const planId = e.target.value;
+                      setAcademyPlanId(planId);
+                      const plan = academyPlans.find((pp) => pp.id === planId);
+                      setAcademyUnitPrice(plan ? String(plan.price) : "");
+                    }}
                     style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
                   >
                     <option value="">플랜 선택</option>
@@ -1984,6 +1990,18 @@ export default function AdminPaymentsPage() {
                       </option>
                     ))}
                   </select>
+
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    단가 (EUR, 직접 수정 가능)
+                  </label>
+                  <input
+                    type="number"
+                    value={academyUnitPrice}
+                    onChange={(e) => setAcademyUnitPrice(e.target.value)}
+                    placeholder="예: 100"
+                    autoComplete="off"
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+                  />
 
                   {academyCoupon && (
                     <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1b3a63", marginBottom: 10 }}>
@@ -2014,9 +2032,8 @@ export default function AdminPaymentsPage() {
                     }}
                   >
                     {(() => {
-                      const selected = academyPlans.find((p) => p.id === academyPlanId);
-                      if (!selected) return "플랜을 선택해주세요";
-                      const raw = Number(selected.price);
+                      if (!academyPlanId) return "플랜을 선택해주세요";
+                      const raw = Number(academyUnitPrice) || 0;
                       const discount = academyUseCoupon && academyCoupon ? Math.min(COUPON_AMOUNT, raw) : 0;
                       return `${Math.max(raw - discount, 0).toFixed(2)} EUR${discount ? ` (쿠폰 -${discount} EUR 적용)` : ""}`;
                     })()}
