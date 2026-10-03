@@ -327,7 +327,7 @@ export default function AdminPaymentsPage() {
   }
 
   // 개인레슨 폼에서 "기존 회원" 선택 시 입력칸을 그 회원 정보로 채운다.
-  function handleSelectExistingPersonalMember(memberId) {
+  async function handleSelectExistingPersonalMember(memberId) {
     setPersonalExistingMemberId(memberId);
     if (!memberId) return;
     const m = registeredMembers.find((rm) => rm.id === memberId);
@@ -338,6 +338,23 @@ export default function AdminPaymentsPage() {
     setGuestAddressStreet(m.address_street || "");
     setGuestAddressZip(m.address_zip || "");
     setGuestAddressCity(m.address_city || "");
+
+    // 등록된 보호자 로그인 이메일(인보이스 발송용)을 불러와 채운다.
+    if (m.guardian_id) {
+      const { data: guardian } = await supabase
+        .from("guardians")
+        .select("user_id")
+        .eq("id", m.guardian_id)
+        .single();
+      if (guardian?.user_id) {
+        const { data: guardianUser } = await supabase
+          .from("users")
+          .select("email")
+          .eq("id", guardian.user_id)
+          .single();
+        setGuestEmail(guardianUser?.email || "");
+      }
+    }
   }
 
   async function loadPersonalPayments() {
