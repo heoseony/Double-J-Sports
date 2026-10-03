@@ -227,7 +227,11 @@ export async function POST(request) {
           html: `<p>안녕하세요,<br/>${member.name}님의 인보이스(${invoiceNumber})가 발급되었습니다. 첨부된 PDF를 확인해주세요.</p>`,
           attachments: [
             {
-              filename: `${invoiceNumber}.pdf`,
+              filename: (() => {
+                const emailMemberName = member.name_en || member.name || "";
+                const safe = emailMemberName.replace(/[^a-zA-Z0-9가-힣]/g, "");
+                return safe ? `${invoiceNumber}-${safe}.pdf` : `${invoiceNumber}.pdf`;
+              })(),
               content: pdfBuffer,
             },
           ],

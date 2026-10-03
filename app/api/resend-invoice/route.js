@@ -32,7 +32,7 @@ export async function POST(request) {
     // 2. 회원 + 이메일 조회 (guardian_id 있으면 guardian 이메일, 없으면 guest_email)
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
-      .select("id, members(id, name, guardian_id, guest_email)")
+      .select("id, members(id, name, name_en, guardian_id, guest_email)")
       .eq("id", paymentId)
       .single();
 
@@ -95,6 +95,12 @@ export async function POST(request) {
       },
     });
 
+    const resendMemberName = member?.name_en || member?.name || "";
+    const resendSafeName = resendMemberName.replace(/[^a-zA-Z0-9가-힣]/g, "");
+    const resendFilename = resendSafeName
+      ? `${invoice.invoice_number}-${resendSafeName}.pdf`
+      : `${invoice.invoice_number}.pdf`;
+
     await transporter.sendMail({
       from: `"Double J Sports" <${process.env.GMAIL_USER}>`,
       to: email,
@@ -102,7 +108,7 @@ export async function POST(request) {
       html: `<p>안녕하세요,<br/>${member?.name || ""}님의 인보이스(${invoice.invoice_number})를 다시 보내드립니다. 첨부된 PDF를 확인해주세요.</p>`,
       attachments: [
         {
-          filename: `${invoice.invoice_number}.pdf`,
+          filename: resendFilename,
           content: pdfBuffer,
         },
       ],
