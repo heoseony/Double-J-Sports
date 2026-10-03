@@ -1865,7 +1865,7 @@ export default function AdminPaymentsPage() {
                 }}
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
               >
-                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                   <option key={n} value={n}>
                     {n}회
                   </option>
