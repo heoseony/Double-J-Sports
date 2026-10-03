@@ -266,8 +266,9 @@ export default function AdminPaymentsPage() {
   async function loadRegisteredMembers() {
     const { data } = await supabase
       .from("members")
-      .select("id, name, name_en, program, guardian_id, address_street, address_zip, address_city")
+      .select("id, name, name_en, program, guardian_id, address_street, address_zip, address_city, is_test")
       .is("guest_email", null)
+      .or("is_test.is.null,is_test.eq.false")
       .order("name");
     setRegisteredMembers(data || []);
     setRegisteredMembersLoaded(true);
