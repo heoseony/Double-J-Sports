@@ -58,6 +58,18 @@ function defaultPersonalDescription(sessions) {
 
 const COUPON_AMOUNT = 20;
 
+// 아카데미 수업 인보이스 기본 문구 미리보기 (실제 발급 시 /api/generate-invoice의
+// autoDescription과 동일한 형식 — 수정 가능하도록 폼에 미리 채워 보여준다).
+function defaultAcademyDescription() {
+  const monthLabel = nowInGermany().toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return `Double J GmbH --
+Akademie-Training (${monthLabel})`;
+}
+
 function monthKey(dateStr) {
   return dateStr.slice(0, 7); // YYYY-MM
 }
@@ -148,6 +160,7 @@ export default function AdminPaymentsPage() {
   const [academyPlans, setAcademyPlans] = useState([]);
   const [academyPlanId, setAcademyPlanId] = useState("");
   const [academyCoupon, setAcademyCoupon] = useState(null);
+  const [academyMemberEmail, setAcademyMemberEmail] = useState("");
   const [academyUseCoupon, setAcademyUseCoupon] = useState(false);
   const [academyDepositorName, setAcademyDepositorName] = useState("");
   const [academyInvoiceNumber, setAcademyInvoiceNumber] = useState("");
@@ -266,10 +279,13 @@ export default function AdminPaymentsPage() {
     setAcademyUseCoupon(false);
     setAcademyCoupon(null);
     setAcademyPlans([]);
+    setAcademyMemberEmail("");
     if (!memberId) return;
 
     const member = registeredMembers.find((m) => m.id === memberId);
     if (!member) return;
+
+    setAcademyDescription(defaultAcademyDescription());
 
     const { data: planData } = await supabase
       .from("membership_plans")
@@ -288,6 +304,23 @@ export default function AdminPaymentsPage() {
       .limit(1)
       .maybeSingle();
     setAcademyCoupon(couponData || null);
+
+    // 영문 이름/이메일 표기용 — 보호자 로그인 이메일을 조회한다 (수정 불가, 참고용).
+    if (member.guardian_id) {
+      const { data: guardian } = await supabase
+        .from("guardians")
+        .select("user_id")
+        .eq("id", member.guardian_id)
+        .single();
+      if (guardian?.user_id) {
+        const { data: guardianUser } = await supabase
+          .from("users")
+          .select("email")
+          .eq("id", guardian.user_id)
+          .single();
+        setAcademyMemberEmail(guardianUser?.email || "");
+      }
+    }
   }
 
   // 개인레슨 폼에서 "기존 회원" 선택 시 입력칸을 그 회원 정보로 채운다.
@@ -591,6 +624,7 @@ export default function AdminPaymentsPage() {
     setAcademyPlans([]);
     setAcademyCoupon(null);
     setAcademyUseCoupon(false);
+    setAcademyMemberEmail("");
     setAcademyDepositorName("");
     setAcademyInvoiceNumber("");
     setAcademyDescription("");
@@ -1735,6 +1769,7 @@ export default function AdminPaymentsPage() {
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 placeholder="이름"
+                autoComplete="off"
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
               />
 
@@ -1744,6 +1779,7 @@ export default function AdminPaymentsPage() {
                 value={guestNameEn}
                 onChange={(e) => setGuestNameEn(e.target.value)}
                 placeholder="영문 이름"
+                autoComplete="off"
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
               />
 
@@ -1753,6 +1789,7 @@ export default function AdminPaymentsPage() {
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
                 placeholder="이메일"
+                autoComplete="off"
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
               />
 
@@ -1926,6 +1963,12 @@ export default function AdminPaymentsPage() {
 
               {academyMemberId && (
                 <>
+                  <div style={{ background: "#f3f7fc", color: "#1b3a63", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
+                    영문 이름: {registeredMembers.find((m) => m.id === academyMemberId)?.name_en || "-"}
+                    {" · "}
+                    이메일: {academyMemberEmail || "-"}
+                  </div>
+
                   <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
                     플랜
                   </label>
