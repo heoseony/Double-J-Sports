@@ -163,6 +163,10 @@ export default function AdminPaymentsPage() {
   const [academyUnitPrice, setAcademyUnitPrice] = useState("");
   const [academyCoupon, setAcademyCoupon] = useState(null);
   const [academyMemberEmail, setAcademyMemberEmail] = useState("");
+  const [academyNameEn, setAcademyNameEn] = useState("");
+  const [academyAddressStreet, setAcademyAddressStreet] = useState("");
+  const [academyAddressZip, setAcademyAddressZip] = useState("");
+  const [academyAddressCity, setAcademyAddressCity] = useState("");
   const [academyUseCoupon, setAcademyUseCoupon] = useState(false);
   const [academyDepositorName, setAcademyDepositorName] = useState("");
   const [academyInvoiceNumber, setAcademyInvoiceNumber] = useState("");
@@ -284,12 +288,20 @@ export default function AdminPaymentsPage() {
     setAcademyCoupon(null);
     setAcademyPlans([]);
     setAcademyMemberEmail("");
+    setAcademyNameEn("");
+    setAcademyAddressStreet("");
+    setAcademyAddressZip("");
+    setAcademyAddressCity("");
     if (!memberId) return;
 
     const member = registeredMembers.find((m) => m.id === memberId);
     if (!member) return;
 
     setAcademyDescription(defaultAcademyDescription());
+    setAcademyNameEn(member.name_en || "");
+    setAcademyAddressStreet(member.address_street || "");
+    setAcademyAddressZip(member.address_zip || "");
+    setAcademyAddressCity(member.address_city || "");
 
     const { data: planData } = await supabase
       .from("membership_plans")
@@ -388,6 +400,10 @@ export default function AdminPaymentsPage() {
       setGuestFormError("회차를 선택해주세요.");
       return;
     }
+    if (!guestNameEn.trim()) {
+      setGuestFormError("영문 이름을 입력해주세요 (인보이스에 필요합니다).");
+      return;
+    }
 
     setCreatingGuestPayment(true);
 
@@ -430,6 +446,24 @@ export default function AdminPaymentsPage() {
     }
 
     let memberIdToUse = personalExistingMemberId || null;
+
+    if (memberIdToUse) {
+      // 인보이스는 회원 정보의 영문 이름/주소를 읽으므로, 폼에서 고친 값을 먼저 저장한다.
+      const { error: existingUpdateError } = await supabase
+        .from("members")
+        .update({
+          name_en: guestNameEn.trim(),
+          address_street: guestAddressStreet.trim() || null,
+          address_zip: guestAddressZip.trim() || null,
+          address_city: guestAddressCity.trim() || null,
+        })
+        .eq("id", memberIdToUse);
+      if (existingUpdateError) {
+        setGuestFormError("회원 정보 저장 실패: " + existingUpdateError.message);
+        setCreatingGuestPayment(false);
+        return;
+      }
+    }
 
     if (!memberIdToUse) {
       const { data: newMember, error: memberError } = await supabase
@@ -488,6 +522,7 @@ export default function AdminPaymentsPage() {
           paymentId: newPayment.id,
           descriptionOverride: guestDescription,
           customInvoiceNumber: guestInvoiceNumber.trim() || null,
+          emailOverride: guestEmail.trim() || undefined,
         }),
       });
       const result = await res.json();
@@ -541,8 +576,34 @@ export default function AdminPaymentsPage() {
       setAcademyFormError("가격을 입력해주세요.");
       return;
     }
+    if (!academyNameEn.trim()) {
+      setAcademyFormError("영문 이름을 입력해주세요 (인보이스에 필요합니다).");
+      return;
+    }
+    const checkRaw = Number(academyUnitPrice);
+    const checkDiscount = academyUseCoupon && academyCoupon ? Math.min(COUPON_AMOUNT, checkRaw) : 0;
+    if (Math.max(checkRaw - checkDiscount, 0) >= 250 && !academyAddressStreet.trim()) {
+      setAcademyFormError("250유로 이상 결제는 독일 세법상 인보이스에 주소가 필요합니다. 주소를 입력해주세요.");
+      return;
+    }
 
     setCreatingAcademyPayment(true);
+
+    // 인보이스는 회원 정보의 영문 이름/주소를 읽어 만들어지므로, 입력한 값을 먼저 저장한다.
+    const { error: memberUpdateError } = await supabase
+      .from("members")
+      .update({
+        name_en: academyNameEn.trim(),
+        address_street: academyAddressStreet.trim() || null,
+        address_zip: academyAddressZip.trim() || null,
+        address_city: academyAddressCity.trim() || null,
+      })
+      .eq("id", academyMemberId);
+    if (memberUpdateError) {
+      setAcademyFormError("회원 정보 저장 실패: " + memberUpdateError.message);
+      setCreatingAcademyPayment(false);
+      return;
+    }
 
     const rawPrice = Number(academyUnitPrice);
     const discount = academyUseCoupon && academyCoupon ? Math.min(COUPON_AMOUNT, rawPrice) : 0;
@@ -553,27 +614,34 @@ export default function AdminPaymentsPage() {
 
     const targetMonth = getTargetMonthStr();
 
-    // 같은 대상 월(target_month)의 기존 active 회원권만 만료 처리 (중복배정 정정용).
-    await supabase
-      .from("memberships")
-      .update({ status: "expired" })
-      .eq("member_id", academyMemberId)
-      .eq("status", "active")
-      .eq("target_month", targetMonth);
+    // 뒤셀도르프 회원은 회원권 없이 운영(출석 명단은 DB 트리거가 자동 등록)하므로
+    // 회원권 생성은 건너뛰고 결제 + 인보이스만 발급한다.
+    const academyMemberRegion = registeredMembers.find((m) => m.id === academyMemberId)?.region;
+    const skipMembership = academyMemberRegion === "dusseldorf";
 
-    const { error: membershipError } = await supabase.from("memberships").insert({
-      member_id: academyMemberId,
-      plan_id: academyPlanId,
-      start_date: todayStr(),
-      target_month: targetMonth,
-      status: "active",
-      sessions_used: 0,
-    });
+    if (!skipMembership) {
+      // 같은 대상 월(target_month)의 기존 active 회원권만 만료 처리 (중복배정 정정용).
+      await supabase
+        .from("memberships")
+        .update({ status: "expired" })
+        .eq("member_id", academyMemberId)
+        .eq("status", "active")
+        .eq("target_month", targetMonth);
 
-    if (membershipError) {
-      setAcademyFormError("회원권 등록 실패: " + membershipError.message);
-      setCreatingAcademyPayment(false);
-      return;
+      const { error: membershipError } = await supabase.from("memberships").insert({
+        member_id: academyMemberId,
+        plan_id: academyPlanId,
+        start_date: todayStr(),
+        target_month: targetMonth,
+        status: "active",
+        sessions_used: 0,
+      });
+
+      if (membershipError) {
+        setAcademyFormError("회원권 등록 실패: " + membershipError.message);
+        setCreatingAcademyPayment(false);
+        return;
+      }
     }
 
     const { data: newPayment, error: paymentError } = await supabase
@@ -618,6 +686,7 @@ export default function AdminPaymentsPage() {
           paymentId: newPayment.id,
           descriptionOverride: academyDescription.trim() || undefined,
           customInvoiceNumber: academyInvoiceNumber.trim() || null,
+          emailOverride: academyMemberEmail.trim() || undefined,
         }),
       });
       const result = await res.json();
@@ -645,9 +714,14 @@ export default function AdminPaymentsPage() {
     setAcademyCoupon(null);
     setAcademyUseCoupon(false);
     setAcademyMemberEmail("");
+    setAcademyNameEn("");
+    setAcademyAddressStreet("");
+    setAcademyAddressZip("");
+    setAcademyAddressCity("");
     setAcademyDepositorName("");
     setAcademyInvoiceNumber("");
     setAcademyDescription("");
+    await loadNextInvoiceNumberPreview();
     setInvoicesLoaded(false);
     setRevenueLoaded(false);
   }
@@ -2015,11 +2089,68 @@ export default function AdminPaymentsPage() {
 
               {academyMemberId && (
                 <>
-                  <div style={{ background: "#f3f7fc", color: "#1b3a63", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
-                    영문 이름: {registeredMembers.find((m) => m.id === academyMemberId)?.name_en || "-"}
-                    {" · "}
-                    이메일: {academyMemberEmail || "-"}
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    영문 이름 (인보이스용)
+                  </label>
+                  <input
+                    type="text"
+                    value={academyNameEn}
+                    onChange={(e) => setAcademyNameEn(e.target.value)}
+                    placeholder="영문 이름"
+                    autoComplete="off"
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+                  />
+
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    이메일 (인보이스 발송용)
+                  </label>
+                  <input
+                    type="email"
+                    value={academyMemberEmail}
+                    onChange={(e) => setAcademyMemberEmail(e.target.value)}
+                    placeholder="이메일"
+                    autoComplete="off"
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+                  />
+
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    주소 (250유로 이상 결제 시 필수)
+                  </label>
+                  <input
+                    type="text"
+                    value={academyAddressStreet}
+                    onChange={(e) => setAcademyAddressStreet(e.target.value)}
+                    placeholder="거리명 + 번지"
+                    autoComplete="off"
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 6 }}
+                  />
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                    <input
+                      type="text"
+                      value={academyAddressZip}
+                      onChange={(e) => setAcademyAddressZip(e.target.value)}
+                      placeholder="우편번호"
+                      autoComplete="off"
+                      style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8 }}
+                    />
+                    <input
+                      type="text"
+                      value={academyAddressCity}
+                      onChange={(e) => setAcademyAddressCity(e.target.value)}
+                      placeholder="도시"
+                      autoComplete="off"
+                      style={{ flex: 2, minWidth: 0, boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8 }}
+                    />
                   </div>
+                  {(() => {
+                    const raw = Number(academyUnitPrice) || 0;
+                    const disc = academyUseCoupon && academyCoupon ? Math.min(COUPON_AMOUNT, raw) : 0;
+                    return Math.max(raw - disc, 0) >= 250 && !academyAddressStreet.trim();
+                  })() && (
+                    <div style={{ background: "#fff4e5", color: "#c07a1e", padding: 10, borderRadius: 8, fontSize: 12, marginBottom: 10 }}>
+                      250유로 이상 결제입니다 — 독일 세법상 인보이스에 주소가 필요해요. 위 주소 칸을 채워주세요.
+                    </div>
+                  )}
 
                   <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
                     플랜

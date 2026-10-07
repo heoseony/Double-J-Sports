@@ -20,7 +20,7 @@ function monthLabelEn(d) {
 export async function POST(request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { paymentId, descriptionOverride, customInvoiceNumber } = await request.json();
+    const { paymentId, descriptionOverride, customInvoiceNumber, emailOverride } = await request.json();
 
     if (!paymentId) {
       return NextResponse.json(
@@ -79,6 +79,11 @@ export async function POST(request) {
     // guardian이 없는 회원(회원가입 없이 등록된 개인레슨 회원 등)은 guest_email로 발송
     if (!guardianEmail && member.guest_email) {
       guardianEmail = member.guest_email;
+    }
+
+    // 관리자가 화면에서 직접 지정한 이메일이 있으면 그쪽으로 발송한다.
+    if (emailOverride && String(emailOverride).trim()) {
+      guardianEmail = String(emailOverride).trim();
     }
 
     // 3. 회사/계좌 정보
