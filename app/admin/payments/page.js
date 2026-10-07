@@ -167,6 +167,8 @@ export default function AdminPaymentsPage() {
   const [academyAddressStreet, setAcademyAddressStreet] = useState("");
   const [academyAddressZip, setAcademyAddressZip] = useState("");
   const [academyAddressCity, setAcademyAddressCity] = useState("");
+  const [academyEntryMode, setAcademyEntryMode] = useState("member");
+  const [academyGuestName, setAcademyGuestName] = useState("");
   const [academyUseCoupon, setAcademyUseCoupon] = useState(false);
   const [academyDepositorName, setAcademyDepositorName] = useState("");
   const [academyInvoiceNumber, setAcademyInvoiceNumber] = useState("");
@@ -277,6 +279,41 @@ export default function AdminPaymentsPage() {
       .order("name");
     setRegisteredMembers(data || []);
     setRegisteredMembersLoaded(true);
+  }
+
+  // 아카데미 입력 방식 전환: 기존 회원 선택 <-> 관리자가 전부 직접 입력 (신규/미등록 학생용).
+  async function handleSwitchAcademyEntryMode(mode) {
+    setAcademyEntryMode(mode);
+    setAcademyMemberId("");
+    setAcademySearch("");
+    setAcademyPlanId("");
+    setAcademyUnitPrice("");
+    setAcademyUseCoupon(false);
+    setAcademyCoupon(null);
+    setAcademyMemberEmail("");
+    setAcademyNameEn("");
+    setAcademyAddressStreet("");
+    setAcademyAddressZip("");
+    setAcademyAddressCity("");
+    setAcademyGuestName("");
+    setAcademyFormError("");
+    setAcademyFormNote("");
+
+    if (mode === "manual") {
+      setAcademyDescription(defaultAcademyDescription());
+      // 직접 입력에서는 프로그램 구분 없이 전체 플랜에서 고른다 (개인레슨 자동 생성 플랜은 제외).
+      const { data: allPlans } = await supabase
+        .from("membership_plans")
+        .select("id, name, program, sessions_per_month, price, currency")
+        .eq("active", true)
+        .not("name", "like", "개인레슨%")
+        .order("program", { ascending: true })
+        .order("price", { ascending: true });
+      setAcademyPlans(allPlans || []);
+    } else {
+      setAcademyDescription("");
+      setAcademyPlans([]);
+    }
   }
 
   // 아카데미 회원 선택 시 해당 회원의 프로그램 플랜 + 사용 가능한 쿠폰을 불러온다.
@@ -564,7 +601,17 @@ export default function AdminPaymentsPage() {
     setAcademyFormError("");
     setAcademyFormNote("");
 
-    if (!academyMemberId) {
+    const isManual = academyEntryMode === "manual";
+    if (isManual) {
+      if (!academyGuestName.trim()) {
+        setAcademyFormError("이름을 입력해주세요.");
+        return;
+      }
+      if (!academyMemberEmail.trim()) {
+        setAcademyFormError("이메일을 입력해주세요 (인보이스 발송용).");
+        return;
+      }
+    } else if (!academyMemberId) {
       setAcademyFormError("회원을 선택해주세요.");
       return;
     }
@@ -589,20 +636,47 @@ export default function AdminPaymentsPage() {
 
     setCreatingAcademyPayment(true);
 
-    // 인보이스는 회원 정보의 영문 이름/주소를 읽어 만들어지므로, 입력한 값을 먼저 저장한다.
-    const { error: memberUpdateError } = await supabase
-      .from("members")
-      .update({
-        name_en: academyNameEn.trim(),
-        address_street: academyAddressStreet.trim() || null,
-        address_zip: academyAddressZip.trim() || null,
-        address_city: academyAddressCity.trim() || null,
-      })
-      .eq("id", academyMemberId);
-    if (memberUpdateError) {
-      setAcademyFormError("회원 정보 저장 실패: " + memberUpdateError.message);
-      setCreatingAcademyPayment(false);
-      return;
+    let academyTargetMemberId = academyMemberId;
+
+    if (isManual) {
+      // 신규/미등록 학생: 개인레슨과 같은 방식으로 회원 정보만 새로 만든다 (회원권은 만들지 않음).
+      const manualPlan = academyPlans.find((pl) => pl.id === academyPlanId);
+      const { data: newGuest, error: guestError } = await supabase
+        .from("members")
+        .insert({
+          name: academyGuestName.trim(),
+          name_en: academyNameEn.trim(),
+          guest_email: academyMemberEmail.trim(),
+          address_street: academyAddressStreet.trim() || null,
+          address_zip: academyAddressZip.trim() || null,
+          address_city: academyAddressCity.trim() || null,
+          program: manualPlan?.program || "kids",
+          status: "active",
+        })
+        .select("id")
+        .single();
+      if (guestError || !newGuest) {
+        setAcademyFormError("회원 등록 실패: " + (guestError?.message || ""));
+        setCreatingAcademyPayment(false);
+        return;
+      }
+      academyTargetMemberId = newGuest.id;
+    } else {
+      // 인보이스는 회원 정보의 영문 이름/주소를 읽어 만들어지므로, 입력한 값을 먼저 저장한다.
+      const { error: memberUpdateError } = await supabase
+        .from("members")
+        .update({
+          name_en: academyNameEn.trim(),
+          address_street: academyAddressStreet.trim() || null,
+          address_zip: academyAddressZip.trim() || null,
+          address_city: academyAddressCity.trim() || null,
+        })
+        .eq("id", academyMemberId);
+      if (memberUpdateError) {
+        setAcademyFormError("회원 정보 저장 실패: " + memberUpdateError.message);
+        setCreatingAcademyPayment(false);
+        return;
+      }
     }
 
     const rawPrice = Number(academyUnitPrice);
@@ -617,7 +691,7 @@ export default function AdminPaymentsPage() {
     // 뒤셀도르프 회원은 회원권 없이 운영(출석 명단은 DB 트리거가 자동 등록)하므로
     // 회원권 생성은 건너뛰고 결제 + 인보이스만 발급한다.
     const academyMemberRegion = registeredMembers.find((m) => m.id === academyMemberId)?.region;
-    const skipMembership = academyMemberRegion === "dusseldorf";
+    const skipMembership = isManual || academyMemberRegion === "dusseldorf";
 
     if (!skipMembership) {
       // 같은 대상 월(target_month)의 기존 active 회원권만 만료 처리 (중복배정 정정용).
@@ -647,7 +721,7 @@ export default function AdminPaymentsPage() {
     const { data: newPayment, error: paymentError } = await supabase
       .from("payments")
       .insert({
-        member_id: academyMemberId,
+        member_id: academyTargetMemberId,
         plan_id: academyPlanId,
         depositor_name: academyDepositorName.trim() || "현장결제(아카데미)",
         total_amount: totalAmount,
@@ -703,14 +777,16 @@ export default function AdminPaymentsPage() {
       invoiceNote = ` (⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message})`;
     }
 
-    const memberName = registeredMembers.find((m) => m.id === academyMemberId)?.name || "회원";
+    const memberName = isManual
+      ? academyGuestName.trim()
+      : registeredMembers.find((m) => m.id === academyMemberId)?.name || "회원";
     setCreatingAcademyPayment(false);
     setAcademyFormNote(`${memberName}님 결제 생성 완료.${invoiceNote}`);
     setAcademyMemberId("");
     setAcademySearch("");
     setAcademyPlanId("");
     setAcademyUnitPrice("");
-    setAcademyPlans([]);
+    if (!isManual) setAcademyPlans([]);
     setAcademyCoupon(null);
     setAcademyUseCoupon(false);
     setAcademyMemberEmail("");
@@ -718,9 +794,10 @@ export default function AdminPaymentsPage() {
     setAcademyAddressStreet("");
     setAcademyAddressZip("");
     setAcademyAddressCity("");
+    setAcademyGuestName("");
     setAcademyDepositorName("");
     setAcademyInvoiceNumber("");
-    setAcademyDescription("");
+    setAcademyDescription(isManual ? defaultAcademyDescription() : "");
     await loadNextInvoiceNumberPreview();
     setInvoicesLoaded(false);
     setRevenueLoaded(false);
@@ -2041,6 +2118,61 @@ export default function AdminPaymentsPage() {
 
               {onsiteMode === "academy" && (
               <>
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchAcademyEntryMode("member")}
+                  style={{
+                    flex: 1,
+                    padding: "8px 0",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: academyEntryMode === "member" ? "none" : "1px solid #e5eaf2",
+                    borderRadius: 8,
+                    background: academyEntryMode === "member" ? BLUE : "white",
+                    color: academyEntryMode === "member" ? "white" : "#8ea0b8",
+                    cursor: "pointer",
+                  }}
+                >
+                  기존 회원 선택
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchAcademyEntryMode("manual")}
+                  style={{
+                    flex: 1,
+                    padding: "8px 0",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: academyEntryMode === "manual" ? "none" : "1px solid #e5eaf2",
+                    borderRadius: 8,
+                    background: academyEntryMode === "manual" ? BLUE : "white",
+                    color: academyEntryMode === "manual" ? "white" : "#8ea0b8",
+                    cursor: "pointer",
+                  }}
+                >
+                  직접 입력 (신규/미등록)
+                </button>
+              </div>
+
+              {academyEntryMode === "manual" && (
+                <>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    이름
+                  </label>
+                  <input
+                    type="text"
+                    value={academyGuestName}
+                    onChange={(e) => setAcademyGuestName(e.target.value)}
+                    placeholder="이름"
+                    autoComplete="off"
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+                  />
+                </>
+              )}
+
+              {academyEntryMode === "member" && (
+              <>
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
                 회원 검색
               </label>
@@ -2086,8 +2218,10 @@ export default function AdminPaymentsPage() {
                   );
                 })()}
               </select>
+              </>
+              )}
 
-              {academyMemberId && (
+              {(academyMemberId || academyEntryMode === "manual") && (
                 <>
                   <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
                     영문 이름 (인보이스용)
@@ -2268,7 +2402,7 @@ export default function AdminPaymentsPage() {
 
               <button
                 type="button"
-                disabled={creatingAcademyPayment || !academyMemberId}
+                disabled={creatingAcademyPayment || !(academyMemberId || academyEntryMode === "manual")}
                 onClick={handleCreateAcademyPayment}
                 style={{
                   width: "100%",
@@ -2280,10 +2414,14 @@ export default function AdminPaymentsPage() {
                   background: BLUE,
                   color: "white",
                   cursor: creatingAcademyPayment ? "default" : "pointer",
-                  opacity: creatingAcademyPayment || !academyMemberId ? 0.6 : 1,
+                  opacity: creatingAcademyPayment || !(academyMemberId || academyEntryMode === "manual") ? 0.6 : 1,
                 }}
               >
-                {creatingAcademyPayment ? "처리 중..." : "회원권 등록 · 결제 생성 · 인보이스 발행"}
+                {creatingAcademyPayment
+                  ? "처리 중..."
+                  : academyEntryMode === "manual"
+                  ? "결제 생성 · 인보이스 발행"
+                  : "회원권 등록 · 결제 생성 · 인보이스 발행"}
               </button>
               </>
               )}
