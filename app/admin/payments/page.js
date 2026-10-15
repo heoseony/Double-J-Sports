@@ -576,8 +576,18 @@ export default function AdminPaymentsPage() {
       invoiceNote = ` (⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message})`;
     }
 
+    const guestInvoiceFailed = invoiceNote.includes("⚠");
+    if (guestInvoiceFailed) {
+      await rollbackFailedPayment(newPayment.id, null);
+      invoiceNote += " 결제는 취소 처리되어 매출에 잡히지 않았습니다. 내용을 확인하고 다시 시도해주세요.";
+    }
+
     setCreatingGuestPayment(false);
-    setGuestFormNote(`${guestName.trim()}님 등록 및 결제 생성 완료.${invoiceNote}`);
+    setGuestFormNote(
+      guestInvoiceFailed
+        ? `${guestName.trim()}님 인보이스 발급 실패.${invoiceNote}`
+        : `${guestName.trim()}님 등록 및 결제 생성 완료.${invoiceNote}`
+    );
     setGuestName("");
     setGuestNameEn("");
     setGuestEmail("");
@@ -594,6 +604,20 @@ export default function AdminPaymentsPage() {
     await loadNextInvoiceNumberPreview();
     setInvoicesLoaded(false);
     setRevenueLoaded(false);
+  }
+
+  // 인보이스 발급에 실패한 수동 결제는 매출에 남지 않도록 취소(rejected) 처리한다.
+  async function rollbackFailedPayment(paymentId, couponId) {
+    await supabase
+      .from("payments")
+      .update({ status: "rejected", confirmed_at: null })
+      .eq("id", paymentId);
+    if (couponId) {
+      await supabase
+        .from("coupons")
+        .update({ used: false, used_at: null, payment_id: null })
+        .eq("id", couponId);
+    }
   }
 
   // 등록된 회원의 아카데미 수업(현장결제) + 결제 생성 + 인보이스 발행을 한 번에 처리한다.
@@ -777,11 +801,21 @@ export default function AdminPaymentsPage() {
       invoiceNote = ` (⚠ 인보이스 발급 요청 자체가 실패했습니다: ${e.message})`;
     }
 
+    const academyInvoiceFailed = invoiceNote.includes("⚠");
+    if (academyInvoiceFailed) {
+      await rollbackFailedPayment(newPayment.id, appliedCouponId);
+      invoiceNote += " 결제는 취소 처리되어 매출에 잡히지 않았습니다. 내용을 확인하고 다시 시도해주세요.";
+    }
+
     const memberName = isManual
       ? academyGuestName.trim()
       : registeredMembers.find((m) => m.id === academyMemberId)?.name || "회원";
     setCreatingAcademyPayment(false);
-    setAcademyFormNote(`${memberName}님 결제 생성 완료.${invoiceNote}`);
+    setAcademyFormNote(
+      academyInvoiceFailed
+        ? `${memberName}님 인보이스 발급 실패.${invoiceNote}`
+        : `${memberName}님 결제 생성 완료.${invoiceNote}`
+    );
     setAcademyMemberId("");
     setAcademySearch("");
     setAcademyPlanId("");
