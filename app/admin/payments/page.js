@@ -1078,13 +1078,19 @@ export default function AdminPaymentsPage() {
 
   async function loadRevenue() {
     // 2026년 8월까지는 테스트 운영 기간이라 매출 집계에서 제외, 9월부터 정식 집계
-    const { data } = await supabase
-      .from("payments")
-      .select("total_amount, confirmed_at")
-      .eq("status", "confirmed")
-      .gte("confirmed_at", "2026-09-01")
-      .order("confirmed_at", { ascending: true });
-    setAllConfirmedPayments(data || []);
+    // 구글 시트와 같은 기준(sheet_invoices 뷰: 아카데미는 회원권 대상 월, 개인레슨은 결제일)으로
+    // 월별 매출을 읽는다. 월 합계 1줄을 월 중순 날짜의 결제 1건처럼 넘겨 기존 집계 코드를 그대로 쓴다.
+    const { data, error } = await supabase.rpc("admin_revenue_by_month");
+    if (error) {
+      console.error("월별 매출 조회 실패:", error);
+    }
+    const monthlyRows = (data || [])
+      .filter((r) => r.month_key >= "2026-09")
+      .map((r) => ({
+        total_amount: Number(r.total),
+        confirmed_at: `${r.month_key}-15T12:00:00Z`,
+      }));
+    setAllConfirmedPayments(monthlyRows);
     setRevenueLoaded(true);
   }
 
