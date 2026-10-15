@@ -112,6 +112,13 @@ export default function AdminPaymentsPage() {
   // ===== 인보이스 탭 상태 =====
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoaded, setInvoicesLoaded] = useState(false);
+  const [trashItems, setTrashItems] = useState([]);
+  const [trashLoaded, setTrashLoaded] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashTarget, setTrashTarget] = useState(null);
+  const [trashPurgeTarget, setTrashPurgeTarget] = useState(null);
+  const [trashBusy, setTrashBusy] = useState(false);
+  const [trashMsg, setTrashMsg] = useState("");
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
   const [openingPdfPath, setOpeningPdfPath] = useState(null);
   const [invoiceMonthOffset, setInvoiceMonthOffset] = useState(0); // 0=이번달, -1=지난달, +1=다음달
@@ -858,6 +865,72 @@ export default function AdminPaymentsPage() {
     setConfirmedPayments(confirmed || []);
   }
 
+  async function loadTrash() {
+    const { data, error } = await supabase
+      .from("invoice_trash")
+      .select("id, invoice_number, member_name, plan_name, total_amount, deleted_at")
+      .order("deleted_at", { ascending: false });
+    if (error) {
+      console.error("휴지통 조회 실패:", error);
+      setTrashItems([]);
+    } else {
+      setTrashItems(data || []);
+    }
+    setTrashLoaded(true);
+  }
+
+  async function refreshAfterTrashChange() {
+    setRevenueLoaded(false);
+    await loadInvoices();
+    await loadTrash();
+    await loadNextInvoiceNumberPreview();
+  }
+
+  async function handleTrashInvoice() {
+    if (!trashTarget) return;
+    setTrashBusy(true);
+    setTrashMsg("");
+    const { error } = await supabase.rpc("trash_invoice", { p_invoice_id: trashTarget.id });
+    setTrashBusy(false);
+    if (error) {
+      setTrashMsg("삭제 실패: " + error.message);
+      setTrashTarget(null);
+      return;
+    }
+    setTrashMsg(`${trashTarget.invoice_number}번 인보이스를 휴지통으로 보냈습니다. 연결된 결제는 매출에서 빠졌습니다.`);
+    setTrashTarget(null);
+    await refreshAfterTrashChange();
+  }
+
+  async function handleRestoreInvoice(item) {
+    setTrashBusy(true);
+    setTrashMsg("");
+    const { error } = await supabase.rpc("restore_invoice", { p_trash_id: item.id });
+    setTrashBusy(false);
+    if (error) {
+      setTrashMsg("복구 실패: " + error.message);
+      return;
+    }
+    setTrashMsg(`${item.invoice_number}번 인보이스를 복구했습니다.`);
+    await refreshAfterTrashChange();
+  }
+
+  async function handlePurgeInvoice() {
+    if (!trashPurgeTarget) return;
+    setTrashBusy(true);
+    setTrashMsg("");
+    const { error } = await supabase.rpc("purge_invoice_trash", { p_trash_id: trashPurgeTarget.id });
+    setTrashBusy(false);
+    if (error) {
+      setTrashMsg("영구 삭제 실패: " + error.message);
+      setTrashPurgeTarget(null);
+      return;
+    }
+    setTrashMsg(`${trashPurgeTarget.invoice_number}번을 영구 삭제했습니다.`);
+    setTrashPurgeTarget(null);
+    await loadTrash();
+  }
+
   async function loadInvoices() {
     const { data, error } = await supabase
       .from("invoices")
@@ -1077,6 +1150,7 @@ export default function AdminPaymentsPage() {
   // 탭 전환 시 필요한 데이터 지연 로딩
   useEffect(() => {
     if (activeTab === "invoices" && !invoicesLoaded) loadInvoices();
+    if (activeTab === "invoices" && !trashLoaded) loadTrash();
     if (activeTab === "settings" && !settingsLoaded) loadSettings();
     if (activeTab === "revenue" && !revenueLoaded) loadRevenue();
     if (activeTab === "personal" && !personalPlansLoaded) loadPersonalPlans();
@@ -1694,7 +1768,7 @@ export default function AdminPaymentsPage() {
                       {monthKey === "미상" ? "날짜 미상" : `${monthKey.slice(0, 4)}년 ${Number(monthKey.slice(5, 7))}월`}
                     </div>
                     {groupedByMonth[monthKey].map((inv, idx) => (
-                      <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} />
+                      <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} onTrash={setTrashTarget} />
                     ))}
                   </div>
                 ));
@@ -1756,12 +1830,142 @@ export default function AdminPaymentsPage() {
                   )}
 
                   {monthInvoices.map((inv, idx) => (
-                    <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} />
+                    <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} onTrash={setTrashTarget} />
                   ))}
                 </>
               );
             })()}
           </div>
+        )}
+
+        {activeTab === "invoices" && (
+          <>
+            {trashMsg && (
+              <div style={{ background: "#e9f1fb", color: "#1b3a63", padding: 12, borderRadius: 10, fontSize: 13, marginTop: 16 }}>
+                {trashMsg}
+              </div>
+            )}
+
+            <div style={{ background: "white", borderRadius: 16, padding: 18, marginTop: 16, boxShadow: "0 2px 10px rgba(30,60,110,0.06)" }}>
+              <button
+                type="button"
+                onClick={() => setShowTrash((v) => !v)}
+                style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontWeight: 700, fontSize: 15, color: "#1b3a63" }}
+              >
+                휴지통 ({trashItems.length}건) {showTrash ? "▲" : "▼"}
+              </button>
+
+              {showTrash && (
+                <div style={{ marginTop: 12 }}>
+                  {trashItems.length === 0 && (
+                    <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>휴지통이 비어 있습니다.</p>
+                  )}
+                  {trashItems.map((item, idx) => (
+                    <div key={item.id} style={{ padding: "12px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
+                      <div style={{ color: "#1b3a63", fontWeight: 700 }}>
+                        {item.invoice_number}
+                        <span style={{ color: "#33455e", fontWeight: 400, marginLeft: 8 }}>
+                          {item.member_name} · {item.plan_name}
+                        </span>
+                      </div>
+                      <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
+                        금액: {item.total_amount} EUR · 삭제일: {item.deleted_at ? new Date(item.deleted_at).toLocaleDateString("ko-KR", { timeZone: "Europe/Berlin" }) : "-"}
+                      </div>
+                      <div style={{ marginTop: 8, display: "flex", gap: 12 }}>
+                        <button
+                          type="button"
+                          disabled={trashBusy}
+                          onClick={() => handleRestoreInvoice(item)}
+                          style={{ color: BLUE, fontWeight: 700, fontSize: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        >
+                          복구
+                        </button>
+                        <button
+                          type="button"
+                          disabled={trashBusy}
+                          onClick={() => setTrashPurgeTarget(item)}
+                          style={{ color: "#b3261e", fontWeight: 700, fontSize: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        >
+                          영구 삭제
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {trashTarget && (
+              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+                <div style={{ background: "white", borderRadius: 16, padding: 20, maxWidth: 360, width: "100%" }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: "#1b3a63", marginBottom: 10 }}>
+                    인보이스를 휴지통으로 보낼까요?
+                  </div>
+                  <p style={{ fontSize: 14, color: "#33455e", margin: "0 0 8px" }}>
+                    {trashTarget.invoice_number} · {trashTarget.payments?.members?.name} · {trashTarget.total_amount} EUR
+                  </p>
+                  <p style={{ fontSize: 12, color: "#8ea0b8", margin: "0 0 8px" }}>
+                    연결된 결제도 함께 매출에서 빠지고, 마지막 번호라면 그 번호를 다시 쓸 수 있게 됩니다. 휴지통에서 복구할 수 있어요.
+                  </p>
+                  <p style={{ fontSize: 12, color: "#b3261e", margin: "0 0 16px" }}>
+                    이미 이메일로 발송된 PDF는 회수되지 않습니다.
+                  </p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      disabled={trashBusy}
+                      onClick={() => setTrashTarget(null)}
+                      style={{ flex: 1, padding: 12, fontSize: 14, fontWeight: 700, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#1b3a63", cursor: "pointer" }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      disabled={trashBusy}
+                      onClick={handleTrashInvoice}
+                      style={{ flex: 1, padding: 12, fontSize: 14, fontWeight: 700, border: "none", borderRadius: 10, background: trashBusy ? "#d9a5a1" : "#b3261e", color: "white", cursor: "pointer" }}
+                    >
+                      {trashBusy ? "처리 중..." : "휴지통으로 보내기"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {trashPurgeTarget && (
+              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+                <div style={{ background: "white", borderRadius: 16, padding: 20, maxWidth: 360, width: "100%" }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: "#b3261e", marginBottom: 10 }}>
+                    영구 삭제할까요?
+                  </div>
+                  <p style={{ fontSize: 14, color: "#33455e", margin: "0 0 8px" }}>
+                    {trashPurgeTarget.invoice_number} · {trashPurgeTarget.member_name} · {trashPurgeTarget.total_amount} EUR
+                  </p>
+                  <p style={{ fontSize: 12, color: "#b3261e", margin: "0 0 16px" }}>
+                    영구 삭제하면 복구할 수 없습니다.
+                  </p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      disabled={trashBusy}
+                      onClick={() => setTrashPurgeTarget(null)}
+                      style={{ flex: 1, padding: 12, fontSize: 14, fontWeight: 700, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#1b3a63", cursor: "pointer" }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      disabled={trashBusy}
+                      onClick={handlePurgeInvoice}
+                      style={{ flex: 1, padding: 12, fontSize: 14, fontWeight: 700, border: "none", borderRadius: 10, background: trashBusy ? "#d9a5a1" : "#b3261e", color: "white", cursor: "pointer" }}
+                    >
+                      {trashBusy ? "처리 중..." : "영구 삭제"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ===================== 계좌설정 탭 ===================== */}
@@ -2865,7 +3069,7 @@ export default function AdminPaymentsPage() {
   );
 }
 
-function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf }) {
+function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf, onTrash }) {
   return (
     <div style={{ padding: "12px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
@@ -2896,6 +3100,15 @@ function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf }) {
       </div>
       <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
         발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR", { timeZone: "Europe/Berlin" }) : "-"} · 금액: {inv.total_amount} EUR
+        {onTrash && (
+          <button
+            type="button"
+            onClick={() => onTrash(inv)}
+            style={{ marginLeft: 12, color: "#b3261e", fontWeight: 700, fontSize: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            삭제
+          </button>
+        )}
       </div>
     </div>
   );
