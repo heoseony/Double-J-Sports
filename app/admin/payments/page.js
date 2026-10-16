@@ -57,6 +57,20 @@ function defaultPersonalDescription(sessions) {
   return `${firstLine}\n${sessionWord} ${monthLabel}`;
 }
 
+// 취미반(여성 Women's / 남성 Man's) 인보이스 기본 문구.
+function defaultHobbyDescription(type, sessions) {
+  const monthLabel = nowInGermany().toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const title = type === "men" ? "Man's Training" : "Women's Training";
+  const sessionWord = Number(sessions) === 1 ? "Session" : "Sessions";
+  const countPart = sessions ? `${sessions} ` : "";
+  return `${title}
+${countPart}${sessionWord} ${monthLabel}`;
+}
+
 const COUPON_AMOUNT = 20;
 
 // 아카데미 수업 인보이스 기본 문구 미리보기 (실제 발급 시 /api/generate-invoice의
@@ -158,7 +172,8 @@ export default function AdminPaymentsPage() {
   const [guestAddressCity, setGuestAddressCity] = useState("");
   const [guestUnitPrice, setGuestUnitPrice] = useState("");
   const [guestSessionCount, setGuestSessionCount] = useState(1);
-  const [onsiteMode, setOnsiteMode] = useState("personal"); // "personal" | "academy"
+  const [onsiteMode, setOnsiteMode] = useState("personal"); // "personal" | "academy" | "hobby"
+  const [hobbyType, setHobbyType] = useState("women"); // "women" | "men"
   const [registeredMembers, setRegisteredMembers] = useState([]);
   const [registeredMembersLoaded, setRegisteredMembersLoaded] = useState(false);
   const [personalExistingSearch, setPersonalExistingSearch] = useState("");
@@ -453,12 +468,19 @@ export default function AdminPaymentsPage() {
 
     const guestAmount = Math.round(Number(guestUnitPrice) * guestSessionCount * 100) / 100;
 
+    const isHobby = onsiteMode === "hobby";
+    const planProgram = isHobby ? "general" : "pro";
+    const planName = isHobby
+      ? `${hobbyType === "men" ? "남성 취미반" : "여성 취미반"} ${guestSessionCount}회`
+      : `개인레슨 ${guestSessionCount}회`;
+
     // 선택한 회차에 맞는 개인레슨 플랜이 없으면 자동으로 만든다 (단가 × 회차).
     let planIdToUse = null;
     const { data: existingPlan } = await supabase
       .from("membership_plans")
       .select("id")
-      .eq("program", "pro")
+      .eq("program", planProgram)
+      .eq("name", planName)
       .eq("sessions_per_month", guestSessionCount)
       .eq("price", guestAmount)
       .eq("active", true)
@@ -470,8 +492,8 @@ export default function AdminPaymentsPage() {
       const { data: newPlan, error: newPlanError } = await supabase
         .from("membership_plans")
         .insert({
-          name: `개인레슨 ${guestSessionCount}회`,
-          program: "pro",
+          name: planName,
+          program: planProgram,
           sessions_per_month: guestSessionCount,
           price: guestAmount,
           currency: "EUR",
@@ -606,6 +628,11 @@ export default function AdminPaymentsPage() {
     setPersonalExistingSearch("");
     setGuestInvoiceNumber("");
     setGuestDescription(defaultPersonalDescription());
+    if (isHobby) {
+      setGuestUnitPrice("20");
+      setGuestSessionCount(4);
+      setGuestDescription(defaultHobbyDescription(hobbyType, 4));
+    }
     setPersonalPaymentsLoaded(false);
     await loadPersonalPayments();
     await loadNextInvoiceNumberPreview();
@@ -2107,7 +2134,14 @@ export default function AdminPaymentsPage() {
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                 <button
                   type="button"
-                  onClick={() => setOnsiteMode("personal")}
+                  onClick={() => {
+                    if (onsiteMode === "hobby") {
+                      setGuestUnitPrice("");
+                      setGuestSessionCount(1);
+                      setGuestDescription(defaultPersonalDescription(1));
+                    }
+                    setOnsiteMode("personal");
+                  }}
                   style={{
                     flex: 1,
                     padding: "10px 0",
@@ -2124,7 +2158,14 @@ export default function AdminPaymentsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setOnsiteMode("academy")}
+                  onClick={() => {
+                    if (onsiteMode === "hobby") {
+                      setGuestUnitPrice("");
+                      setGuestSessionCount(1);
+                      setGuestDescription(defaultPersonalDescription(1));
+                    }
+                    setOnsiteMode("academy");
+                  }}
                   style={{
                     flex: 1,
                     padding: "10px 0",
@@ -2139,10 +2180,85 @@ export default function AdminPaymentsPage() {
                 >
                   아카데미 수업
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOnsiteMode("hobby");
+                    setGuestUnitPrice("20");
+                    setGuestSessionCount(4);
+                    setGuestDescription(defaultHobbyDescription(hobbyType, 4));
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: onsiteMode === "hobby" ? "none" : "1px solid #e5eaf2",
+                    borderRadius: 8,
+                    background: onsiteMode === "hobby" ? BLUE : "white",
+                    color: onsiteMode === "hobby" ? "white" : "#8ea0b8",
+                    cursor: "pointer",
+                  }}
+                >
+                  취미반
+                </button>
               </div>
 
-              {onsiteMode === "personal" && (
+              {(onsiteMode === "personal" || onsiteMode === "hobby") && (
               <>
+              {onsiteMode === "hobby" && (
+                <>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+                    수업 종류
+                  </label>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHobbyType("women");
+                        setGuestDescription(defaultHobbyDescription("women", guestSessionCount));
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "10px 0",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: hobbyType === "women" ? "none" : "1px solid #e5eaf2",
+                        borderRadius: 8,
+                        background: hobbyType === "women" ? BLUE : "white",
+                        color: hobbyType === "women" ? "white" : "#8ea0b8",
+                        cursor: "pointer",
+                      }}
+                    >
+                      여성 취미반 (Women's Training)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHobbyType("men");
+                        setGuestDescription(defaultHobbyDescription("men", guestSessionCount));
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "10px 0",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: hobbyType === "men" ? "none" : "1px solid #e5eaf2",
+                        borderRadius: 8,
+                        background: hobbyType === "men" ? BLUE : "white",
+                        color: hobbyType === "men" ? "white" : "#8ea0b8",
+                        cursor: "pointer",
+                      }}
+                    >
+                      남성 취미반 (Man's Training)
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 12, color: "#8ea0b8", marginTop: 0, marginBottom: 14 }}>
+                    월 4회 80유로 기준(단가 20 × 4회)입니다. 회차를 바꾸면 단가 × 회차로 합계가 계산돼요.
+                  </p>
+                </>
+              )}
+
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
                 기존 회원에서 불러오기 (선택)
               </label>
@@ -2268,6 +2384,20 @@ export default function AdminPaymentsPage() {
               />
 
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>회차</label>
+              {onsiteMode === "hobby" ? (
+                <input
+                  type="number"
+                  min="1"
+                  value={guestSessionCount || ""}
+                  onChange={(e) => {
+                    const count = Math.floor(Number(e.target.value)) || 0;
+                    setGuestSessionCount(count);
+                    setGuestDescription(defaultHobbyDescription(hobbyType, count));
+                  }}
+                  placeholder="회차 직접 입력"
+                  style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10 }}
+                />
+              ) : (
               <select
                 value={guestSessionCount}
                 onChange={(e) => {
@@ -2283,6 +2413,7 @@ export default function AdminPaymentsPage() {
                   </option>
                 ))}
               </select>
+              )}
 
               <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
                 총 금액 (단가 × 회차, 자동 계산)
