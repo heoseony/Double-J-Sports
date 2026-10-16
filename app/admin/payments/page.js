@@ -172,6 +172,7 @@ export default function AdminPaymentsPage() {
   const [guestSessionCount, setGuestSessionCount] = useState(1);
   const [onsiteMode, setOnsiteMode] = useState("personal"); // "personal" | "academy" | "hobby"
   const [hobbyType, setHobbyType] = useState("women"); // "women" | "men"
+  const [guestMembers, setGuestMembers] = useState([]); // 직접 입력으로 등록한 현장등록 회원
   const [registeredMembers, setRegisteredMembers] = useState([]);
   const [registeredMembersLoaded, setRegisteredMembersLoaded] = useState(false);
   const [personalExistingSearch, setPersonalExistingSearch] = useState("");
@@ -298,6 +299,15 @@ export default function AdminPaymentsPage() {
       .or("is_test.is.null,is_test.eq.false")
       .order("name");
     setRegisteredMembers(data || []);
+
+    // 개인레슨/취미반 등 직접 입력으로 등록한(guest_email이 있는) 회원도 따로 불러온다.
+    const { data: guestData } = await supabase
+      .from("members")
+      .select("id, name, name_en, guest_email, address_street, address_zip, address_city, is_test")
+      .not("guest_email", "is", null)
+      .or("is_test.is.null,is_test.eq.false")
+      .order("name");
+    setGuestMembers(guestData || []);
     setRegisteredMembersLoaded(true);
   }
 
@@ -400,11 +410,11 @@ export default function AdminPaymentsPage() {
   async function handleSelectExistingPersonalMember(memberId) {
     setPersonalExistingMemberId(memberId);
     if (!memberId) return;
-    const m = registeredMembers.find((rm) => rm.id === memberId);
+    const m = registeredMembers.find((rm) => rm.id === memberId) || guestMembers.find((gm) => gm.id === memberId);
     if (!m) return;
     setGuestName(m.name || "");
     setGuestNameEn(m.name_en || "");
-    setGuestEmail("");
+    setGuestEmail(m.guest_email || "");
     setGuestAddressStreet(m.address_street || "");
     setGuestAddressZip(m.address_zip || "");
     setGuestAddressCity(m.address_city || "");
@@ -517,6 +527,7 @@ export default function AdminPaymentsPage() {
         .from("members")
         .update({
           name_en: guestNameEn.trim(),
+          ...(guestMembers.some((g) => g.id === memberIdToUse) ? { guest_email: guestEmail.trim() || null } : {}),
           address_street: guestAddressStreet.trim() || null,
           address_zip: guestAddressZip.trim() || null,
           address_city: guestAddressCity.trim() || null,
@@ -633,6 +644,7 @@ export default function AdminPaymentsPage() {
     }
     setPersonalPaymentsLoaded(false);
     await loadPersonalPayments();
+    await loadRegisteredMembers();
     await loadNextInvoiceNumberPreview();
     setInvoicesLoaded(false);
     setRevenueLoaded(false);
@@ -2273,6 +2285,24 @@ export default function AdminPaymentsPage() {
                 style={{ width: "100%", boxSizing: "border-box", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, marginBottom: 10, background: "white" }}
               >
                 <option value="">직접 입력 (신규 등록)</option>
+                {(() => {
+                  const q = personalExistingSearch.trim().toLowerCase();
+                  const guestsMatched = guestMembers.filter((g) =>
+                    q
+                      ? (g.name || "").toLowerCase().includes(q) || (g.name_en || "").toLowerCase().includes(q)
+                      : true
+                  );
+                  if (guestsMatched.length === 0) return null;
+                  return (
+                    <optgroup label="현장등록 회원 (개인레슨·취미반 등)">
+                      {guestsMatched.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name} {g.name_en ? `(${g.name_en})` : ""}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })()}
                 {(() => {
                   const matched = registeredMembers.filter((m) =>
                     personalExistingSearch.trim()
