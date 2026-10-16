@@ -65,10 +65,8 @@ function defaultHobbyDescription(type, sessions) {
     timeZone: "UTC",
   });
   const title = type === "men" ? "Man's Training" : "Women's Training";
-  const sessionWord = Number(sessions) === 1 ? "Session" : "Sessions";
-  const countPart = sessions ? `${sessions} ` : "";
-  return `${title}
-${countPart}${sessionWord} ${monthLabel}`;
+  return `Double J GmbH --
+${title} (${monthLabel})`;
 }
 
 const COUPON_AMOUNT = 20;
