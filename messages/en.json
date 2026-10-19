@@ -195,7 +195,10 @@
     "errCancelFailedPrefix": "Cancellation failed: ",
     "successCancelledRestored": "Cancelled. Your remaining session has been restored.",
     "successCancelledNotRestored": "Cancelled. Same-day cancellations do not restore your remaining session.",
-    "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?"
+    "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?",
+    "confirmSameDayCancelTitle": "Same-day cancellation",
+    "confirmSameDayCancelKeep": "Keep booking",
+    "confirmSameDayCancelGo": "Cancel anyway"
   },
   "reservations": {
     "loading": "Loading...",
@@ -216,7 +219,10 @@
     "errCancelFailedPrefix": "Cancellation failed: ",
     "successCancelledRestored": "Booking cancelled and your remaining session has been restored.",
     "successCancelledNotRestored": "Same-day cancellation does not restore your remaining session.",
-    "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?"
+    "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?",
+    "confirmSameDayCancelTitle": "Same-day cancellation",
+    "confirmSameDayCancelKeep": "Keep booking",
+    "confirmSameDayCancelGo": "Cancel anyway"
   },
   "classDetail": {
     "stepDetail": "Class Details",
@@ -250,6 +256,9 @@
     "successCancelledRestored": "Booking cancelled and your remaining session has been restored.",
     "successCancelledNotRestored": "Same-day cancellation does not restore your remaining session.",
     "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?",
+    "confirmSameDayCancelTitle": "Same-day cancellation",
+    "confirmSameDayCancelKeep": "Keep booking",
+    "confirmSameDayCancelGo": "Cancel anyway",
     "errBookingFailedPrefix": "Booking failed: "
   },
   "subscribe": {

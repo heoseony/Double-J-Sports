@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "../components/ConfirmModal";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -366,7 +367,7 @@ function BookPageInner() {
 
     const isPrior = now < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
-    if (!isPrior && !window.confirm(t("book.confirmSameDayCancel"))) {
+    if (!isPrior && !(await confirmDialog({ title: t("book.confirmSameDayCancelTitle"), message: t("book.confirmSameDayCancel"), keepLabel: t("book.confirmSameDayCancelKeep"), goLabel: t("book.confirmSameDayCancelGo") }))) {
       setCancellingSessionId(null);
       return;
     }

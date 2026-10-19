@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "../../../components/ConfirmModal";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -139,7 +140,7 @@ export default function ReservationsPage() {
     cutoffTime.setUTCHours(23, 59, 59, 999);
     const isPrior = nowInGermany() < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
-    if (!isPrior && !window.confirm(t("reservations.confirmSameDayCancel"))) {
+    if (!isPrior && !(await confirmDialog({ title: t("reservations.confirmSameDayCancelTitle"), message: t("reservations.confirmSameDayCancel"), keepLabel: t("reservations.confirmSameDayCancelKeep"), goLabel: t("reservations.confirmSameDayCancelGo") }))) {
       setCancellingId(null);
       return;
     }
