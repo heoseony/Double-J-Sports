@@ -194,7 +194,8 @@
     "errSessionNotFound": "수업 정보를 찾을 수 없습니다.",
     "errCancelFailedPrefix": "취소 실패: ",
     "successCancelledRestored": "취소되었습니다. 잔여 횟수가 복구되었습니다.",
-    "successCancelledNotRestored": "취소되었습니다. 당일 취소라 잔여 횟수는 복구되지 않습니다."
+    "successCancelledNotRestored": "취소되었습니다. 당일 취소라 잔여 횟수는 복구되지 않습니다.",
+    "confirmSameDayCancel": "수업 당일 취소는 회원권 잔여 횟수가 복구되지 않고 1회 차감된 상태로 남습니다. 그래도 취소하시겠어요?"
   },
   "reservations": {
     "loading": "불러오는 중...",
@@ -214,7 +215,8 @@
     "errLoadBookingsPrefix": "예약 내역을 불러오지 못했습니다: ",
     "errCancelFailedPrefix": "취소 실패: ",
     "successCancelledRestored": "예약이 취소되었고, 잔여 횟수가 복구되었습니다.",
-    "successCancelledNotRestored": "당일 취소로 잔여 횟수는 복구되지 않습니다."
+    "successCancelledNotRestored": "당일 취소로 잔여 횟수는 복구되지 않습니다.",
+    "confirmSameDayCancel": "수업 당일 취소는 회원권 잔여 횟수가 복구되지 않고 1회 차감된 상태로 남습니다. 그래도 취소하시겠어요?"
   },
   "classDetail": {
     "stepDetail": "수업 상세",
@@ -247,6 +249,7 @@
     "errCancelFailedPrefix": "취소 실패: ",
     "successCancelledRestored": "예약이 취소되었고, 잔여 횟수가 복구되었습니다.",
     "successCancelledNotRestored": "당일 취소로 잔여 횟수는 복구되지 않습니다.",
+    "confirmSameDayCancel": "수업 당일 취소는 회원권 잔여 횟수가 복구되지 않고 1회 차감된 상태로 남습니다. 그래도 취소하시겠어요?",
     "errBookingFailedPrefix": "예약 실패: "
   },
   "subscribe": {

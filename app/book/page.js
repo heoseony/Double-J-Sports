@@ -366,6 +366,10 @@ function BookPageInner() {
 
     const isPrior = now < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
+    if (!isPrior && !window.confirm(t("book.confirmSameDayCancel"))) {
+      setCancellingSessionId(null);
+      return;
+    }
 
     const { error: cancelError } = await supabase
       .from("bookings")

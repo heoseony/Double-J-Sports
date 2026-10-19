@@ -127,6 +127,10 @@ export default function AdultReservationsPage() {
     cutoffTime.setUTCHours(23, 59, 59, 999);
     const isPrior = nowInGermany() < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
+    if (!isPrior && !window.confirm(t("reservations.confirmSameDayCancel"))) {
+      setCancellingId(null);
+      return;
+    }
 
     const { error } = await supabase
       .from("bookings")

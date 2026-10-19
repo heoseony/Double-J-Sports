@@ -166,6 +166,10 @@ export default function ClassDetailPage() {
     cutoffTime.setUTCHours(23, 59, 59, 999);
     const isPrior = nowInGermany() < cutoffTime;
     const newStatus = isPrior ? "cancelled_prior" : "cancelled_same_day";
+    if (!isPrior && !window.confirm(t("classDetail.confirmSameDayCancel"))) {
+      setCancelling(false);
+      return;
+    }
 
     const { error } = await supabase
       .from("bookings")

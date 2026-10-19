@@ -194,7 +194,8 @@
     "errSessionNotFound": "Class information not found.",
     "errCancelFailedPrefix": "Cancellation failed: ",
     "successCancelledRestored": "Cancelled. Your remaining session has been restored.",
-    "successCancelledNotRestored": "Cancelled. Same-day cancellations do not restore your remaining session."
+    "successCancelledNotRestored": "Cancelled. Same-day cancellations do not restore your remaining session.",
+    "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?"
   },
   "reservations": {
     "loading": "Loading...",
@@ -214,7 +215,8 @@
     "errLoadBookingsPrefix": "Failed to load bookings: ",
     "errCancelFailedPrefix": "Cancellation failed: ",
     "successCancelledRestored": "Booking cancelled and your remaining session has been restored.",
-    "successCancelledNotRestored": "Same-day cancellation does not restore your remaining session."
+    "successCancelledNotRestored": "Same-day cancellation does not restore your remaining session.",
+    "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?"
   },
   "classDetail": {
     "stepDetail": "Class Details",
@@ -247,6 +249,7 @@
     "errCancelFailedPrefix": "Cancellation failed: ",
     "successCancelledRestored": "Booking cancelled and your remaining session has been restored.",
     "successCancelledNotRestored": "Same-day cancellation does not restore your remaining session.",
+    "confirmSameDayCancel": "Cancelling on the day of the class will not restore your session — it will still count as used. Do you want to cancel anyway?",
     "errBookingFailedPrefix": "Booking failed: "
   },
   "subscribe": {
