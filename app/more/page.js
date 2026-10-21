@@ -42,6 +42,7 @@ function getMenuByRole(t) {
   ],
   admin: [
     { label: "수업 관리", href: "/admin/classes" },
+    { label: "고정 명단 관리", href: "/admin/roster" },
     { label: "예약 관리", href: null },
     { label: "출석 관리", href: "/admin/attendance" },
     { label: "회원 관리", href: "/admin/members" },
