@@ -7,6 +7,7 @@ import { supabase } from "../../../lib/supabaseClient";
 import { nowInGermany } from "../../../lib/germanyTime";
 import { getRegionLabel } from "../../../lib/classColors";
 import LoadingScreen from "../../components/LoadingScreen";
+import { confirmDialog } from "../../components/ConfirmModal";
 
 const BLUE = "#3B82C4";
 
@@ -303,6 +304,96 @@ export default function AdminMembersPage() {
   const [assignMsg, setAssignMsg] = useState("");
   const [assignAmountOverride, setAssignAmountOverride] = useState({});
 
+  const [rosterClasses, setRosterClasses] = useState([]);
+  const [rosterMap, setRosterMap] = useState({});
+  const [rosterBusyKey, setRosterBusyKey] = useState("");
+
+
+  function rosterShortName(cls) {
+    return (cls.class_name || "").includes("선수반") ? "선수반" : "아카데미";
+  }
+
+  async function loadRosterInfo() {
+    const { data: cls } = await supabase
+      .from("classes")
+      .select("id, class_name, region, weekday, start_time")
+      .eq("active", true)
+      .eq("region", "dusseldorf")
+      .order("weekday", { ascending: true })
+      .order("start_time", { ascending: true });
+    setRosterClasses(cls || []);
+
+    const { data: rows } = await supabase
+      .from("class_fixed_roster")
+      .select("class_id, member_id");
+    const map = {};
+    for (const r of rows || []) {
+      if (!map[r.member_id]) map[r.member_id] = [];
+      map[r.member_id].push(r.class_id);
+    }
+    setRosterMap(map);
+  }
+
+  async function toggleRoster(member, cls, isOn) {
+    const key = member.id + cls.id;
+    if (isOn) {
+      const ok = await confirmDialog({
+        title: "명단에서 빼기",
+        message: `${member.name} 님을 ${rosterShortName(cls)} 고정 명단에서 뺄까요?`,
+        keepLabel: "취소",
+        goLabel: "명단에서 빼기",
+      });
+      if (!ok) return;
+      const delFuture = await confirmDialog({
+        title: "앞으로 남은 예약",
+        message:
+          "앞으로 남은 회차의 예약도 같이 지울까요? 이미 출석·결석 처리된 기록은 지우지 않아요.",
+        keepLabel: "예약은 그대로 두기",
+        goLabel: "예약도 삭제",
+      });
+
+      setRosterBusyKey(key);
+      const { error } = await supabase
+        .from("class_fixed_roster")
+        .delete()
+        .eq("class_id", cls.id)
+        .eq("member_id", member.id);
+      if (error) {
+        alert("빼지 못했습니다: " + error.message);
+        setRosterBusyKey("");
+        return;
+      }
+      if (delFuture) {
+        const { data: sessions } = await supabase
+          .from("class_sessions")
+          .select("id")
+          .eq("class_id", cls.id)
+          .gte("session_date", todayStr());
+        const ids = (sessions || []).map((s) => s.id);
+        if (ids.length > 0) {
+          const { error: delErr } = await supabase
+            .from("bookings")
+            .delete()
+            .eq("member_id", member.id)
+            .eq("status", "booked")
+            .in("class_session_id", ids);
+          if (delErr) alert("명단에서는 뺐지만 예약을 지우지 못했습니다: " + delErr.message);
+        }
+      }
+    } else {
+      setRosterBusyKey(key);
+      const { error } = await supabase
+        .from("class_fixed_roster")
+        .insert({ class_id: cls.id, member_id: member.id });
+      if (error) {
+        alert("추가하지 못했습니다: " + error.message);
+        setRosterBusyKey("");
+        return;
+      }
+    }
+    await loadRosterInfo();
+    setRosterBusyKey("");
+  }
 
   async function loadMembers() {
     const { data, error } = await supabase
@@ -343,6 +434,7 @@ export default function AdminMembersPage() {
       }
 
       setIsAdmin(true);
+      loadRosterInfo();
       setAdminUserId(user.id);
       await loadMembers();
 
@@ -876,6 +968,23 @@ export default function AdminMembersPage() {
                         <span style={{ fontSize: 11, color: "#8ea0b8", fontWeight: 600 }}>
                           {m.program}
                         </span>
+                        {rosterClasses
+                          .filter((rc) => (rosterMap[m.id] || []).includes(rc.id))
+                          .map((rc) => (
+                            <span
+                              key={rc.id}
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: "#5b5fc7",
+                                background: "#eef0fb",
+                                padding: "2px 6px",
+                                borderRadius: 999,
+                              }}
+                            >
+                              {rosterShortName(rc)}
+                            </span>
+                          ))}
                       </div>
                       <div style={{ fontSize: 12, color: "#8ea0b8", marginTop: 4 }}>
                         {contact}
@@ -915,6 +1024,44 @@ export default function AdminMembersPage() {
 
                 {isExpanded && (
                   <div style={{ padding: "0 16px 16px" }}>
+                    {m.region === "dusseldorf" && rosterClasses.length > 0 && (
+                      <div
+                        style={{
+                          marginBottom: 12,
+                          padding: "10px 14px",
+                          border: "1px solid #e3eaf4",
+                          borderRadius: 10,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#1b3a63", marginBottom: 8 }}>
+                          고정 명단 (자동 예약)
+                        </div>
+                        {rosterClasses.map((rc) => {
+                          const on = (rosterMap[m.id] || []).includes(rc.id);
+                          return (
+                            <label
+                              key={rc.id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                fontSize: 13,
+                                color: "#1b3a63",
+                                padding: "4px 0",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={on}
+                                disabled={rosterBusyKey === m.id + rc.id}
+                                onChange={() => toggleRoster(m, rc, on)}
+                              />
+                              {"뒤셀도르프 " + rosterShortName(rc)}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => openCouponModal(m)}
