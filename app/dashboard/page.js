@@ -883,13 +883,13 @@ export default function DashboardPage() {
     { label: "출석 현황", href: "/admin/attendance", icon: "check", bg: "#e9f8f0", color: "#2ea86e" },
     { label: "회원 관리", href: "/admin/members", icon: "users", bg: "#fdf1e6", color: "#e2892e" },
     { label: "수업 관리", href: "/admin/classes", icon: "calendar", bg: "#eaf2fb", color: "#3B82C4" },
-    { label: "고정 명단", href: "/admin/roster", icon: "users", bg: "#eef0fb", color: "#5b5fc7" },
     { label: "회원권 배정", href: "/admin/memberships", icon: "ticket", bg: "#f2eefc", color: "#8b5fd6" },
     { label: "상품 관리", href: "/admin/plans", icon: "tag", bg: "#fde9f0", color: "#d6336c" },
     { label: "공지사항", href: "/notices", icon: "megaphone", bg: "#fef6e0", color: "#d6a02e" },
     { label: "갤러리", href: "/photos", icon: "image", bg: "#e6f7f7", color: "#2ea8a0" },
     { label: "월간 성장일지", href: "/admin/growth-journal", icon: "notebook", bg: "#eef0fb", color: "#5b5fc7" },
     { label: "운영 리포트", href: "/admin/reports", icon: "chart", bg: "#e6f7f7", color: "#2ea8a0" },
+    { label: "고정 명단", href: "/admin/roster", icon: "users", bg: "#eef0fb", color: "#5b5fc7" },
   ];
 
   return (

@@ -58,6 +58,7 @@ export default function AdminRosterPage() {
         .from("classes")
         .select("id, class_name, region, weekday, start_time, auto_enroll_region_members, active")
         .eq("active", true)
+        .eq("region", "dusseldorf")
         .order("region", { ascending: true })
         .order("weekday", { ascending: true })
         .order("start_time", { ascending: true });
