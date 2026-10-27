@@ -69,7 +69,24 @@ export default function NewMemberPage() {
       return;
     }
 
-    const { data: newMember, error } = await supabase
+    // 체험으로 먼저 등록된 같은 이름의 회원이 있으면 새로 만들지 않고 그 회원을 이어서 쓴다
+    const { data: claimedId } = await supabase.rpc("claim_trial_member", {
+      p_name: name.trim(),
+      p_region: region,
+      p_program: program,
+      p_name_en: nameEn.trim() || null,
+      p_birth_date: birthdate || null,
+      p_gender: gender || null,
+      p_experience_level: experience || null,
+      p_emergency_contact: emergencyContact || null,
+    });
+
+    let newMember = null;
+    let error = null;
+    if (claimedId) {
+      newMember = { id: claimedId };
+    } else {
+      const inserted = await supabase
       .from("members")
       .insert({
         guardian_id: guardian.id,
@@ -84,6 +101,9 @@ export default function NewMemberPage() {
       })
       .select()
       .single();
+      newMember = inserted.data;
+      error = inserted.error;
+    }
 
     if (error) {
       setErrorMsg(t("memberNew.errRegisterFailedPrefix") + error.message);

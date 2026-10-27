@@ -332,6 +332,33 @@ function AttendanceInner() {
     setCreatingTrial(true);
     setAddMemberError("");
 
+    // 같은 이름과 같은 지역의 기존 회원이 있으면 새로 만들지 않고 그 회원을 쓴다
+    const trimmedName = trialName.trim();
+    const trialRegion = sessionInfo?.classes?.region || "frankfurt";
+    const { data: existingList } = await supabase
+      .from("members")
+      .select("id, name, status, is_test, created_at")
+      .eq("region", trialRegion)
+      .is("guest_email", null)
+      .ilike("name", trimmedName.replace(/[\\%_]/g, "\\$&"));
+    const existingMember = (existingList || [])
+      .filter((m) => !m.is_test)
+      .sort((a, b) => {
+        const ta = a.status === "trial" ? 1 : 0;
+        const tb = b.status === "trial" ? 1 : 0;
+        if (ta !== tb) return ta - tb;
+        return String(a.created_at).localeCompare(String(b.created_at));
+      })[0];
+    if (existingMember) {
+      setShowTrialForm(false);
+      setTrialName("");
+      setCreatingTrial(false);
+      setSearchResults([]);
+      setSearchQuery("");
+      await handleSelectCandidate({ id: existingMember.id, name: existingMember.name });
+      return;
+    }
+
     const { data: newMember, error } = await supabase
       .from("members")
       .insert({
