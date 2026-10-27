@@ -84,6 +84,13 @@ Akademie-Training (${monthLabel})`;
 }
 
 function monthKey(dateStr) {
+  // 시각(ISO)이면 독일 시간 기준의 월, 날짜만 있으면 그대로 앞 7글자를 쓴다
+  if (dateStr && dateStr.length > 10) {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }).slice(0, 7); // YYYY-MM
+    }
+  }
   return dateStr.slice(0, 7); // YYYY-MM
 }
 
@@ -1218,7 +1225,7 @@ export default function AdminPaymentsPage() {
   }
 
   function handleClearConfirmedList() {
-    const now = nowInGermany().toISOString();
+    const now = new Date().toISOString();
     try {
       localStorage.setItem("double-j-sports-payments-cleared-before", now);
     } catch (e) {
@@ -1228,7 +1235,7 @@ export default function AdminPaymentsPage() {
   }
 
   function handleClearPersonalList() {
-    const now = nowInGermany().toISOString();
+    const now = new Date().toISOString();
     try {
       localStorage.setItem("double-j-sports-personal-cleared-before", now);
     } catch (e) {
@@ -1247,7 +1254,7 @@ export default function AdminPaymentsPage() {
       .from("payments")
       .update({
         status: "confirmed",
-        confirmed_at: nowInGermany().toISOString(),
+        confirmed_at: new Date().toISOString(),
         confirmed_by: adminUserId,
       })
       .eq("id", payment.id);
@@ -1799,7 +1806,7 @@ export default function AdminPaymentsPage() {
 
                 const groupedByMonth = {};
                 filtered.forEach((inv) => {
-                  const key = inv.issued_at ? inv.issued_at.slice(0, 7) : "미상";
+                  const key = inv.issued_at ? monthKey(inv.issued_at) : "미상";
                   if (!groupedByMonth[key]) groupedByMonth[key] = [];
                   groupedByMonth[key].push(inv);
                 });
@@ -1823,7 +1830,7 @@ export default function AdminPaymentsPage() {
               const targetKey = `${targetDate.getUTCFullYear()}-${String(targetDate.getUTCMonth() + 1).padStart(2, "0")}`;
               const targetLabel = `${targetDate.getUTCFullYear()}년 ${targetDate.getUTCMonth() + 1}월`;
 
-              const monthInvoices = invoices.filter((inv) => inv.issued_at && inv.issued_at.slice(0, 7) === targetKey);
+              const monthInvoices = invoices.filter((inv) => inv.issued_at && monthKey(inv.issued_at) === targetKey);
 
               return (
                 <>

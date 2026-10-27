@@ -200,7 +200,7 @@ export async function POST(request) {
       total_amount: payment.total_amount,
       net_amount: payment.net_amount,
       vat_amount: payment.vat_amount,
-      issued_at: issueDate.toISOString(),
+      issued_at: new Date().toISOString(),
       pdf_url: pdfPath,
     });
 
