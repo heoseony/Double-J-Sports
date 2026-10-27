@@ -17,6 +17,8 @@ export default function SignupPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [referredBy, setReferredBy] = useState("");
+  const [signupSource, setSignupSource] = useState("");
+  const [signupSourceDetail, setSignupSourceDetail] = useState("");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreePhoto, setAgreePhoto] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -31,6 +33,10 @@ export default function SignupPage() {
 
     if (!name.trim() || !email.trim() || !password) {
       setErrorMsg(t("signup.errNameEmailPassword"));
+      return;
+    }
+    if (!signupSource) {
+      setErrorMsg(t("signup.errSourceRequired"));
       return;
     }
     if (password.length < 6) {
@@ -71,7 +77,9 @@ export default function SignupPage() {
       user_id: authData.user.id,
       name: name.trim(),
       phone: phone.trim() || null,
-      referred_by: referredBy.trim() || null,
+      referred_by: signupSource === "friend" ? referredBy.trim() || null : null,
+      signup_source: signupSource,
+      signup_source_detail: signupSource === "other" ? signupSourceDetail.trim() || null : null,
     });
 
     setSubmitting(false);
@@ -208,14 +216,40 @@ export default function SignupPage() {
               style={inputStyle}
             />
 
-            <label style={labelStyle}>{t("signup.referrerLabel")}</label>
-            <input
-              type="text"
-              value={referredBy}
-              onChange={(e) => setReferredBy(e.target.value)}
-              placeholder={t("signup.referrerPlaceholder")}
+            <label style={labelStyle}>{t("signup.sourceLabel")}</label>
+            <select
+              value={signupSource}
+              onChange={(e) => setSignupSource(e.target.value)}
               style={inputStyle}
-            />
+            >
+              <option value="">{t("signup.sourceSelect")}</option>
+              <option value="friend">{t("signup.sourceFriend")}</option>
+              <option value="instagram">{t("signup.sourceInstagram")}</option>
+              <option value="naver_blog">{t("signup.sourceNaverBlog")}</option>
+              <option value="other">{t("signup.sourceOther")}</option>
+            </select>
+
+            {signupSource === "friend" && (
+              <>
+                <label style={labelStyle}>{t("signup.referrerLabel")}</label>
+                <input
+                  type="text"
+                  value={referredBy}
+                  onChange={(e) => setReferredBy(e.target.value)}
+                  placeholder={t("signup.referrerPlaceholder")}
+                  style={inputStyle}
+                />
+              </>
+            )}
+            {signupSource === "other" && (
+              <input
+                type="text"
+                value={signupSourceDetail}
+                onChange={(e) => setSignupSourceDetail(e.target.value)}
+                placeholder={t("signup.sourceOtherPlaceholder")}
+                style={{ ...inputStyle, marginTop: 10 }}
+              />
+            )}
 
             <div style={checkboxRowStyle}>
               <input

@@ -91,7 +91,15 @@
     "errSignupFailedPrefix": "Sign up failed: ",
     "errUnknown": "Unknown error",
     "errUserSavePrefix": "Failed to save user information: ",
-    "errGuardianSavePrefix": "Failed to save guardian information: "
+    "errGuardianSavePrefix": "Failed to save guardian information: ",
+    "sourceLabel": "How did you hear about us?",
+    "sourceSelect": "Please select",
+    "sourceFriend": "Referred by a friend",
+    "sourceInstagram": "Instagram",
+    "sourceNaverBlog": "Naver Blog",
+    "sourceOther": "Other (flyer, etc.)",
+    "sourceOtherPlaceholder": "Please tell us (e.g. flyer, saw it on the street)",
+    "errSourceRequired": "Please select how you heard about us."
   },
   "memberNew": {
     "title": "Add Player",
@@ -159,7 +167,15 @@
     "errSignupFailedPrefix": "Sign up failed: ",
     "errUnknown": "Unknown error",
     "errUserSavePrefix": "Failed to save user information: ",
-    "errMemberSavePrefix": "Failed to save member information: "
+    "errMemberSavePrefix": "Failed to save member information: ",
+    "sourceLabel": "How did you hear about us?",
+    "sourceSelect": "Please select",
+    "sourceFriend": "Referred by a friend",
+    "sourceInstagram": "Instagram",
+    "sourceNaverBlog": "Naver Blog",
+    "sourceOther": "Other (flyer, etc.)",
+    "sourceOtherPlaceholder": "Please tell us (e.g. flyer, saw it on the street)",
+    "errSourceRequired": "Please select how you heard about us."
   },
   "book": {
     "summary": "Book a Class for {name} · {remaining} Sessions Remaining",

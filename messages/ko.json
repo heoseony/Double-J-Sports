@@ -91,7 +91,15 @@
     "errSignupFailedPrefix": "회원가입 실패: ",
     "errUnknown": "알 수 없는 오류",
     "errUserSavePrefix": "사용자 정보 저장 실패: ",
-    "errGuardianSavePrefix": "보호자 정보 저장 실패: "
+    "errGuardianSavePrefix": "보호자 정보 저장 실패: ",
+    "sourceLabel": "가입 경로 (어떻게 알게 되셨나요?)",
+    "sourceSelect": "선택해주세요",
+    "sourceFriend": "지인 추천",
+    "sourceInstagram": "인스타그램",
+    "sourceNaverBlog": "네이버 블로그",
+    "sourceOther": "기타 (전단지 등)",
+    "sourceOtherPlaceholder": "직접 입력해주세요 (예: 전단지, 길에서 보고)",
+    "errSourceRequired": "가입 경로를 선택해주세요."
   },
   "memberNew": {
     "title": "선수 등록",
@@ -159,7 +167,15 @@
     "errSignupFailedPrefix": "회원가입 실패: ",
     "errUnknown": "알 수 없는 오류",
     "errUserSavePrefix": "사용자 정보 저장 실패: ",
-    "errMemberSavePrefix": "회원 정보 저장 실패: "
+    "errMemberSavePrefix": "회원 정보 저장 실패: ",
+    "sourceLabel": "가입 경로 (어떻게 알게 되셨나요?)",
+    "sourceSelect": "선택해주세요",
+    "sourceFriend": "지인 추천",
+    "sourceInstagram": "인스타그램",
+    "sourceNaverBlog": "네이버 블로그",
+    "sourceOther": "기타 (전단지 등)",
+    "sourceOtherPlaceholder": "직접 입력해주세요 (예: 전단지, 길에서 보고)",
+    "errSourceRequired": "가입 경로를 선택해주세요."
   },
   "book": {
     "summary": "{name}님 수업 예약 · 잔여 {remaining}회",

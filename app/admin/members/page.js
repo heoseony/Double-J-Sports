@@ -399,7 +399,7 @@ export default function AdminMembersPage() {
     const { data, error } = await supabase
       .from("members")
       .select(
-        "id, name, name_en, program, status, birth_date, gender, referred_by, is_test, notes, emergency_contact, region, guardians(name, phone, referred_by), users(email, phone)"
+        "id, name, name_en, program, status, birth_date, gender, referred_by, signup_source, signup_source_detail, is_test, notes, emergency_contact, region, guardians(name, phone, referred_by, signup_source, signup_source_detail), users(email, phone)"
       )
       // 개인레슨(결제 관리 > 개인레슨 탭) 게스트 등록은 guest_email이 채워지는데,
       // 이 회원들은 회원관리 화면이 아니라 개인레슨 탭에서 전부 관리하므로 목록에서 제외한다.
@@ -922,6 +922,12 @@ export default function AdminMembersPage() {
               : "연락처 정보 없음";
 
             const referredBy = m.guardians?.referred_by || m.referred_by;
+            const srcKey = m.guardians?.signup_source || m.signup_source;
+            const srcDetail = m.guardians?.signup_source_detail || m.signup_source_detail;
+            const srcLabel = srcKey
+              ? ({ friend: "지인 추천", instagram: "인스타그램", naver_blog: "네이버 블로그", other: "기타" }[srcKey] || srcKey) +
+                (srcKey === "other" && srcDetail ? " - " + srcDetail : "")
+              : "";
             const isExpanded = expandedId === m.id;
             const allMemberships = membershipsByMember[m.id] || [];
             const memberships = allMemberships.filter((ms) => ms.status === "active").slice(0, 1);
@@ -992,6 +998,11 @@ export default function AdminMembersPage() {
                       {referredBy && (
                         <div style={{ fontSize: 11, color: BLUE, marginTop: 3, fontWeight: 600 }}>
                           추천인: {referredBy}
+                        </div>
+                      )}
+                      {srcLabel && (
+                        <div style={{ fontSize: 11, color: "#8ea0b8", marginTop: 3, fontWeight: 600 }}>
+                          가입 경로: {srcLabel}
                         </div>
                       )}
                       {!m.name_en && (
