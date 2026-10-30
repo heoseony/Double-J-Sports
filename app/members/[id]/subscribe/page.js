@@ -284,6 +284,21 @@ export default function SubscribePage() {
               {t("subscribe.body1")}<strong style={{ color: "#1b3a63" }}>{submitted.total_amount} EUR</strong>{t("subscribe.body2")}{" "}
               <strong style={{ color: "#1b3a63" }}>"{submitted.depositor_name}"</strong>{t("subscribe.body3")}
             </p>
+            <div
+              style={{
+                background: "#fff6e0",
+                border: "1px solid #f3d38a",
+                color: "#7a5200",
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 13,
+                lineHeight: 1.6,
+                fontWeight: 600,
+                marginTop: 12, marginBottom: 0,
+              }}
+            >
+              {t("subscribe.nextMonthNotice")}
+            </div>
             {Number(submitted.discount_amount) > 0 && (
               <p style={{ fontSize: 13, color: BLUE, marginTop: 8, marginBottom: 0, fontWeight: 700 }}>
                 {t("subscribe.couponAppliedMsg", { amount: submitted.discount_amount })}
@@ -357,6 +372,21 @@ export default function SubscribePage() {
           <div style={{ fontWeight: 700, fontSize: 15, color: "#1b3a63", marginBottom: 14 }}>
             {t("subscribe.newSubscriptionTitle")}
           </div>
+          <div
+              style={{
+                background: "#fff6e0",
+                border: "1px solid #f3d38a",
+                color: "#7a5200",
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 13,
+                lineHeight: 1.6,
+                fontWeight: 600,
+                marginBottom: 14,
+              }}
+            >
+              {t("subscribe.nextMonthNotice")}
+            </div>
 
           {plans.length === 0 ? (
             <p style={{ fontSize: 13, color: "#8ea0b8", margin: 0 }}>

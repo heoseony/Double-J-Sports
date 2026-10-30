@@ -308,7 +308,8 @@
     "depositorNamePlaceholder": "Name of the person making the transfer",
     "submitting": "Submitting...",
     "submit": "Submit",
-    "backToPlayers": "← Back to Players"
+    "backToPlayers": "← Back to Players",
+    "nextMonthNotice": "📢 If you are signing up for next month's membership, the invoice will be issued on the 1st of next month. Please make your payment after you receive the invoice."
   },
   "memberBook": {
     "errMemberNotFound": "Player information not found.",
