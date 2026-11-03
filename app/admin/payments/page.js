@@ -127,6 +127,12 @@ export default function AdminPaymentsPage() {
   const [modalPayment, setModalPayment] = useState(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [invoiceNumberDraft, setInvoiceNumberDraft] = useState("");
+  const [editInv, setEditInv] = useState(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editResend, setEditResend] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   // ===== 인보이스 탭 상태 =====
   const [invoices, setInvoices] = useState([]);
@@ -979,7 +985,7 @@ export default function AdminPaymentsPage() {
     const { data, error } = await supabase
       .from("invoices")
       .select(
-        "id, invoice_number, issued_at, total_amount, payment_id, pdf_url"
+        "id, invoice_number, issued_at, total_amount, payment_id, pdf_url, description"
       )
       .order("issued_at", { ascending: false })
       .limit(200);
@@ -1477,6 +1483,71 @@ export default function AdminPaymentsPage() {
     });
   }
 
+  function openEditInvoice(inv) {
+    const monthLabel = inv.issued_at
+      ? new Date(inv.issued_at).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "Europe/Berlin" })
+      : "";
+    setEditInv(inv);
+    setEditAmount(String(inv.total_amount));
+    setEditDesc(inv.description || `Double J GmbH --\nAkademie-Training (${monthLabel})`);
+    setEditResend(false);
+    setEditError("");
+  }
+
+  async function submitEditInvoice() {
+    if (!editInv) return;
+    setEditError("");
+    const amt = Number(String(editAmount).replace(",", "."));
+    if (!isFinite(amt) || amt < 0 || editAmount === "") {
+      setEditError("금액을 올바르게 입력해주세요.");
+      return;
+    }
+    const changed = Math.round(amt * 100) !== Math.round(Number(editInv.total_amount) * 100);
+    const ok = window.confirm(
+      `${editInv.invoice_number} 인보이스를 수정합니다.\n` +
+        (changed ? `금액: ${editInv.total_amount} EUR → ${amt} EUR\n` : "금액은 그대로입니다.\n") +
+        "PDF가 새로 만들어지고 결제 내역/매출도 함께 바뀝니다. 진행할까요?"
+    );
+    if (!ok) return;
+    setEditSaving(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const res = await fetch("/api/update-invoice-amount", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          invoiceId: editInv.id,
+          newTotal: amt,
+          description: editDesc,
+          resend: editResend,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setEditError(result.error || "수정 실패");
+        setEditSaving(false);
+        return;
+      }
+      let msg = `${result.invoiceNumber} 수정 완료 (${result.oldTotal} → ${result.newTotal} EUR)`;
+      if (editResend) {
+        msg += result.emailSent ? " · 이메일 재전송 완료" : ` · 이메일 재전송 실패: ${result.emailError || "알 수 없는 이유"}`;
+      }
+      setEditSaving(false);
+      setEditInv(null);
+      setInvoicesLoaded(false);
+      setRevenueLoaded(false);
+      window.alert(msg);
+    } catch (e) {
+      setEditError("요청 실패: " + e.message);
+      setEditSaving(false);
+    }
+  }
+
   // 이미 발급된 인보이스를 새 번호로 다시 만들지 않고, 저장된 PDF 그대로 이메일만 재전송한다.
   // (이메일 발송 실패 같은 경우 재시도용)
   async function handleResendInvoice(payment) {
@@ -1818,7 +1889,7 @@ export default function AdminPaymentsPage() {
                       {monthKey === "미상" ? "날짜 미상" : `${monthKey.slice(0, 4)}년 ${Number(monthKey.slice(5, 7))}월`}
                     </div>
                     {groupedByMonth[monthKey].map((inv, idx) => (
-                      <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} onTrash={setTrashTarget} />
+                      <InvoiceRow onEditAmount={openEditInvoice} key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} onTrash={setTrashTarget} />
                     ))}
                   </div>
                 ));
@@ -1880,7 +1951,7 @@ export default function AdminPaymentsPage() {
                   )}
 
                   {monthInvoices.map((inv, idx) => (
-                    <InvoiceRow key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} onTrash={setTrashTarget} />
+                    <InvoiceRow onEditAmount={openEditInvoice} key={inv.id} inv={inv} idx={idx} openingPdfPath={openingPdfPath} handleOpenInvoicePdf={handleOpenInvoicePdf} onTrash={setTrashTarget} />
                   ))}
                 </>
               );
@@ -3113,6 +3184,86 @@ export default function AdminPaymentsPage() {
         </div>
       )}
 
+      {/* ===================== 발행된 인보이스 금액 수정 모달 ===================== */}
+      {editInv && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(20,35,60,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}
+          onClick={() => { if (!editSaving) setEditInv(null); }}
+        >
+          <div style={{ background: "white", borderRadius: 16, padding: 20, width: "100%", maxWidth: 420, maxHeight: "90vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#1b3a63", marginBottom: 6 }}>인보이스 금액 수정</div>
+            <p style={{ fontSize: 13, color: "#8ea0b8", marginTop: 0 }}>
+              {editInv.invoice_number} · {editInv.payments?.members?.name || ""} · 현재{" "}
+              <strong style={{ color: "#1b3a63" }}>{editInv.total_amount} EUR</strong>
+            </p>
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63", display: "block", marginBottom: 6 }}>
+              새 금액 (EUR, 부가세 포함)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={editAmount}
+              onChange={(e) => setEditAmount(e.target.value)}
+              style={{ width: "100%", padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 8, boxSizing: "border-box", marginBottom: 6 }}
+            />
+            {(() => {
+              const t = Number(String(editAmount).replace(",", "."));
+              if (editAmount === "" || !isFinite(t)) return null;
+              const n = Math.round((t / 1.19) * 100) / 100;
+              const v = Math.round((t - n) * 100) / 100;
+              return (
+                <p style={{ fontSize: 12, color: "#5b7699", marginTop: 0 }}>
+                  순액 {n} EUR + 부가세(19%) {v} EUR
+                </p>
+              );
+            })()}
+
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#1b3a63" }}>인보이스 항목 설명 (Description)</label>
+            <textarea
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              rows={3}
+              style={{ width: "100%", marginTop: 6, padding: 10, fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 10, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
+            />
+            <p style={{ fontSize: 12, color: "#aab9cc", marginTop: 4 }}>
+              인보이스 번호와 발행일은 그대로 유지되고, PDF만 새로 만들어집니다. 결제 내역과 매출 금액도 함께 바뀝니다.
+            </p>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#1b3a63", marginTop: 8 }}>
+              <input type="checkbox" checked={editResend} onChange={(e) => setEditResend(e.target.checked)} style={{ width: 18, height: 18 }} />
+              수정한 PDF를 이메일로 다시 보내기
+            </label>
+
+            {editError && (
+              <div style={{ background: "#fdecec", color: "#b3261e", padding: 12, borderRadius: 10, fontSize: 13, marginTop: 12 }}>
+                {editError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={submitEditInvoice}
+                disabled={editSaving}
+                style={{ flex: 1, padding: "12px 16px", fontSize: 14, fontWeight: 700, border: "none", borderRadius: 10, background: editSaving ? "#9db8d6" : BLUE, color: "white", cursor: editSaving ? "default" : "pointer" }}
+              >
+                {editSaving ? "수정 중..." : "수정하고 PDF 다시 만들기"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditInv(null)}
+                disabled={editSaving}
+                style={{ padding: "12px 16px", fontSize: 14, border: "1px solid #e5eaf2", borderRadius: 10, background: "white", color: "#5b7699", cursor: "pointer" }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===================== 개인레슨 인보이스 발행 확인/수정 모달 ===================== */}
       {pimPayment && (
         <div
@@ -3241,7 +3392,7 @@ export default function AdminPaymentsPage() {
   );
 }
 
-function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf, onTrash }) {
+function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf, onTrash, onEditAmount }) {
   return (
     <div style={{ padding: "12px 0", borderTop: idx === 0 ? "none" : "1px solid #f0f3f8", fontSize: 13 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
@@ -3272,6 +3423,15 @@ function InvoiceRow({ inv, idx, openingPdfPath, handleOpenInvoicePdf, onTrash })
       </div>
       <div style={{ color: "#8ea0b8", fontSize: 12, marginTop: 4 }}>
         발행일: {inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ko-KR", { timeZone: "Europe/Berlin" }) : "-"} · 금액: {inv.total_amount} EUR
+        {onEditAmount && (
+          <button
+            type="button"
+            onClick={() => onEditAmount(inv)}
+            style={{ marginLeft: 10, color: BLUE, fontWeight: 700, fontSize: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            금액 수정
+          </button>
+        )}
         {onTrash && (
           <button
             type="button"

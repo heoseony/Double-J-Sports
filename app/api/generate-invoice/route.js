@@ -202,6 +202,7 @@ export async function POST(request) {
       vat_amount: payment.vat_amount,
       issued_at: new Date().toISOString(),
       pdf_url: pdfPath,
+      description: finalDescription,
     });
 
     if (insertError) {
