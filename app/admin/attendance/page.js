@@ -289,7 +289,7 @@ export default function AdminAttendancePage() {
                     style={{
                       width: 4,
                       flexShrink: 0,
-                      background: getProgramTextColor(s.classes?.program),
+                      background: (s.classes?.region === "dusseldorf") ? "#c0392b" : getProgramTextColor(s.classes?.program),
                     }}
                   />
                   <div style={{ padding: "12px 4px 12px 0", flexShrink: 0, textAlign: "center", minWidth: 46 }}>

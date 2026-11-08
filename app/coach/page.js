@@ -353,7 +353,7 @@ export default function CoachHomePage() {
                     style={{
                       width: 4,
                       flexShrink: 0,
-                      background: getProgramTextColor(s.classInfo?.program),
+                      background: (s.classInfo?.region === "dusseldorf") ? "#c0392b" : getProgramTextColor(s.classInfo?.program),
                     }}
                   />
                   <div style={{ padding: "12px 4px 12px 0", flexShrink: 0, textAlign: "center", minWidth: 46 }}>
