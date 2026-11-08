@@ -306,7 +306,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
               style={{
                 width: 4,
                 flexShrink: 0,
-                background: getProgramTextColor(info?.program),
+                background: (s.classes?.region === "dusseldorf") ? "#c0392b" : getProgramTextColor(info?.program),
               }}
             />
 
