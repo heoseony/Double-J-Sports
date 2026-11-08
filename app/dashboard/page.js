@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionBg, getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../lib/classColors";
+import { getRegionBg, getClassBg, getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../lib/classColors";
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
@@ -299,7 +299,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
               opacity: s.is_cancelled ? 0.5 : 1,
               overflow: "hidden",
               cursor: clickable ? "pointer" : "default",
-              background: getRegionBg(s.classes?.region),
+              background: getClassBg(s.classes?.region, s.classes?.class_name),
             }}
           >
             <div

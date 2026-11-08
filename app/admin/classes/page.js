@@ -431,7 +431,7 @@ function AdminClassesPageInner() {
       for (let i = 0; i < 28; i++) {
         const d = new Date(today);
         d.setUTCDate(today.getUTCDate() + i);
-        if (d.getUTCDay() === c.weekday) {
+        if (d.getUTCDay() === c.weekday && (c.four_per_month === false || d.getUTCDate() <= 28)) {
           const yyyy = d.getUTCFullYear();
           const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
           const dd = String(d.getUTCDate()).padStart(2, "0");
@@ -461,7 +461,7 @@ function AdminClassesPageInner() {
     }
 
     setGenerating(false);
-    setGenerateMsg(`${createdCount}개의 새 세션이 생성되었습니다. (앞으로 4주치)`);
+    setGenerateMsg(`${createdCount}개의 새 세션이 생성되었습니다. (앞으로 4주치, 5주차 제외)`);
     await loadMonthSessions(currentMonth);
   }
 
