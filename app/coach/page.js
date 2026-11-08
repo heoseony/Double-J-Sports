@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../lib/classColors";
+import { getRegionLabel, getRegionTextColor, getProgramTextColor, getClassBarColor } from "../../lib/classColors";
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
@@ -353,7 +353,7 @@ export default function CoachHomePage() {
                     style={{
                       width: 4,
                       flexShrink: 0,
-                      background: (s.classInfo?.region === "dusseldorf") ? "#c0392b" : getProgramTextColor(s.classInfo?.program),
+                      background: getClassBarColor(s.classInfo?.region, s.classInfo?.class_name, s.classInfo?.program),
                     }}
                   />
                   <div style={{ padding: "12px 4px 12px 0", flexShrink: 0, textAlign: "center", minWidth: 46 }}>

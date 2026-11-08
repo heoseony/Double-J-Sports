@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { nowInGermany } from "../../../lib/germanyTime";
-import { getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../../lib/classColors";
+import { getRegionLabel, getRegionTextColor, getProgramTextColor, getClassBarColor } from "../../../lib/classColors";
 import { supabase } from "../../../lib/supabaseClient";
 import LoadingScreen from "../../components/LoadingScreen";
 
@@ -289,7 +289,7 @@ export default function AdminAttendancePage() {
                     style={{
                       width: 4,
                       flexShrink: 0,
-                      background: (s.classes?.region === "dusseldorf") ? "#c0392b" : getProgramTextColor(s.classes?.program),
+                      background: getClassBarColor(s.classes?.region, s.classes?.class_name, s.classes?.program),
                     }}
                   />
                   <div style={{ padding: "12px 4px 12px 0", flexShrink: 0, textAlign: "center", minWidth: 46 }}>

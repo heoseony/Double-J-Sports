@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getRegionBg, getClassBg, getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../lib/classColors";
+import { getRegionBg, getClassBg, getClassBarColor, getRegionLabel, getRegionTextColor, getProgramTextColor } from "../../lib/classColors";
 import { nowInGermany } from "../../lib/germanyTime";
 import { supabase } from "../../lib/supabaseClient";
 import LoadingScreen from "../components/LoadingScreen";
@@ -306,7 +306,7 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
               style={{
                 width: 4,
                 flexShrink: 0,
-                background: (s.classes?.region === "dusseldorf") ? "#c0392b" : getProgramTextColor(info?.program),
+                background: getClassBarColor(s.classes?.region, s.classes?.class_name, info?.program),
               }}
             />
 
