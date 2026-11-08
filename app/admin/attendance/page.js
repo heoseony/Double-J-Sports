@@ -102,6 +102,13 @@ export default function AdminAttendancePage() {
         return;
       }
 
+      // 같은 날 안에서는 프랑크푸르트 먼저, 뒤셀도르프 나중 (각각 시간순)
+      (sessionData || []).sort((a, b) =>
+        (a.session_date || "").localeCompare(b.session_date || "") ||
+        ((a.classes?.region === "dusseldorf" ? 1 : 0) - (b.classes?.region === "dusseldorf" ? 1 : 0)) ||
+        (a.start_time || "").localeCompare(b.start_time || "")
+      );
+
       const classIds = [...new Set((sessionData || []).map((s) => s.class_id))];
 
       let coachNamesByClass = {};

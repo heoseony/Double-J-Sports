@@ -254,7 +254,10 @@ function TodayClassList({ sessions, sessionCounts, targetDate, myClassIds, role,
   const todayStr = targetDate || toDateStr(nowInGermany());
   const todaySessions = sessions
     .filter((s) => s.session_date === todayStr)
-    .sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
+    .sort((a, b) =>
+      ((a.classes?.region === "dusseldorf" ? 1 : 0) - (b.classes?.region === "dusseldorf" ? 1 : 0)) ||
+      (a.start_time || "").localeCompare(b.start_time || "")
+    );
 
   if (todaySessions.length === 0) {
     return (

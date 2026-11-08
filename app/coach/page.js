@@ -127,6 +127,13 @@ export default function CoachHomePage() {
         classInfo: classMap[s.class_id],
       }));
 
+      // 같은 날 안에서는 프랑크푸르트 먼저, 뒤셀도르프 나중 (각각 시간순)
+      withClassInfo.sort((a, b) =>
+        (a.session_date || "").localeCompare(b.session_date || "") ||
+        ((a.classInfo?.region === "dusseldorf" ? 1 : 0) - (b.classInfo?.region === "dusseldorf" ? 1 : 0)) ||
+        (a.start_time || "").localeCompare(b.start_time || "")
+      );
+
       const sessionIds = withClassInfo.map((s) => s.id);
       let bookingCountBySession = {};
       let bookingPendingBySession = {};
