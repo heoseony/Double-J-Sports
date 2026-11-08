@@ -310,7 +310,21 @@ export default function AdminMembersPage() {
 
 
   function rosterShortName(cls) {
-    return (cls.class_name || "").includes("선수반") ? "선수반" : "아카데미";
+    const n = cls.class_name || "";
+    if (n.includes("여성 취미반")) return "여성 취미반";
+    if (n.includes("남성 취미반")) return "남성 취미반";
+    return n.includes("선수반") ? "선수반" : "아카데미";
+  }
+
+  // 이 회원에게 보여줄 고정 명단 수업: 뒤셀도르프 회원은 뒤셀도르프 수업, 일반(취미) 회원은 취미반
+  function rosterClassesFor(member) {
+    if (member.region === "dusseldorf") {
+      return rosterClasses.filter((rc) => rc.region === "dusseldorf");
+    }
+    if (member.program === "general") {
+      return rosterClasses.filter((rc) => rc.region !== "dusseldorf");
+    }
+    return [];
   }
 
   async function loadRosterInfo() {
@@ -318,7 +332,7 @@ export default function AdminMembersPage() {
       .from("classes")
       .select("id, class_name, region, weekday, start_time")
       .eq("active", true)
-      .eq("region", "dusseldorf")
+      .or("region.eq.dusseldorf,program.eq.general")
       .order("weekday", { ascending: true })
       .order("start_time", { ascending: true });
     setRosterClasses(cls || []);
@@ -1035,7 +1049,7 @@ export default function AdminMembersPage() {
 
                 {isExpanded && (
                   <div style={{ padding: "0 16px 16px" }}>
-                    {m.region === "dusseldorf" && rosterClasses.length > 0 && (
+                    {rosterClassesFor(m).length > 0 && (
                       <div
                         style={{
                           marginBottom: 12,
@@ -1047,7 +1061,7 @@ export default function AdminMembersPage() {
                         <div style={{ fontSize: 12, fontWeight: 700, color: "#1b3a63", marginBottom: 8 }}>
                           고정 명단 (자동 예약)
                         </div>
-                        {rosterClasses.map((rc) => {
+                        {rosterClassesFor(m).map((rc) => {
                           const on = (rosterMap[m.id] || []).includes(rc.id);
                           return (
                             <label
@@ -1067,7 +1081,7 @@ export default function AdminMembersPage() {
                                 disabled={rosterBusyKey === m.id + rc.id}
                                 onChange={() => toggleRoster(m, rc, on)}
                               />
-                              {"뒤셀도르프 " + rosterShortName(rc)}
+                              {(rc.region === "dusseldorf" ? "뒤셀도르프 " : "프랑크푸르트 ") + rosterShortName(rc)}
                             </label>
                           );
                         })}
