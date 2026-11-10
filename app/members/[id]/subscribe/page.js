@@ -32,6 +32,7 @@ export default function SubscribePage() {
 
   const [availableCoupon, setAvailableCoupon] = useState(null);
   const [useCoupon, setUseCoupon] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function loadPendingPayments() {
     const { data } = await supabase
@@ -106,7 +107,8 @@ export default function SubscribePage() {
   const discount = useCoupon && availableCoupon ? Math.min(COUPON_AMOUNT, rawPrice) : 0;
   const finalPrice = Math.max(rawPrice - discount, 0);
 
-  async function handleSubmit(e) {
+  // 신청하기 버튼: 입력 확인 후 안내 모달을 먼저 띄운다
+  function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg("");
 
@@ -117,6 +119,26 @@ export default function SubscribePage() {
 
     const plan = plans.find((p) => p.id === planId);
     if (!plan) {
+      setErrorMsg(t("subscribe.errPlanNotFound"));
+      return;
+    }
+
+    setShowConfirm(true);
+  }
+
+  // 모달에서 "확인하고 신청하기"를 누르면 실제 신청 처리
+  async function doSubmit() {
+    setErrorMsg("");
+
+    if (!planId || !depositorName.trim()) {
+      setShowConfirm(false);
+      setErrorMsg(t("subscribe.errFillRequired"));
+      return;
+    }
+
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) {
+      setShowConfirm(false);
       setErrorMsg(t("subscribe.errPlanNotFound"));
       return;
     }
@@ -146,6 +168,7 @@ export default function SubscribePage() {
 
     if (error) {
       setSubmitting(false);
+      setShowConfirm(false);
       setErrorMsg(t("subscribe.errSubmitFailedPrefix") + error.message);
       return;
     }
@@ -158,6 +181,7 @@ export default function SubscribePage() {
     }
 
     setSubmitting(false);
+    setShowConfirm(false);
     setSubmitted({ ...paymentData, planName: plan.name });
     setPlanId("");
     setDepositorName("");
@@ -522,6 +546,113 @@ export default function SubscribePage() {
           </Link>
         </div>
       </div>
+
+      {showConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,35,60,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+          onClick={() => {
+            if (!submitting) setShowConfirm(false);
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: 20,
+              width: "100%",
+              maxWidth: 420,
+              boxShadow: "0 8px 30px rgba(20,35,60,0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 800, fontSize: 16, color: "#1b3a63", marginBottom: 12 }}>
+              {lang === "en" ? "Please read before submitting" : "신청 전 꼭 확인해 주세요"}
+            </div>
+
+            <div
+              style={{
+                background: "#fff6e0",
+                border: "1px solid #f3d38a",
+                color: "#7a5200",
+                padding: 14,
+                borderRadius: 10,
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              {lang === "en" ? (
+                <>
+                  <div style={{ fontWeight: 800 }}>
+                    Please enter the invoice number in the payment reference field (Verwendungszweck) when you transfer.
+                  </div>
+                  <div style={{ marginTop: 4 }}>This is required so that we can confirm your payment smoothly.</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontWeight: 800 }}>
+                    입금하실 때 메모(Verwendungszweck)란에 인보이스 번호를 꼭 입력해 주세요.
+                  </div>
+                  <div style={{ marginTop: 4 }}>원활한 입금 확인을 위해 꼭 필요합니다.</div>
+                </>
+              )}
+            </div>
+
+            <p style={{ fontSize: 13, color: "#33455e", lineHeight: 1.7, margin: "12px 0 0" }}>
+              {lang === "en"
+                ? "Invoices are issued starting on the 1st of each month. Please transfer after you receive the invoice."
+                : "인보이스는 매월 1일부터 발급됩니다. 인보이스를 받으신 뒤 입금해 주세요."}
+            </p>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={doSubmit}
+                disabled={submitting}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 10,
+                  background: submitting ? "#9db8d6" : BLUE,
+                  color: "white",
+                  cursor: submitting ? "default" : "pointer",
+                }}
+              >
+                {submitting
+                  ? lang === "en" ? "Submitting..." : "신청 중..."
+                  : lang === "en" ? "Confirm and submit" : "확인하고 신청하기"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                disabled={submitting}
+                style={{
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  border: "1px solid #e5eaf2",
+                  borderRadius: 10,
+                  background: "white",
+                  color: "#5b7699",
+                  cursor: "pointer",
+                }}
+              >
+                {lang === "en" ? "Cancel" : "취소"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
