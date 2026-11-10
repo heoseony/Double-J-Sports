@@ -323,6 +323,29 @@ export default function SubscribePage() {
             >
               {t("subscribe.nextMonthNotice")}
             </div>
+            <div
+              style={{
+                color: "#d32f2f",
+                fontSize: 14,
+                fontWeight: 800,
+                lineHeight: 1.7,
+                marginTop: 12,
+              }}
+            >
+              {lang === "en" ? (
+                <>
+                  Please enter the invoice number (Rechnungsnummer) in the payment reference field (Verwendungszweck) when you transfer.
+                  <div style={{ fontWeight: 700, marginTop: 2 }}>
+                    This is required so that we can confirm your payment smoothly.
+                  </div>
+                </>
+              ) : (
+                <>
+                  입금 시 송금 메모란(Verwendungszweck)에 반드시 인보이스 번호(Rechnungsnummer)를 기재해 주시기 바랍니다.
+                  <div style={{ fontWeight: 700, marginTop: 2 }}>원활한 입금 확인을 위해 꼭 필요합니다.</div>
+                </>
+              )}
+            </div>
             {Number(submitted.discount_amount) > 0 && (
               <p style={{ fontSize: 13, color: BLUE, marginTop: 8, marginBottom: 0, fontWeight: 700 }}>
                 {t("subscribe.couponAppliedMsg", { amount: submitted.discount_amount })}
