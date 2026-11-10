@@ -230,7 +230,7 @@ export async function POST(request) {
           from: `"Double J Sports" <${process.env.GMAIL_USER}>`,
           to: guardianEmail,
           subject: `[Double J Sports] Invoice ${invoiceNumber}`,
-          html: `<p>안녕하세요,<br/>${member.name}님의 인보이스(${invoiceNumber})가 발급되었습니다. 첨부된 PDF를 확인해주세요.</p>`,
+          html: `<p>안녕하세요,<br/>${member.name}님의 인보이스(${invoiceNumber})가 발급되었습니다. 첨부된 PDF를 확인해주세요.</p><p><strong>입금하실 때 메모(Verwendungszweck)란에 인보이스 번호 ${invoiceNumber} 를 꼭 입력해 주세요.</strong> 원활한 입금 확인을 위해 꼭 필요합니다.<br/>Please enter the invoice number <strong>${invoiceNumber}</strong> in the payment reference field when transferring.</p>`,
           attachments: [
             {
               filename: (() => {
