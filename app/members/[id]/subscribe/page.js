@@ -599,7 +599,7 @@ export default function SubscribePage() {
               ) : (
                 <>
                   <div style={{ fontWeight: 800 }}>
-                    입금하실 때 메모(Verwendungszweck)란에 인보이스 번호를 꼭 입력해 주세요.
+                    입금 시 송금 메모란(Verwendungszweck)에 반드시 인보이스 번호(Rechnungsnummer)를 기재해 주시기 바랍니다.
                   </div>
                   <div style={{ marginTop: 4 }}>원활한 입금 확인을 위해 꼭 필요합니다.</div>
                 </>
