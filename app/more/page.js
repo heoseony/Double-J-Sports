@@ -51,6 +51,7 @@ function getMenuByRole(t) {
     { label: "갤러리 관리", href: "/photos" },
     { label: "운영 통계", href: null },
     { label: "고정 명단 관리", href: "/admin/roster" },
+    { label: "체험 신청", href: "/admin/trial-applications" },
   ],
   };
 }

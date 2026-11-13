@@ -410,6 +410,7 @@ export default function DashboardPage() {
   const [email, setEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+  const [newTrialCount, setNewTrialCount] = useState(0);
   const [isCoach, setIsCoach] = useState(false);
   const [isAdultMember, setIsAdultMember] = useState(false);
   const [adultMemberName, setAdultMemberName] = useState("");
@@ -482,6 +483,11 @@ export default function DashboardPage() {
           .select("id", { count: "exact", head: true })
           .eq("status", "pending");
         setPendingPaymentsCount(pendingCount || 0);
+        const { count: trialCount } = await supabase
+          .from("trial_applications")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "new");
+        setNewTrialCount(trialCount || 0);
       }
 
       const { data: selfMember } = await supabase
@@ -893,6 +899,7 @@ export default function DashboardPage() {
     { label: "월간 성장일지", href: "/admin/growth-journal", icon: "notebook", bg: "#eef0fb", color: "#5b5fc7" },
     { label: "운영 리포트", href: "/admin/reports", icon: "chart", bg: "#e6f7f7", color: "#2ea8a0" },
     { label: "고정 명단", href: "/admin/roster", icon: "users", bg: "#eef0fb", color: "#5b5fc7" },
+    { label: "체험 신청", href: "/admin/trial-applications", icon: "users", bg: "#fdecea", color: "#e53935" },
   ];
 
   return (
@@ -1501,7 +1508,7 @@ export default function DashboardPage() {
                         }}
                       >
                         <MenuIcon type={m.icon} color={m.color} />
-                        {m.label === "결제 관리" && pendingPaymentsCount > 0 && (
+                        {((m.label === "결제 관리" && pendingPaymentsCount > 0) || (m.label === "체험 신청" && newTrialCount > 0)) && (
                           <span
                             style={{
                               position: "absolute",
@@ -1522,7 +1529,7 @@ export default function DashboardPage() {
                               boxShadow: "0 0 0 2px white",
                             }}
                           >
-                            {pendingPaymentsCount > 99 ? "99+" : pendingPaymentsCount}
+                            {(() => { const c = m.label === "체험 신청" ? newTrialCount : pendingPaymentsCount; return c > 99 ? "99+" : c; })()}
                           </span>
                         )}
                       </div>
